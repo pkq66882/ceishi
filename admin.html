@@ -1000,7 +1000,9 @@
                 }).join(''));
             } catch (e) { 
                 console.error("Base64 decoding to UTF-8 failed:", e);
-                return atob(str); // Fallback, might still be garbled for non-ASCII
+                // Fallback, might still be garbled for non-ASCII
+                // Alternatively, throw error or return empty string based on desired strictness
+                return atob(str); 
             }
         };
 
@@ -1014,7 +1016,7 @@
                     const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, documentation_url: response.url || endpoint }));
                     const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}`;
                     console.error('GitHub API Error:', errorMessage, errorData);
-                    const specificError = errorMessage.toLowerCase().includes('bad credentials') || errorMessage.toLowerCase().includes('requires authentication') || response.status === 401 || response.status === 403
+                    const specificError = (errorMessage.toLowerCase().includes('bad credentials') || errorMessage.toLowerCase().includes('requires authentication') || response.status === 401 || response.status === 403)
                         ? '你的 GitHub Token 可能无效或权限不足。请检查：[Token生成页面](https://github.com/settings/tokens)'
                         : '';
                     if (response.status === 404 && errorData.documentation_url.includes('create-or-update-file-contents')) {
@@ -1030,28 +1032,29 @@
                 try {
                     const contents = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
                     if (!Array.isArray(contents)) {
-                        console.warn(`Path ${path} is not a directory or empty.`);
+                        console.warn(`Path ${path} is not a directory or empty. Response:`, contents);
                         return [];
                     }
                     return contents;
                 } catch (error) {
-                    if (String(error).includes('Not Found') || String(error).includes('This is not a directory')) {
+                    if (String(error).includes('Not Found') || String(error).includes('This is not a directory') || String(error).includes('No content.')) {
                         console.info(`Directory not found or not a directory: ${path}.`);
                         return [];
                     }
+                    console.error(`Error fetching directory contents for ${path}:`, error);
                     throw error;
                 }
             },
             async getFile(token, owner, repo, path) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content !== 'string' || result.encoding !== 'base64' || result.content.trim().length === 0) { // check content length
-                        console.warn(`File content for ${path} is empty, invalid, or file not found. Response:`, result);
+                    if (!result || typeof result.content !== 'string' || result.encoding !== 'base64' || result.content.trim().length === 0) {
+                        console.warn(`File content for ${path} is empty, invalid, or file not found. Response details:`, result);
                         return null; 
                     }
                     return { content: b64_to_utf8(result.content), sha: result.sha };
                 } catch (error) {
-                    if (error.message.toLowerCase().includes('not found') || error.message.includes('file not found') || String(error).includes('No content.')) {
+                    if (error.message.toLowerCase().includes('not found') || error.message.includes('file not found') || String(error).includes('No content.') ) {
                         console.info(`File not found: ${path}. This is expected during initial setup.`);
                         return null;
                     }
@@ -1086,15 +1089,9 @@
             settings: document.getElementById('settings-view'),
             gitalkSettings: document.getElementById('gitalk-settings-view'),
         };
-        const navButtons = {
-            // 直接获取元素，不要用一个对象包裹，避免初始化顺序问题或其他引用问题
-            dashboard: document.getElementById('nav-dashboard'),
-            posts: document.getElementById('nav-posts'),
-            mediaLibrary: document.getElementById('nav-media-library'),
-            settings: document.getElementById('nav-settings'),
-            gitalkSettings: document.getElementById('nav-gitalk-settings'),
-            logout: document.getElementById('nav-logout'),
-        };
+        // Direct references to nav elements (no longer an object for simplicity)
+        // const navButtons = { ... } (Removed, using direct getElementById in event listeners)
+        
         const postListBody = document.getElementById('post-list');
         const mediaLibraryGrid = document.getElementById('media-library-grid');
 
@@ -1111,7 +1108,6 @@
             const hostname = window.location.hostname; 
             let pathSegments = window.location.pathname.split('/').filter(p => p); 
 
-            // 移除当前文件名本身
             if (pathSegments.length > 0 && 
                 (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
                  pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
@@ -1124,74 +1120,86 @@
             const hostnameLow = hostname.toLowerCase();
             const usernameLow = githubUsername.toLowerCase();
             const userGithubIoPattern = new RegExp(`^${usernameLow}\\.github\\.io$`);
+            
+            console.log(`[parseGitHubPath Debug] Hostname: ${hostname}, Username: ${githubUsername}, PathSegments: ${pathSegments}`);
 
-           if (userGithubIoPattern.test(hostnameLow)) {
-                // 情况1: hostname 是 username.github.io
+            if (userGithubIoPattern.test(hostnameLow)) {
+                // 情况1: hostname 是 user.github.io (如 pkq66882.github.io)
                 if (pathSegments.length > 0) {
-                    // pathSegments[0] 是项目名，例如 "ceishi"
-                    currentRepo = pathSegments[0]; 
-                    currentBasePath = pathSegments.slice(1).join('/'); // 如果是 "ceishi/subfolder"
-                    console.log(`[parseGitHubPath] Case 1.1: Project Page, Repo: ${currentRepo}, BasePath: ${currentBasePath}`);
+                    // 这是项目页面部署在子路径 (e.g., pkq66882.github.io/ceishi/)
+                    currentRepo = pathSegments[0]; // repo 是 "ceishi"
+                    currentBasePath = pathSegments.slice(1).join('/'); // basePath 是 "ceishi" 之后的部分 (通常为空字符串)
+                    console.log(`[parseGitHubPath Debug] Case 1.1: Project Page under User.github.io, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
-                    // root of user.github.io, e.g., pkq66882.github.io/
-                    currentRepo = hostnameLow; // Repo is the full hostname, e.g., "pkq66882.github.io"
+                    // 这是用户/组织页面根目录部署 (e.g., pkq66882.github.io/)
+                    currentRepo = hostnameLow; // repo 是 "pkq66882.github.io"
                     currentBasePath = '';
-                    console.log(`[parseGitHubPath] Case 1.2: User/Org Page Root, Repo: ${currentRepo}, BasePath: ${currentBasePath}`);
+                    console.log(`[parseGitHubPath Debug] Case 1.2: User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
-            } else if (hostnameLow.endsWith('.github.io')) {
-                // 情况2: hostname 是非 user.github.io 的 .github.io 域名 (可能不太常见)
-                // 或者用户输入了错误的用户名，导致 userGithubIoPattern 失败
+            } else if (hostnameLow.endsWith('.github.io')) { // 理论上应该被上面的 `userGithubIoPattern` 捕获，但为健壮性保留
+                // 情况2: hostname 是 .github.io 结尾，但不是当前用户的。这通常是理论上无法直接访问的URL，或在某些CNAME配置下。
                 // 暂时按照项目页面处理
-                if (pathSegments.length > 0) {
+                 if (pathSegments.length > 0) {
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
-                    console.log(`[parseGitHubPath] Case 2.1: Generic .github.io / Project Page, Repo: ${currentRepo}, BasePath: ${currentBasePath}`);
+                    console.log(`[parseGitHubPath Debug] Case 2.1: Generic .github.io Project Page, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
-                    // 没有 pathSegments，且不是 user.github.io。需要用户手动输入
-                    console.warn("[parseGitHubPath] Case 2.2: Insufficient info for repo. Prompting user.");
-                    // Fallback to prompting or a default
-                    currentRepo = prompt("无法自动检测到您的 GitHub 仓库名。请输入它 (例如: 'my-blog-repo' 或 'username.github.io'):", `${githubUsername}.github.io`) || `${githubUsername}.github.io`;
+                     // 这种情况复杂, 强制设为 username.github.io
+                    currentRepo = `${githubUsername}.github.io`; 
                     currentBasePath = '';
-                     console.log(`[parseGitHubPath] Case 2.2 Result: Repo: ${currentRepo}, BasePath: ${currentBasePath}`);
+                    console.log(`[parseGitHubPath Debug] Case 2.2: Generic .github.io No Path, Default to User Repo, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             } else { 
                 // 情况3: 自定义域名 (e.g., custom.com, custom.domain.com)
                 if (pathSegments.length > 0) {
-                    currentRepo = pathSegments[0]; // 假设 custom.com/my-blog/ => my-blog
+                    // 假设 custom.com/my-blog/ => my-blog (项目仓库)
+                    currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
-                    console.log(`[parseGitHubPath] Case 3.1: Custom Domain / Project Page, Repo: ${currentRepo}, BasePath: ${currentBasePath}`);
+                    console.log(`[parseGitHubPath Debug] Case 3.1: Custom Domain Project Page, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
                     // 没有 pathSegments，假设 CNAME 直接指向用户/组织仓库根目录
                     currentRepo = `${githubUsername}.github.io`; 
                     currentBasePath = '';
-                    console.log(`[parseGitHubPath] Case 3.2: Custom Domain / User/Org Page Root, Repo: ${currentRepo}, BasePath: ${currentBasePath}`);
+                    console.log(`[parseGitHubPath Debug] Case 3.2: Custom Domain User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             }
-
-            // 最终安全检查/修正
+            
+            // 最终安全检查和修正：确保 repo 不为空
             if (!currentRepo || currentRepo.trim() === '') {
-                console.warn("[parseGitHubPath] Final check: currentRepo is empty, defaulting to user site repo.");
+                console.warn("[parseGitHubPath Debug] Final adjustment: currentRepo is empty or invalid, defaulting to user site repo.");
                 currentRepo = `${githubUsername}.github.io`;
             }
-            if (currentRepo.includes('.github.io') && currentRepo.split('.')[0].toLowerCase() !== githubUsername.toLowerCase() && !userGithubIoPattern.test(hostnameLow) && pathSegments.length > 0) {
-                // 如果当前 repo 看起来是 user.github.io 但与当前用户不符，且有 path segments，
-                // 可能是项目页，但之前的逻辑没捕获。再次尝试使用 pathSegments[0]
-                const potentialProjectRepo = pathSegments[0];
-                if (potentialProjectRepo && potentialProjectRepo.toLowerCase() !== usernameLow) {
-                    currentRepo = potentialProjectRepo;
-                    currentBasePath = pathSegments.slice(1).join('/');
-                    console.log(`[parseGitHubPath] Final check anomaly: Adjusting to Project Repo: ${currentRepo}, BasePath: ${currentBasePath}`);
-                }
-            }
 
-            console.log(`[parseGitHubPath] Final determination - Owner: ${githubUsername}, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+            console.log(`[parseGitHubPath Final] Owner: ${githubUsername}, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
             return { owner: githubUsername, repo: currentRepo, basePath: currentBasePath };
         };
 
 
+        // **将 createGitHubDirectory 移动到全局作用域**
+        async function createGitHubDirectory(apiToken, apiOwner, apiRepo, directoryPath) {
+            const gitkeepPath = `${directoryPath}/.gitkeep`; // directoryPath 已经是完整的路径了
+            console.log(`Checking/Creating directory: ${apiOwner}/${apiRepo}/${gitkeepPath}`);
+            try {
+                // 尝试获取文件，如果不存在会抛出 404
+                const fileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
+                if (!fileData) { // 文件不存在，尝试创建
+                    await GitHubAPI.createFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', `feat: create directory ${directoryPath}`);
+                    console.log(`Directory ${directoryPath} created successfully.`);
+                    return true;
+                } else {
+                    console.log(`Directory ${directoryPath} already exists.`);
+                    return true;
+                }
+            } catch (error) {
+                console.error(`Failed to create directory ${directoryPath}:`, error);
+                throw error; // 重新抛出错误，阻止后续操作
+            }
+        }
+
+
         // ==================== UI 辅助函数 ====================
         const showAdminView = (viewName) => {
-            Object.values(adminViews).forEach(v => v.style.display = 'none');
+            Object.values(adminViews).forEach(v => v ? v.style.display = 'none' : null); // null check for safety
             if (easyMDE && viewName !== 'editor') {
                 easyMDE.toTextArea();
                 document.getElementById('post-content').style.display = '';
@@ -1199,17 +1207,18 @@
             }
 
             // navButtons is now a direct reference to DOM elements
-            Object.values(navButtons).forEach(b => {
-                 if (b) b.classList.remove('active'); // Add null check
+            document.querySelectorAll('#admin-sidebar .nav a').forEach(b => {
+                 b.classList.remove('active');
             });
             const currentNavLink = document.querySelector(`[data-view="${viewName}"]`);
             if (currentNavLink) {
                  currentNavLink.classList.add('active');
             } else if (viewName === 'editor') {
-                if (navButtons.posts) navButtons.posts.classList.add('active'); // Add null check
+                const postsNavLink = document.getElementById('nav-posts');
+                if (postsNavLink) postsNavLink.classList.add('active');
             }
             
-            if (adminViews[viewName]) adminViews[viewName].style.display = 'block'; // Add null check
+            if (adminViews[viewName]) adminViews[viewName].style.display = 'block';
             
             if (viewName === 'editor' && !easyMDE) {
                 initializeEasyMDE();
@@ -1267,23 +1276,26 @@
             initialMessageEl.style.color = 'var(--text-color)';
 
             try {
-                const githubUser = await GitHubAPI.getUser(token); // 使用局部变量
-                const parsedPath = parseGitHubPath(githubUser.login); // 使用局部变量
-                owner = parsedPath.owner; // 更新全局变量
-                repo = parsedPath.repo;   // 更新全局变量
-                basePath = parsedPath.basePath; // 更新全局变量
+                const githubUser = await GitHubAPI.getUser(token);
+                // 确保 owner, repo, basePath 使用 parseGitHubPath 的结果
+                const { owner: resolvedOwner, repo: resolvedRepo, basePath: resolvedBasePath } = parseGitHubPath(githubUser.login);
+                owner = resolvedOwner; 
+                repo = resolvedRepo;   
+                basePath = resolvedBasePath; 
                 
                 console.log(`[admin.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
                 showAlert(`检测到仓库信息：Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`, 'info', 'path-detection-alert');
 
                 initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在检查并创建所需文件目录...`;
                 try {
-                    const baseDirParts = basePath.split('/').filter(p =>p);
+                    // 如果 basePath 不为空，需要确保其层级存在
+                    const baseDirParts = basePath.split('/').filter(p => p);
                     let currentPathAccumulated = '';
                     for (const part of baseDirParts) {
                         currentPathAccumulated = currentPathAccumulated ? `${currentPathAccumulated}/${part}` : part;
                         await createGitHubDirectory(token, owner, repo, currentPathAccumulated);
                     }
+                    // 无论 basePath 如何，images 目录都是相对于计算出的 basePath 的
                     const imagesDirPath = getPath('images');
                     await createGitHubDirectory(token, owner, repo, imagesDirPath); 
 
@@ -1297,7 +1309,6 @@
                 initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在获取核心配置文件...`;
 
                 try {
-                    // 使用局部变量 owner, repo
                     existingConfigData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
                 } catch (e) {
                     initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 获取 ${getPath('config.json')} 失败: ${e.message}`;
@@ -1305,7 +1316,6 @@
                 }
                 
                 try {
-                    // 使用局部变量 owner, repo
                     existingPostsData = await GitHubAPI.getFile(token, owner, repo, getPath('posts.json'));
                 } catch (e) {
                     initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 获取 ${getPath('posts.json')} 失败: ${e.message}`;
@@ -1317,7 +1327,7 @@
 
                 const initialConfig = {
                     site: {
-                        title: `${owner}的博客`, // 使用解析后的 owner
+                        title: `${owner}的博客`,
                         description: "由GitHub驱动的现代化半静态博客",
                         aboutContent: `# 关于我\n\n你好！我是 ${owner}，一个热爱技术和分享的开发者。欢迎来到我的博客！\n\n在这里，我将分享我的技术心得、学习笔记以及一些生活感悟。希望我的内容能对你有所启发或帮助。\n\n**联系我:**\n\n*   GitHub: [${owner}](https://github.com/${owner})\n*   Email: your_email@example.com\n\n---`,
                     },
@@ -1331,8 +1341,9 @@
                         enabled: false,
                         clientID: '',
                         clientSecret: '',
-                        repo: repo, // 使用解析后的 repo
-                        owner: owner, // 使用解析后的 owner
+                        //repo, owner 已经在全局变量中设置，这里引用
+                        repo: repo, 
+                        owner: owner,
                         admin: [owner],
                         distractionFreeMode: false,
                         labels: ['Gitalk', '评论'],
@@ -1361,8 +1372,10 @@
                             gitalk: {...initialConfig.gitalk, ...(parsedConfig.gitalk || {})},
                         };
 
+                        // 强制更新Gitalk配置中的repo/owner/admin，以防之前解析错误或缺失
                         currentConfig.gitalk.repo = repo; 
                         currentConfig.gitalk.owner = owner;
+                        // 确保 admin 列表中包含当前 owner
                         if (!Array.isArray(currentConfig.gitalk.admin) || !currentConfig.gitalk.admin.includes(owner)) {
                             currentConfig.gitalk.admin = currentConfig.gitalk.admin ? [...new Set([...currentConfig.gitalk.admin, owner])] : [owner];
                         }
@@ -1372,9 +1385,8 @@
                     }
                     try {
                         const commitMessage = 'conf: update config with default/existing values';
-                        await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(currentConfig, null, 2), existingConfigData.sha, commitMessage);
-                        configSha = currentConfig.sha || existingConfigData.sha || ''; // 更新 sha
-
+                        const updateRes = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(currentConfig, null, 2), existingConfigData.sha, commitMessage);
+                        configSha = updateRes.content.sha;
                     } catch (e) {
                          console.error(`Error updating config.json: ${e.message}`);
                          initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 更新 ${getPath('config.json')} 失败: ${e.message}`;
@@ -1383,8 +1395,8 @@
                 } else {
                     try {
                         const commitMessage = 'feat: initialize config';
-                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), commitMessage);
-                        configSha = res.content.sha;
+                        const createRes = await GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), commitMessage);
+                        configSha = createRes.content.sha;
                         currentConfig = initialConfig;
                     } catch (e) {
                         console.error(`Error creating config.json: ${e.message}`);
@@ -1410,8 +1422,8 @@
                     currentPostsArray.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
                     try {
                         const commitMessage = 'docs: update posts with initial/existing entries';
-                        await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(currentPostsArray, null, 2), existingPostsData.sha, commitMessage);
-                        postsSha = currentPostsArray.sha || existingPostsData.sha || ''; // 更新 sha
+                        const updateRes = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(currentPostsArray, null, 2), existingPostsData.sha, commitMessage);
+                        postsSha = updateRes.content.sha;
                     } catch (e) {
                         console.error(`Error updating posts.json: ${e.message}`);
                         initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 更新 ${getPath('posts.json')} 失败: ${e.message}`;
@@ -1420,8 +1432,8 @@
                 } else {
                     try {
                         const commitMessage = 'feat: initialize first post';
-                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), commitMessage);
-                        postsSha = res.content.sha;
+                        const createRes = await GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), commitMessage);
+                        postsSha = createRes.content.sha;
                         currentPostsArray = initialPosts;
                     } catch (e) {
                         console.error(`Error creating posts.json: ${e.message}`);
@@ -1434,8 +1446,8 @@
                 loginWrapper.style.display = 'none';
                 adminWrapper.style.display = 'flex';
                 showAdminView('dashboard');
-                // renderDashboard();
-                // renderPostList();
+                // renderDashboard(); // showAdminView 会触发 renderDashboard
+                // renderPostList(); // showAdminView 会触发对应的渲染
                 populateSettings();
                 populateGitalkSettings();
                 updateUniqueTags();
@@ -1451,8 +1463,11 @@
 
             } catch (error) {
                 console.error("Critical initialization failure:", error);
-                if (!initialMessageEl.innerHTML.includes('无法创建目录') && !initialMessageEl.innerHTML.includes('Token') && !initialMessageEl.innerHTML.includes('获取') && !initialMessageEl.innerHTML.includes('创建')) {
+                // 确保即使有其他错误消息，最重要的错误也显示
+                if (!initialMessageEl.innerHTML.includes('Token') && !initialMessageEl.innerHTML.includes('权限')) {
                     initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}<br>通用建议：请仔细检查您的Token权限、GitHub Pages配置和网络连接。`;
+                } else if (initialMessageEl.innerHTML.includes('无法创建目录')) {
+                    initialMessageEl.innerHTML += `<br>请注意：Token可能已失效或权限不足，导致无法创建目录。`;
                 }
                 initialMessageEl.style.color = 'var(--danger-color)';
                 token = null;
@@ -1464,11 +1479,10 @@
 
         // ==================== 仪表盘功能 ====================
         const renderDashboard = () => {
-             // 确保 posts 数组已加载
-            if (!posts || posts.length === 0) {
-                 document.getElementById('total-posts').textContent = '0'; // 默认 0
-                 document.getElementById('total-categories').textContent = '0'; // 默认 0
-                 document.getElementById('total-tags').textContent = '0'; // 默认 0
+             if (!posts || posts.length === 0) {
+                 document.getElementById('total-posts').textContent = '0';
+                 document.getElementById('total-categories').textContent = '0';
+                 document.getElementById('total-tags').textContent = '0';
                  document.getElementById('activity-list').innerHTML = `
                     <div class="activity-item">
                         <i class="fas fa-info-circle"></i>
@@ -1676,7 +1690,7 @@
 
         // ==================== 媒体库功能 ====================
         const renderMediaLibrary = async () => {
-            mediaLibraryGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">加载图像中...</p>';
+            mediaLibraryGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;"><i class="fas fa-spinner fa-spin"></i> 加载图像中...</p>';
             setButtonsDisabled(true);
             try {
                 const imageContents = await GitHubAPI.getDirectoryContents(token, owner, repo, getPath('images'));
@@ -1689,7 +1703,7 @@
                         mediaItem.className = 'media-item';
                         mediaItem.innerHTML = `
                             <div class="media-item-thumbnail">
-                                <img src="https://gh-proxy.com/${item.download_url}" alt="${item.name}">
+                                <img src="https://gh-proxy.com/${item.download_url}" alt="${item.name}" loading="lazy">
                             </div>
                             <div class="media-item-info">
                                 <div class="name" title="${item.name}">${item.name}</div>
@@ -1771,12 +1785,33 @@
             initialMessageEl.style.color = 'var(--text-color)';
             try {
                 const uploadPromises = Array.from(files).map(file => uploadFile(file, 'images', `feat: upload image "${file.name}"`));
-                await Promise.allSettled(uploadPromises); 
+                // Use Promise.allSettled to ensure all uploads are attempted, and results are collected
+                const results = await Promise.allSettled(uploadPromises); 
                 
-                showAlert(`${files.length} 张图片处理完成 (请检查是否有失败提示)。`, 'info');
+                let successCount = 0;
+                let failureCount = 0;
+                results.forEach(result => {
+                    if (result.status === 'fulfilled') {
+                        successCount++;
+                    } else {
+                        failureCount++;
+                        console.error(`Failed to upload one image:`, result.reason);
+                    }
+                });
+
+                if (successCount > 0) {
+                    showAlert(`${successCount} 张图片上传成功！`, 'success');
+                }
+                if (failureCount > 0) {
+                    showAlert(`${failureCount} 张图片上传失败，请查看控制台获取详情。`, 'danger');
+                }
+                if (successCount === 0 && failureCount === 0) {
+                     showAlert('没有图片被上传。', 'info');
+                }
+
                 renderMediaLibrary();
             } catch (error) {
-                 // Individual errors handled by uploadFile
+                 showAlert(`图片上传过程中发生未知错误: ${error.message}`, 'danger');
             } finally {
                 setButtonsDisabled(false);
                 initialMessageEl.innerHTML = '';
@@ -1786,22 +1821,26 @@
 
         // ==================== 网站设置功能 ====================
         const populateSettings = () => {
+            // 设置表单值
             document.getElementById('setting-title').value = config.site.title || '';
             document.getElementById('setting-description').value = config.site.description || '';
             document.getElementById('setting-about-content').value = config.site.aboutContent || '';
             document.getElementById('setting-bg-color').value = config.styling.backgroundColor || '#f8f9fa';
             document.getElementById('setting-text-color').value = config.styling.textColor || '#212529';
             document.getElementById('setting-accent-color').value = config.styling.accentColor || '#0d6efd';
-            
+
+            // 背景图预览逻辑
             const bgImageUrl = config.styling.backgroundImageUrl;
             document.getElementById('setting-bg-image-url').value = bgImageUrl || '';
             const bgImagePreview = document.getElementById('setting-bg-image-preview');
+            const uploadBgImageBtn = document.getElementById('upload-bg-image-btn');
+            
             if (bgImageUrl) {
-                bgImagePreview.innerHTML = `<img src="${bgImageUrl}" alt="背景图预览">`;
-                document.getElementById('upload-bg-image-btn').style.display = 'none';
+                bgImagePreview.innerHTML = `<img src="${bgImageUrl}" alt="背景图预览" loading="lazy">`;
+                uploadBgImageBtn.style.display = 'none'; // 已经有图，隐藏上传按钮
             } else {
                 bgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
-                document.getElementById('upload-bg-image-btn').style.display = 'inline-flex';
+                uploadBgImageBtn.style.display = 'inline-flex';
             }
         };
         
@@ -1881,7 +1920,7 @@
 
         // ==================== 文件上传功能 (通用，用于图片) ====================
         const uploadFile = async (file, uploadPath, message) => {
-            if (!file) return;
+            if (!file) throw new Error("No file provided for upload."); // Ensure file exists
             const reader = new FileReader();
             return new Promise((resolve, reject) => {
                 reader.onload = async (e) => {
@@ -2080,6 +2119,7 @@
             startBtn.onclick = startAdmin;
             tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAdmin(); });
             
+            // 导航点击事件绑定 (DOM 元素获取后直接绑定)
             document.getElementById('nav-dashboard').onclick = (e) => { e.preventDefault(); showAdminView('dashboard'); };
             document.getElementById('nav-posts').onclick = (e) => { e.preventDefault(); showAdminView('posts'); };
             document.getElementById('nav-media-library').onclick = (e) => { e.preventDefault(); showAdminView('mediaLibrary'); };
@@ -2120,7 +2160,7 @@
                     const file = e.target.files[0];
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        settingBgImagePreview.innerHTML = `<img src="${e.target.result}" alt="背景图预览">`;
+                        settingBgImagePreview.innerHTML = `<img src="${e.target.result}" alt="背景图预览" loading="lazy">`;
                         uploadBgImageBtn.style.display = 'inline-flex';
                     };
                     reader.readAsDataURL(file);
@@ -2131,12 +2171,16 @@
             };
             settingBgImageUrlInput.addEventListener('input', () => {
                 const url = settingBgImageUrlInput.value.trim();
-                if (url) {
-                    settingBgImagePreview.innerHTML = `<img src="${url}" alt="背景图预览">`;
+                const displayUrl = url.startsWith('http') ? url : ''; // Only display valid URLs
+                if (displayUrl) {
+                    settingBgImagePreview.innerHTML = `<img src="${displayUrl}" alt="背景图预览" loading="lazy">`;
                     uploadBgImageBtn.style.display = 'none';
                 } else {
                     settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
-                    uploadBgImageBtn.style.display = 'inline-flex';
+                    // 如果 URL 输入为空，且文件选择器没有文件，才显示上传按钮
+                    if (!settingBgImageInput.files || settingBgImageInput.files.length === 0) {
+                         uploadBgImageBtn.style.display = 'inline-flex';
+                    }
                 }
             });
 
@@ -2148,6 +2192,8 @@
                         showAlert(`正在上传背景图片 ${file.name}...`, 'info');
                         const url = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`);
                         document.getElementById('setting-bg-image-url').value = url;
+                        // 成功后预览更新，并隐藏上传按钮
+                        settingBgImagePreview.innerHTML = `<img src="${url}" alt="背景图预览" loading="lazy">`;
                         uploadBgImageBtn.style.display = 'none';
                         showAlert('背景图片上传并设置成功！请点击保存设置！', 'success');
                     } catch (error) {
