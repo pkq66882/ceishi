@@ -373,6 +373,10 @@
         .admin-table .actions a.edit { color: var(--accent-color); }
         .admin-table .actions a.delete { color: var(--danger-color); }
         .admin-table .actions a.link { color: var(--sidebar-active-bg); }
+        .admin-table td input[type="checkbox"] {
+            margin-right: 0;
+            width: auto;
+        }
 
         /* EasyMDE Styles */
         .editor-toolbar {
@@ -875,7 +879,7 @@
                     <h2><i class="fas fa-list-alt"></i> 文章管理</h2>
                     <div>
                         <button id="new-post-btn" class="btn-primary"><i class="fas fa-plus-circle"></i> 撰写新文章</button>
-                        <button id="delete-selected-posts-btn" class="btn-danger" style="display:none;"><i class="fas fa-trash-alt"></i> 删除选中文章</button>
+                        <button id="delete-selected-posts-btn" class="btn-danger" style="display:none; margin-left: 10px;"><i class="fas fa-trash-alt"></i> 删除选中文章</button>
                     </div>
                 </div>
                 <div class="admin-table-wrapper">
@@ -1107,16 +1111,14 @@
                     throw error;
                 }
             },
-            // 修正 getFile 对空文件返回 null 的逻辑，应该返回包含 sha 的对象
             async getFile(token, owner, repo, path) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content === 'undefined' || result.encoding !== 'base64') { // Allow empty content, but check encoding
-                        // If file not found (404) or is not a file/base64 encoded content, return null.
+                    if (!result || typeof result.content === 'undefined' || result.encoding !== 'base64') { 
                         console.warn(`File data for ${path} is invalid or file not found. Response details:`, result);
                         return null; 
                     }
-                    const content = result.content ? b64_to_utf8(result.content) : ''; // Handle empty content string gracefully
+                    const content = result.content ? b64_to_utf8(result.content) : ''; 
                     return { content: content, sha: result.sha };
                 } catch (error) {
                     if (error.message.toLowerCase().includes('not found') || String(error).toLowerCase().includes('no content')) {
@@ -1252,7 +1254,7 @@
             const hostname = window.location.hostname; 
             let pathSegments = window.location.pathname.split('/').filter(p => p); 
 
-            // Remove current HTML file if it's the last segment
+            // Remove current HTML file (admin.html or index.html) if it's the last segment
             if (pathSegments.length > 0 && 
                 (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
                  pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
@@ -1262,43 +1264,38 @@
             const usernameLow = githubUsername.toLowerCase();
             const hostnameLow = hostname.toLowerCase();
 
-            let finalOwner = usernameLow;
+            let finalOwner = githubUsername; // Use original casing for owner
             let finalRepo = '';
             let finalPublicUrlBase = ''; // e.g., '/ceishi' for pkq66882.github.io/ceishi
 
-            // Case 1: user.github.io (user/org page) or localhost
+            // Scenario 1: User/Organization site (e.g., user.github.io) or local environment
             if (hostnameLow === `${usernameLow}.github.io` || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
                 if (pathSegments.length > 0) {
                     // Project site: e.g., pkq66882.github.io/ceishi/ -> repo="ceishi", publicUrlBase="/ceishi"
                     finalRepo = pathSegments[0];
                     finalPublicUrlBase = `/${pathSegments[0]}`;
                 } else {
-                    // User/Org site: e.g., pkq66882.github.io/ -> repo="pkq66882.github.io", publicUrlBase=""
-                    finalRepo = `${usernameLow}.github.io`;
+                    // User/Org site root: e.g., pkq66882.github.io/ -> repo="pkq66882.github.io", publicUrlBase=""
+                    finalRepo = `${usernameLow}.github.io`; // Repo name is the hostname
                     finalPublicUrlBase = '';
                 }
             } 
-            // Case 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
+            // Scenario 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
             else if (pathSegments.length > 0) {
-                // Assume first path segment is the repo name for project-like hosting
+                // Assume the first path segment is the repository name for a project-like setup
                 finalRepo = pathSegments[0];
                 finalPublicUrlBase = `/${pathSegments[0]}`;
             } else {
-                // Custom domain root. Assume it points to the user's main site repo without a path segment.
-                finalRepo = `${usernameLow}.github.io`;
+                // Custom domain pointing to user/org repo root without path segment
+                finalRepo = `${usernameLow}.github.io`; 
                 finalPublicUrlBase = '';
             }
 
-            // Safety net: if repo is still empty, default to user's main site repo.
+            // Safety net: if repo is still empty (shouldn't happen with the above logic, but for robustness)
             if (!finalRepo || finalRepo.trim() === '') {
                 finalRepo = `${usernameLow}.github.io`;
                 finalPublicUrlBase = '';
             }
-
-            // The 'basePath' variable, used for GitHub API file paths, typically refers to a subfolder
-            // *within* the identified repository. For this project, config.json, posts.json, and images/
-            // are expected to be at the root of the repository. Thus, the file paths passed to GitHubAPI
-            // will be simply 'config.json', 'posts.json', 'images/.gitkeep', etc.
 
             console.log(`[parseGitHubRepoAndBasePath Final] Owner: ${finalOwner}, Repo: "${finalRepo}", PublicUrlBase: "${finalPublicUrlBase}"`);
             return { owner: finalOwner, repo: finalRepo, publicUrlBase: finalPublicUrlBase };
@@ -1324,7 +1321,6 @@
                     console.log(`Directory ${directoryPath} created successfully.`);
                 } else { 
                     console.log(`Attempting to update existing .gitkeep for directory ${directoryPath}`);
-                    // Use updateFile as it already exists, send empty content to keep it a .gitkeep
                     await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', fileData.sha, `ci: update .gitkeep content for directory ${directoryPath}`);
                     console.log(`Directory ${directoryPath} updated successfully.`);
                 }
@@ -1342,7 +1338,6 @@
                             console.log(`Directory ${directoryPath} recovered by update with new sha.`);
                             return true;
                         } else {
-                            // If re-fetching still yields no file data, then we're truly stuck
                             throw new Error(`Failed to recover .gitkeep: still no file data after direct retry.`);
                         }
                     } catch (recoveryError) {
@@ -1358,42 +1353,40 @@
         const getProxiedImageUrl = (inputUrl) => {
             if (!inputUrl) return '';
 
-            let urlToProxy = inputUrl;
+            let urlToProcess = inputUrl;
 
-            // Step 1: Normalize the URL to its most 'raw' form before applying a new proxy.
-            // If it's already a gh-proxy URL, decode it to get the original raw GitHub URL.
-            if (urlToProxy.startsWith('https://gh-proxy.com/')) {
+            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
+            if (urlToProcess.startsWith('https://gh-proxy.com/')) {
                 try {
-                    urlToProxy = decodeURIComponent(urlToProxy.substring('https://gh-proxy.com/'.length));
+                    urlToProcess = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
                 } catch (e) {
-                    console.warn("Could not decode part of URL from gh-proxy link, using as is:", e, urlToProxy);
+                    console.warn('Failed to decode existing gh-proxy URL, using as is for further processing:', e, urlToProcess);
                 }
             }
 
-            // Step 2: Now, urlToProxy should ideally be the raw.githubusercontent.com URL.
-            // However, GitHub itself might provide 'download_url' with already-encoded parts (like %7E for ~).
-            // To prevent double encoding of '%' if the URL is already percent-encoded (e.g., %257E),
-            // we will parse the URL, explicitly decode the path and search parts, and then re-encode the whole thing for the proxy.
-            try {
-                const urlObj = new URL(urlToProxy);
-                // Decode path component completely to remove any existing %-encoding like %7E
-                const decodedPath = decodeURIComponent(urlObj.pathname); 
-                urlObj.pathname = decodedPath; 
-                // Reconstruct URL. urlObj.toString() will correctly re-encode characters it needs to.
-                // It will NOT double-encode existing '%' characters if they are part of a percent-encoded sequence
-                // after the explicit decodeURIComponent.
-                urlToProxy = urlObj.toString(); 
-            } catch (e) {
-                console.warn("Could not parse or decode URL object, attempting simple re-encode:", e, urlToProxy);
-                // Fallback for invalid URLs or those not needing path decoding. Proceed as is.
+            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com),
+            // we will parse it, explicitly decode path components, then re-encode for the proxy.
+            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
+                try {
+                    const urlObj = new URL(urlToProcess);
+                    // Explicitly decode the path and search components fully.
+                    // This handles cases where GitHub's download_url might return partially encoded URLs
+                    // or contain characters like '~' that were not directly percent-encoded by GitHub but need it for the proxy.
+                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
+                    urlObj.search = decodeURIComponent(urlObj.search);
+                    // Reconstruct the URL. urlObj.toString() will re-encode what's necessary,
+                    // but on the now fully-decoded segments, avoiding double-encoding.
+                    urlToProcess = urlObj.toString();
+                } catch (e) {
+                    console.warn("URL parsing/decoding for path normalization failed, using raw URL for encoding:", e, urlToProcess);
+                     // Fallback: If URL parsing fails, assume the original URL is the target for encoding.
+                }
+                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized) URL.
+                return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
             }
 
-            // Step 3: Apply gh-proxy and encode the *entire* (now normalized) raw URL once.
-            if (urlToProxy.startsWith('https://raw.githubusercontent.com/') || urlToProxy.startsWith('http://') || urlToProxy.startsWith('https://')) {
-                return `https://gh-proxy.com/${encodeURIComponent(urlToProxy)}`;
-            }
-
-            return urlToProxy; // Return as is for relative paths or others not meant for proxy
+            // For any other URL (e.g., relative paths, data URIs, etc.), return as is.
+            return inputUrl; 
         };
 
 
@@ -1407,7 +1400,7 @@
             const currentNavLink = document.querySelector(`#admin-sidebar .nav a[data-view="${viewName}"]`);
             if (currentNavLink) {
                  currentNavLink.classList.add('active');
-            } else if (viewName === 'editor') { // Highlight Posts link when in editor
+            } else if (viewName === 'editor') {
                 const postsNavLink = document.getElementById('nav-posts');
                 if (postsNavLink) postsNavLink.classList.add('active');
             }
@@ -1530,8 +1523,8 @@
                     throw e;
                 }
 
-                const hasExistingConfig = !!existingConfigData;
-                const hasExistingPosts = !!existingPostsData;
+                const hasExistingConfig = !!existingConfigData && existingConfigData.content !== '';
+                const hasExistingPosts = !!existingPostsData && existingPostsData.content !== '';
 
                 const initialConfig = {
                     site: {
@@ -1558,15 +1551,15 @@
                     }
                 };
                 const uniqueIdSuffix = () => Date.now() + '_' + Math.random().toString(36).substring(2, 8);
-                const initialPosts = [{
-                    id: `welcome_post_${uniqueIdSuffix()}`, // More unique ID
+                const initialWelcomePost = {
+                    id: `welcome_post_${uniqueIdSuffix()}`, 
                     title: "欢迎来到我的博客！",
                     content: "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](/admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
                     category: "公告",
                     tags: ["欢迎", "教程"],
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
-                }];
+                };
 
                 let currentConfig = initialConfig;
                 if (hasExistingConfig) {
@@ -1585,19 +1578,24 @@
                         if (!Array.isArray(currentConfig.gitalk.admin) || !currentConfig.gitalk.admin.includes(owner)) {
                             currentConfig.gitalk.admin = currentConfig.gitalk.admin ? [...new Set([...currentConfig.gitalk.admin, owner])] : [owner];
                         }
-                    } catch (e) {
-                        console.warn("Invalid config.json content, using default config.", e);
-                        showAlert('config.json ' + (existingConfigData.content ? '内容无效' : '文件不存在或为空') + '，已使用默认配置覆盖。', 'warning');
-                    }
-                    try {
+                        // Update existing file
                         const commitMessage = 'conf: update config with default/existing values';
                         const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(currentConfig, null, 2), existingConfigData.sha, commitMessage);
                         configSha = updateRes.content.sha;
 
                     } catch (e) {
-                         console.error(`Error updating config.json: ${e.message}`);
-                         initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 更新 config.json 失败: ${e.message}`;
-                         throw e;
+                        console.warn(`Invalid config.json content, attempting to use default config and update. Error: ${e}`);
+                        showAlert('config.json ' + (existingConfigData.content ? '内容无效' : '文件不存在或为空') + '，已使用默认配置覆盖，请点击“保存设置”以写入。', 'warning');
+                        // If parsing fails, but file exists, try to update it with default + existing if partial
+                         try {
+                            const commitMessage = 'conf: attempting to normalize/update config content';
+                            const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(currentConfig, null, 2), existingConfigData.sha, commitMessage);
+                            configSha = updateRes.content.sha;
+                        } catch (re) {
+                           console.error(`Error during recovery update of config.json: ${re.message}`);
+                           initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法更新 config.json: ${re.message}`;
+                           throw re;
+                        }
                     }
                 } else {
                     try {
@@ -1618,31 +1616,53 @@
                     try {
                         currentPostsArray = JSON.parse(existingPostsData.content);
                         // Ensure there's a welcome post if posts.json exists but is empty or doesn't have it
-                        if (currentPostsArray.length === 0 || !currentPostsArray.some(p => p.title === initialPosts[0].title)) { // Check by title if ID might change
-                             currentPostsArray.push(initialPosts[0]);
+                        if (currentPostsArray.length === 0 || !currentPostsArray.some(p => p.title === initialWelcomePost.title)) { 
+                             currentPostsArray.push(initialWelcomePost);
                              showAlert('posts.json 文件之前为空或缺少欢迎文章，已补充。', 'info');
                         }
-                    } catch (e) {
-                        console.warn("Invalid posts.json content, overwriting with default post.", e);
-                        showAlert('posts.json ' + (existingPostsData.content ? '内容无效' : '文件不存在或为空') + '，已添加默认文章。', 'warning');
-                        currentPostsArray = initialPosts;
-                    }
-                    currentPostsArray.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-                    try {
+                        // Sort by createdAt descending
+                        currentPostsArray.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                        // Store raw GitHub URLs from content (if any old proxied URLs exist)
+                        currentPostsArray = currentPostsArray.map(post => {
+                            let newContent = post.content.replace(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/g, (match, alt, url) => {
+                                let originalUrl = url;
+                                if (originalUrl.startsWith('https://gh-proxy.com/')) {
+                                    try {
+                                        originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
+                                    } catch (e) {
+                                        console.warn("Error decoding URL part during post content normalization:", e, originalUrl);
+                                    }
+                                }
+                                return `![${alt}](${originalUrl})`; // Store the raw URL in post content
+                            });
+                            return { ...post, content: newContent };
+                        });
+
                         const commitMessage = 'docs: update posts with initial/existing entries';
                         const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(currentPostsArray, null, 2), existingPostsData.sha, commitMessage);
                         postsSha = updateRes.content.sha;
+
                     } catch (e) {
-                        console.error(`Error updating posts.json: ${e.message}`);
-                        initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 更新 posts.json 失败: ${e.message}`;
-                        throw e;
+                        console.warn(`Invalid posts.json content, attempting to use default post and update. Error: ${e}`);
+                        showAlert('posts.json ' + (existingPostsData.content ? '内容无效' : '文件不存在或为空') + '，已添加默认文章，请点击“更新文章”以写入。', 'warning');
+                        currentPostsArray = [initialWelcomePost]; // Fallback to just the welcome post
+                        try {
+                            const commitMessage = 'docs: attempting to normalize/update posts content';
+                            const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(currentPostsArray, null, 2), existingPostsData.sha, commitMessage);
+                            postsSha = updateRes.content.sha;
+                        } catch (re) {
+                           console.error(`Error during recovery update of posts.json: ${re.message}`);
+                           initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法更新 posts.json: ${re.message}`;
+                           throw re;
+                        }
                     }
                 } else {
                     try {
                         const commitMessage = 'feat: initialize first post';
-                        const createRes = await GitHubAPI.createFile(token, owner, repo, 'posts.json', JSON.stringify(initialPosts, null, 2), commitMessage);
+                        const createRes = await GitHubAPI.createFile(token, owner, repo, 'posts.json', JSON.stringify([initialWelcomePost], null, 2), commitMessage);
                         postsSha = createRes.content.sha;
-                        currentPostsArray = initialPosts;
+                        currentPostsArray = [initialWelcomePost];
                     } catch (e) {
                         console.error(`Error creating posts.json: ${e.message}`);
                         initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 创建 posts.json 失败: ${e.message}`;
@@ -1819,7 +1839,6 @@
              deleteBtn.style.display = selectedPostIds.length > 0 ? 'inline-flex' : 'none';
         };
 
-        // Event listener for select all posts checkbox
         document.getElementById('select-all-posts').addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             document.querySelectorAll('.post-checkbox').forEach(checkbox => {
@@ -1872,7 +1891,7 @@
                 updateUniqueTags();
                 renderPostList();
                 renderDashboard();
-                selectedPostIds = []; // Clear selection
+                selectedPostIds = []; 
                 document.getElementById('select-all-posts').checked = false;
                 toggleBulkDeleteButton();
             } catch (error) {
@@ -2068,7 +2087,6 @@
             initialMessageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传图片...';
             initialMessageEl.style.color = 'var(--text-color)';
             
-            // Show progress container globally or specifically for media library
             uploadProgressContainer.style.display = 'block';
             updateProgressBar(0, '准备上传...');
 
@@ -2204,7 +2222,7 @@
                 owner: document.getElementById('gitalk-owner').value.trim(),
                 admin: gitalkAdminArray,
                 distractionFreeMode: newConfig.gitalk.distractionFreeMode, 
-                labels: newConfig.gitalk.labels || ['Gitalk', '评论'], // Ensure labels array exists
+                labels: newConfig.gitalk.labels || ['Gitalk', '评论'], 
                 perPage: newConfig.gitalk.perPage || 10,
             };
 
@@ -2217,7 +2235,7 @@
             try {
                 const res = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(newConfig, null, 2), configSha, 'conf: update Gitalk settings');
                 configSha = res.content.sha;
-                config = newConfig; // Update local config
+                config = newConfig; 
                 showAlert('Gitalk 评论设置已保存！', 'success');
             } catch (error) {
                 showAlert(`Gitalk 评论设置保存失败: ${error.message}`, 'danger');
@@ -2235,19 +2253,17 @@
                 const reader = new FileReader(); // Use FileReader for binary data to base64
                 reader.onload = async (e) => {
                     const contentBase64 = e.target.result.split(',')[1];
-                    // Ensure the file path for image upload is relative to the repo root and includes the directory
                     const blobPath = `${uploadDirectory}/${new Date().toISOString().replace(/[-:.]/g, '')}_${file.name}`;
                     try {
-                        // Use the GitHubAPI.createFile which is now XMLHttpRequest based
                         await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress);
                         const rawGithubUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${blobPath}`;
-                        resolve(rawGithubUrl); // Return raw.githubusercontent.com URL
+                        resolve(rawGithubUrl); 
                     } catch (error) {
                         reject(error);
                     }
                 };
                 reader.onerror = (error) => reject(error);
-                reader.readAsDataURL(file); // Read file as Base64 data URL
+                reader.readAsDataURL(file); 
             });
         };
 
@@ -2286,7 +2302,6 @@
                         const uploadAlertId = 'image-upload-alert';
                         showAlert(`正在上传图片 ${file.name}...`, 'info', uploadAlertId);
                         
-                        // Show a temporary progress bar above the editor
                         const editorToolbarEl = document.querySelector('.editor-toolbar');
                         let editorProgressBarContainer = editorToolbarEl.querySelector('.progress-container.editor');
                         if (!editorProgressBarContainer) {
@@ -2311,11 +2326,11 @@
                         try {
                             const rawImageUrl = await uploadFile(
                                 file,
-                                'images', // Target upload directory within repo
+                                'images', 
                                 `feat: upload image "${file.name}" for post`,
                                 (progress) => updateEditorProgressBar(progress, `上传 ${file.name}: ${Math.round(progress)}%`)
                             );
-                            // IMPORTANT: Insert the RAW GitHub URL into markdown, not the proxied one.
+                            // IMPORTANT: Insert the RAW GitHub URL into markdown content.
                             // The blog's frontend (index.html) will handle proxying for display.
                             const markdownImage = `![${file.name.split('.')[0]}](${rawImageUrl})`; 
                             
@@ -2330,7 +2345,7 @@
                             setButtonsDisabled(false);
                             setTimeout(() => {
                                 if (editorProgressBarContainer) editorProgressBarContainer.style.display = 'none';
-                            }, 1500); // Hide editor progress bar after a delay
+                            }, 1500); 
                         }
                     }
                 };
@@ -2479,7 +2494,7 @@
             };
 
             document.getElementById('new-post-btn').onclick = () => openEditor();
-            document.getElementById('delete-selected-posts-btn').onclick = bulkDeletePosts; // New bulk delete button
+            document.getElementById('delete-selected-posts-btn').onclick = bulkDeletePosts; 
             document.getElementById('cancel-edit-btn').onclick = () => {
                  showAdminView('posts');
                  showAlert('已取消文章编辑。', 'info');
@@ -2507,23 +2522,23 @@
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         settingBgImagePreview.innerHTML = `<img src="${e.target.result}" alt="背景图预览" loading="lazy">`;
-                        uploadBgImageBtn.style.display = 'inline-flex'; // Show upload button when a file is selected
+                        uploadBgImageBtn.style.display = 'inline-flex'; 
                     };
                     reader.readAsDataURL(file);
                 } else {
                     settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
-                    uploadBgImageBtn.style.display = 'none'; // Hide if no file selected
+                    uploadBgImageBtn.style.display = 'none'; 
                 }
             };
             settingBgImageUrlInput.addEventListener('input', () => {
                 const url = settingBgImageUrlInput.value.trim();
                 if (url) {
                     settingBgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(url)}" alt="背景图预览" loading="lazy">`;
-                    uploadBgImageBtn.style.display = 'none'; // URL input takes precedence, hide file upload button
+                    uploadBgImageBtn.style.display = 'none'; 
                 } else {
                     settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
                     if (!settingBgImageInput.files || settingBgImageInput.files.length === 0) {
-                         uploadBgImageBtn.style.display = 'inline-flex'; // Show upload button if no URL and no file selected
+                         uploadBgImageBtn.style.display = 'inline-flex'; 
                     }
                 }
             });
