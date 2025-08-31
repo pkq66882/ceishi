@@ -8,8 +8,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- SimpleMDE Markdown Editor CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.css">
+    
+    <!-- TinyMCE CDN (full version) -->
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- 替换 'no-api-key' 为您自己的 TinyMCE API key 以获得完整功能和避免水印 -->
     
     <style>
         :root {
@@ -20,10 +22,12 @@
             --sidebar-active-bg: #1abc9c;
             --content-bg: #fff;
             --text-color: #34495e;
+            --heading-color: #2c3e50; /* Darker heading for contrast */
             --accent-color: #3498db;
             --border-color: #e0e0e0;
             --danger-color: #e74c3c;
             --success-color: #2ecc71;
+            --primary-light: #d6eaf8; /* A lighter shade of accent for backgrounds */
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         body {
@@ -34,7 +38,7 @@
             font-size: 14px;
         }
         a { text-decoration: none; }
-        input, textarea, button { font-family: inherit; }
+        input, textarea, button, select { font-family: inherit; }
 
         /* Login Page Styles */
         #login-wrapper {
@@ -80,6 +84,7 @@
         .admin-wrapper {
             display: flex;
             min-height: 100vh;
+            position: relative; /* For mobile overlay */
         }
 
         #admin-sidebar {
@@ -87,7 +92,7 @@
             top: 0;
             left: 0;
             height: 100%;
-            width: 250px; /* Slightly wider sidebar */
+            width: 250px;
             background: var(--sidebar-bg);
             color: var(--sidebar-text);
             display: flex;
@@ -95,10 +100,20 @@
             transform: translateX(-100%);
             transition: transform .3s ease-in-out;
             z-index: 1000;
-            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 8px rgba(0,0,0,0.2);
         }
         .admin-wrapper.sidebar-visible #admin-sidebar {
             transform: translateX(0);
+        }
+        #mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,.5);
+            z-index: 999;
+            display: none;
         }
         .admin-wrapper.sidebar-visible #mobile-overlay {
             display: block;
@@ -122,7 +137,7 @@
             margin-bottom: 5px;
         }
         #admin-sidebar .nav-group a {
-            display: flex; /* Use flex for icon and text alignment */
+            display: flex;
             align-items: center;
             padding: 15px 25px;
             color: var(--sidebar-text);
@@ -139,6 +154,7 @@
         #admin-sidebar .nav-group a.active {
             background: var(--sidebar-active-bg);
             color: #fff;
+            font-weight: 600;
             position: relative;
         }
         #admin-sidebar .nav-group a.active::before {
@@ -152,7 +168,7 @@
             border-radius: 0 5px 5px 0;
         }
         #admin-sidebar .nav-group .logout-btn {
-            margin-top: auto; /* Push to bottom */
+            margin-top: auto;
             border-top: 1px solid rgba(255,255,255,0.1);
             padding-top: 20px;
             margin-top: 20px;
@@ -162,14 +178,16 @@
         }
         #admin-sidebar .nav-group .logout-btn a:hover {
             background: var(--sidebar-hover-bg);
+            color: #fff;
         }
 
 
         #admin-content {
             width: 100%;
             padding: 20px;
-            position: relative; /* For proper positioning of overlay for small screens */
             transition: margin-left .3s ease-in-out;
+            margin-left: 0; /* Default for mobile */
+             flex-grow: 1;
         }
         
         #mobile-header {
@@ -196,37 +214,29 @@
             font-weight: 700;
             color: var(--heading-color);
         }
-        #mobile-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,.5);
-            z-index: 999;
-            display: none;
-        }
 
         @media (min-width: 992px) { /* Lg breakpoint for desktop layout */
             #admin-sidebar {
                 position: static;
                 transform: translateX(0);
                 width: 250px;
-                flex-shrink: 0; /* Prevents sidebar from shrinking */
+                flex-shrink: 0;
             }
             #admin-content {
-                margin-left: 0; /* Reset margin for desktop */
+                margin-left: 0;
                 width: calc(100% - 250px);
                 padding: 30px;
             }
             #mobile-header {
                 display: none;
             }
+             .admin-wrapper.sidebar-visible #admin-sidebar { /* Prevent unwanted transition */
+                transform: translateX(0) !important;
+            }
         }
         @media (max-width: 991.98px) {
-            #admin-content { /* Push content to the right when sidebar is visible */
-                padding-left: 20px;
-                padding-right: 20px;
+            #admin-wrapper.sidebar-visible #admin-content {
+                /* When sidebar is visible, content might shift or be covered by overlay */
             }
         }
 
@@ -247,10 +257,6 @@
             font-weight: 600;
         }
 
-        .alert-dismissible .btn-close {
-            padding: 0.75rem 1.25rem;
-        }
-
         .admin-table-wrapper { overflow-x: auto; }
         .admin-table {
             width: 100%;
@@ -258,7 +264,7 @@
             background: var(--content-bg);
             box-shadow: var(--shadow);
             border-radius: 8px;
-            overflow: hidden; /* For rounded corners */
+            overflow: hidden;
         }
         .admin-table th, .admin-table td {
             padding: 15px;
@@ -285,59 +291,58 @@
         }
 
         /* Forms */
-        .form-group { margin-bottom: 20px; }
         .form-label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: var(--text-color);
         }
-        .form-control {
+        .form-control, .form-select {
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 10px 15px;
             font-size: 1rem;
             transition: border-color 0.2s, box-shadow 0.2s;
+            color: var(--text-color); /* Ensure input text color is readable */
+            background-color: var(--content-bg); /* Ensure input background fits theme */
         }
-        .form-control:focus {
+        .form-control:focus, .form-select:focus {
             border-color: var(--accent-color);
             box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+            background-color: var(--content-bg);
         }
         textarea.form-control { resize: vertical; min-height: 150px; }
 
-        /* SimpleMDE styles override for better integration */
-        .editor-toolbar {
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-            border-color: var(--border-color);
-            background-color: var(--bg-color);
-            padding: 8px 10px;
-        }
-        .editor-toolbar button {
-            color: var(--text-color);
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-        .editor-toolbar button:hover {
-            opacity: 1;
-            background-color: var(--border-color);
-        }
-        .CodeMirror, .CodeMirror-fullscreen {
-            border: 1px solid var(--border-color) !important;
-            border-bottom-left-radius: 4px !important;
-            border-bottom-right-radius: 4px !important;
-            height: auto; /* Auto height for SimpleMDE content textarea */
-            min-height: 300px; /* Minimum height for editor */
-            padding: 10px;
-        }
-        .editor-preview {
-            background-color: var(--content-bg);
+        /* TinyMCE styles override for better integration */
+        .tox .tox-editor-container {
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            padding: 15px;
         }
-        .editor-preview-active .editor-preview.editor-preview-full {
-             border-top: none; /* Remove duplicate border */
+        .tox .tox-menubar, .tox .tox-toolbar-overlord {
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .tox .tox-tbtn, .tox .tox-icon, .tox .tox-toolbar__group {
+            color: var(--text-color);
+        }
+        .tox .tox-collection__item {
+             color: var(--text-color);
+        }
+        .tox .tox-dialog {
+             background-color: var(--content-bg);
+             color: var(--text-color);
+        }
+        /* Specific contrast for TinyMCE buttons */
+        .tox .tox-tbtn { /* Standard buttons */
+            background-color: transparent;
+            border: none;
+        }
+        .tox .tox-tbtn:hover {
+            background-color: rgba(var(--accent-color-rgb, 52, 152, 219), 0.1);
+        }
+        .tox .tox-checkbox__input:checked + .tox-checkbox__icons {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
         }
 
         /* Buttons */
@@ -346,17 +351,31 @@
             border-radius: 4px;
             font-size: 0.95rem;
             transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            font-weight: 500; /* Medium weight for buttons */
         }
-        .btn-primary { background: var(--accent-color); border-color: var(--accent-color); }
-        .btn-primary:hover { background: #2980b9; border-color: #2980b9; }
-        .btn-success { background: var(--success-color); border-color: var(--success-color); }
-        .btn-success:hover { background: #27ae60; border-color: #27ae60; }
-        .btn-danger { background: var(--danger-color); border-color: var(--danger-color); }
-        .btn-danger:hover { background: #c0392b; border-color: #c0392b; }
-        .btn-secondary { background: #6c757d; border-color: #6c757d; }
-        .btn-secondary:hover { background: #5a6268; border-color: #5a6268; }
+        .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: #fff; }
+        .btn-primary:hover { background: #2980b9; border-color: #2980b9; color: #fff; box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2); }
+        .btn-success { background: var(--success-color); border-color: var(--success-color); color: #fff; }
+        .btn-success:hover { background: #27ae60; border-color: #27ae60; color: #fff; box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2); }
+        .btn-danger { background: var(--danger-color); border-color: var(--danger-color); color: #fff; }
+        .btn-danger:hover { background: #c0392b; border-color: #c0392b; color: #fff; box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2); }
+        .btn-secondary { background: #6c757d; border-color: #6c757d; color: #fff; }
+        .btn-secondary:hover { background: #5a6268; border-color: #5a6268; color: #fff; box-shadow: 0 4px 8px rgba(108, 117, 125, 0.2); }
+        .btn-info { background: #17a2b8; border-color: #17a2b8; color: #fff; }
+        .btn-info:hover { background: #138496; border-color: #138496; color: #fff; }
+        .btn-warning { background: #ffc107; border-color: #ffc107; color: #212529; }
+        .btn-warning:hover { background: #e0a800; border-color: #e0a800; color: #212529; }
+        .btn-outline-primary {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .btn-outline-primary:hover {
+            color: #fff;
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
 
-        /* Image Upload Preview */
+        /* Image Upload Preview (for settings) */
         .image-preview-container {
             display: flex;
             flex-wrap: wrap;
@@ -370,6 +389,7 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             overflow: hidden;
+            background-color: var(--bg-color);
         }
         .image-preview-item img {
             width: 100%;
@@ -416,14 +436,16 @@
             margin-left: 10px;
             padding: 4px 8px;
             font-size: 0.75rem;
+            flex-shrink: 0;
         }
-
+        
+        .alert-dismissible .btn-close {
+            padding: 0.75rem 1.25rem;
+             filter: none; /* Reset filter for close button */
+            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+        }
+         
         /* Comments/User Posts Management */
-        .table-action-btn {
-            font-size: 0.85rem;
-            padding: 5px 10px;
-            border-radius: 0.25rem;
-        }
         .comments-list-group .list-group-item {
             background-color: var(--content-bg);
             border-color: var(--border-color);
@@ -432,12 +454,52 @@
         .comments-list-group .list-group-item:last-child {
             margin-bottom: 0;
         }
-        .comment-actions {
+        .comment-actions, .user-post-actions {
             display: flex;
             gap: 10px;
             margin-top: 10px;
         }
+        .loading-spinner-wrapper {
+             min-height: 100px;
+             display: flex;
+             flex-direction: column;
+             justify-content: center;
+            align-items: center;
+            color: var(--meta-color);
+            gap: 10px;
+        }
 
+        /* Social Link Editor Group */
+        .social-link-item .input-group-text,
+        .social-link-item .form-control {
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        .social-link-item .input-group-text {
+            border-right: none;
+            width: 45px; /* Fixed width for icon */
+            justify-content: center;
+        }
+        .social-link-item .form-control:not(:first-child) {
+            border-left: none; /* Remove duplicate border */
+        }
+        .social-link-item .form-control:focus {
+            z-index: 1; /* Keep focus border on top */
+        }
+        .social-link-item .remove-social-link-btn {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+            color: #fff;
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .social-link-item .remove-social-link-btn:hover {
+            background-color: #c0392b;
+            border-color: #c0392b;
+        }
     </style>
 </head>
 <body>
@@ -481,13 +543,12 @@
             </header>
 
             <!-- Posts Management View -->
-            <div id="posts-view" style="display:none;">
+            <div id="posts-view" class="container-fluid" style="display:none;">
                 <div class="page-header">
                     <h2><i class="fas fa-clipboard-list me-2"></i>文章管理</h2>
                     <button id="new-post-btn" class="btn btn-primary"><i class="fas fa-plus me-2"></i>撰写新文章</button>
                 </div>
-                <!-- Message alert for posts -->
-                <div id="posts-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+                <div id="posts-message-alert" class="alert mt-3" style="display:none;" role="alert"></div>
                 <div class="admin-table-wrapper">
                     <table class="admin-table">
                         <thead>
@@ -507,67 +568,62 @@
             </div>
             
             <!-- Post Editor Container -->
-            <div id="editor-container" style="display:none;">
+            <div id="editor-container" class="container-fluid" style="display:none;">
                 <h2 id="editor-title" class="mb-4"><i class="fas fa-edit me-2"></i>撰写新文章</h2>
-                <div id="editor-alert" class="alert alert-info" style="display:none;"></div>
+                <div id="editor-alert" class="alert mt-3" style="display:none;"></div>
                 <input type="hidden" id="post-id">
                 <div class="mb-3">
                     <label for="post-title" class="form-label">标题 <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="post-title" placeholder="文章标题">
+                    <input type="text" class="form-control" id="post-title" placeholder="文章标题" required maxlength="100">
                 </div>
                 <div class="mb-3">
                     <label for="post-tags" class="form-label">标签 (用英文逗号 `,` 分隔)</label>
-                    <input type="text" class="form-control" id="post-tags" placeholder="标签1, 标签2">
+                    <input type="text" class="form-control" id="post-tags" placeholder="标签1, 标签2" maxlength="200">
                     <div class="form-text">例如：技术, 前端, 学习。请使用英文逗号分隔。</div>
                 </div>
                 <div class="mb-3">
-                    <label for="post-content" class="form-label">内容 (支持 Markdown)</label>
-                    <textarea id="post-content"></textarea> <!-- SimpleMDE will attach here -->
+                    <label for="post-content" class="form-label">内容 (支持富文本编辑)</label>
+                    <textarea id="post-content"></textarea> <!-- TinyMCE will attach here -->
+                    <div class="form-text">可以使用所见即所得编辑器、直接上传图片、编写HTML。</div>
                 </div>
-                <div class="mb-3">
-                    <label for="image-upload" class="form-label">上传图片到文章 (将返回图片URL)</label>
-                    <input type="file" class="form-control" id="image-upload" accept="image/*" multiple>
-                    <div class="form-text">您可以上传多张图片，上传后将显示图片URL，请手动复制粘贴到文章内容中。</div>
-                    <ul id="uploaded-image-urls" class="image-url-list"></ul>
-                </div>
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
                     <div>
                         <button id="save-post-btn" class="btn btn-success me-2"><i class="fas fa-save me-2"></i>发布文章</button>
-                        <button id="cancel-edit-btn" class="btn btn-secondary"><i class="fas fa-times me-2"></i>取消</button>
+                        <button id="cancel-edit-btn" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>取消</button>
                     </div>
                     <button id="delete-post-btn" class="btn btn-danger" style="display:none;"><i class="fas fa-trash-alt me-2"></i>删除文章</button>
                 </div>
             </div>
 
             <!-- Comments Management View -->
-            <div id="comments-view" style="display:none;">
+            <div id="comments-view" class="container-fluid" style="display:none;">
                 <div class="page-header">
                     <h2><i class="fas fa-comments me-2"></i>评论管理</h2>
                 </div>
-                <div id="comments-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+                <div id="comments-message-alert" class="alert mt-3" style="display:none;" role="alert"></div>
                 <!-- Comments list -->
                 <div id="comments-list-admin" class="list-group comments-list-group">
-                    <div class="text-center py-4 text-muted">加载评论中...</div>
+                    <div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div>加载评论中...</div>
                 </div>
             </div>
 
             <!-- User Posts Management View -->
-            <div id="user-posts-view" style="display:none;">
+            <div id="user-posts-view" class="container-fluid" style="display:none;">
                 <div class="page-header">
                     <h2><i class="fas fa-users-edit me-2"></i>用户投稿</h2>
                 </div>
-                <div id="user-posts-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+                <div id="user-posts-message-alert" class="alert mt-3" style="display:none;" role="alert"></div>
                 <div id="user-posts-list-admin" class="list-group comments-list-group">
-                    <div class="text-center py-4 text-muted">加载用户投稿中...</div>
+                    <div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div>加载用户投稿中...</div>
                 </div>
             </div>
 
             <!-- Settings View -->
-            <div id="settings-view" style="display: none;">
+            <div id="settings-view" class="container-fluid" style="display: none;">
                 <div class="page-header">
                     <h2><i class="fas fa-cogs me-2"></i>网站设置</h2>
                 </div>
-                 <div id="settings-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+                 <div id="settings-message-alert" class="alert mt-3" style="display:none;" role="alert"></div>
 
                 <div class="card p-4 mb-4">
                     <h5 class="card-title mb-3">站点信息</h5>
@@ -580,7 +636,7 @@
                         <input type="text" class="form-control" id="setting-description" placeholder="一句话描述您的博客">
                     </div>
                      <div class="mb-3">
-                        <label for="setting-logo-url" class="form-label">网站Logo URL (方形)</label>
+                        <label for="setting-logo-url" class="form-label">网站Logo URL (方形，建议 80x80)</label>
                         <input type="text" class="form-control" id="setting-logo-url" placeholder="http://example.com/logo.png">
                     </div>
                      <div class="mb-3">
@@ -610,11 +666,16 @@
                         </div>
                     </div>
                      <div class="mb-3">
-                        <label for="setting-bg-image" class="form-label d-block">上传网站背景图</label>
-                        <input type="file" class="form-control d-inline-block w-auto me-2" id="setting-bg-image" accept="image/*">
-                        <button id="upload-bg-image-btn" class="btn btn-info btn-sm me-2"><i class="fas fa-upload me-1"></i>上传</button>
-                        <button id="clear-bg-image-btn" class="btn btn-warning btn-sm"><i class="fas fa-times me-1"></i>清除</button>
-                        <input type="text" class="form-control mt-2" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" readonly>
+                        <label for="setting-bg-image" class="form-label d-block">网站背景图 URL</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" readonly>
+                            <button id="clear-bg-image-btn" class="btn btn-warning" type="button"><i class="fas fa-eraser me-1"></i>清除</button>
+                        </div>
+                        <div class="form-text">您可以直接粘贴图片URL，或使用下面的上传功能。</div>
+                        <div class="input-group mt-2">
+                            <input type="file" class="form-control" id="setting-bg-image-upload" accept="image/*">
+                            <button id="upload-bg-image-btn" class="btn btn-info" type="button"><i class="fas fa-upload me-1"></i>上传并设置</button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">代码高亮主题</label>
@@ -626,6 +687,9 @@
                             <option value="vs">Visual Studio</option>
                             <option value="xcode">Xcode</option>
                              <option value="darcula">Darcula</option>
+                             <option value="ocean">Ocean</option>
+                             <option value="dracula">Dracula</option>
+                             <option value="nord">Nord</option>
                         </select>
                     </div>
                     <div class="mb-3 form-check form-switch">
@@ -638,7 +702,7 @@
                     <h5 class="card-title mb-3">社交链接与页脚</h5>
                      <div id="social-links-list" class="mb-3">
                          <!-- Social links editor will go here -->
-                          <div class="alert alert-secondary text-center py-2" role="alert">暂无社交链接，点击添加。</div>
+                         <div class="alert alert-secondary text-center py-2" role="alert">暂无社交链接，点击添加。</div>
                      </div>
                     <button id="add-social-link-btn" class="btn btn-outline-primary btn-sm mb-3">
                         <i class="fas fa-plus me-1"></i>添加社交链接
@@ -660,8 +724,6 @@
 
     <!-- Bootstrap 5 JavaScript Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7Cfch1ZAD4Xw" crossorigin="anonymous"></script>
-    <!-- SimpleMDE Markdown Editor JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js"></script>
 
     <script>
         // Utility functions
@@ -669,7 +731,6 @@
         const b64_to_utf8 = (str) => {
             try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch (e) { return atob(str); }
         };
-        const hexToRgb = (hex) => { /* Same as index.html */ }; // Define if needed for admin side color parsing
 
         // GitHub API Interaction
         const GitHubAPI = {
@@ -693,7 +754,10 @@
             async getFile(token, owner, repo, path) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content !== 'string') return null;
+                    if (!result || typeof result.content !== 'string') {
+                         if (result && result.message && result.message.toLowerCase().includes('not found')) return null; // File does not exist
+                        throw new Error(`文件内容获取失败或格式不正确: ${path}`);
+                    }
                     return { content: b64_to_utf8(result.content), sha: result.sha };
                 } catch (error) {
                     if (error.message.toLowerCase().includes('not found') || (error.message.toLowerCase().includes('http error') && error.message.includes('404'))) return null;
@@ -709,20 +773,26 @@
         const AdminAPI = {
              API_ENDPOINT: null, // Will be set from config.json
              async request(endpoint, options = {}) {
-                if (!this.API_ENDPOINT) throw new Error("Admin API endpoint is not configured.");
-                 // You might want to add authentication header for admin API, e.g., an Admin-specific token
-                 // For now, it's open, but in production, secure this.
-                 const response = await fetch(`${this.API_ENDPOINT}${endpoint}`, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
-                 if (!response.ok) {
-                     const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}` }));
-                     throw new Error(errorData.message || `Admin API request failed: ${response.status} ${response.statusText}`);
-                 }
-                return await response.json();
+                if (!this.API_ENDPOINT) throw new Error("Admin API endpoint is not configured in config.json.");
+                try {
+                    // ⚠️ In production, add a secure authentication token here for admin access
+                    const response = await fetch(`${this.API_ENDPOINT}${endpoint}`, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}` }));
+                        throw new Error(errorData.message || `Admin API request failed: ${response.status} ${response.statusText}`);
+                    }
+                    if (response.status === 204) return { success: true, message: "操作成功。" }; // For no-content responses
+                    return await response.json();
+                } catch (error) {
+                    console.error('Admin API Request Error:', error);
+                    throw error;
+                }
             },
             getComments: () => AdminAPI.request('/comments'),
             deleteComment: (commentId) => AdminAPI.request(`/comments/${commentId}`, { method: 'DELETE' }),
-            getUserPosts: () => AdminAPI.request('/posts'), // For user posts awaiting approval
-            approveUserPost: (userPostId) => AdminAPI.request(`/posts/${userPostId}/approve`, { method: 'POST' }), // This action needs a secure mechanism
+            getUserPosts: () => AdminAPI.request('/posts'),
+            // This 'approve' only mark status on serverless DB and returns content for admin to push to GitHub
+            approveUserPost: (userPostId) => AdminAPI.request(`/posts/${userPostId}/approve`, { method: 'POST' }), 
             rejectUserPost: (userPostId) => AdminAPI.request(`/posts/${userPostId}/reject`, { method: 'DELETE' })
         };
 
@@ -744,35 +814,42 @@
             userPosts: document.getElementById('nav-user-posts'),
             settings: document.getElementById('nav-settings')
         };
+        const userPostsNavItem = document.getElementById('nav-user-posts-item');
         const editorContainer = document.getElementById('editor-container');
         const postListBody = document.getElementById('post-list');
         const commentsListAdmin = document.getElementById('comments-list-admin');
         const userPostsListAdmin = document.getElementById('user-posts-list-admin');
 
-        let token = localStorage.getItem('github_pat') || null; // Persist token
+        let token = localStorage.getItem('github_pat') || null;
         let owner = '';
         let repo = '';
         let basePath = '';
-        let simplemde = null; // SimpleMDE instance
+        let tinymceEditor = null; // TinyMCE instance
 
         let posts = [], postsSha = '';
         let config = {}, configSha = '';
-        let uploadedImageUrls = []; // Track uploaded image URLs for display
-
+        
         const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
+        // Custom alert function for admin panel
         const showMessage = (element, message, type = 'info', dismissible = true) => {
             element.className = `alert mt-3 alert-${type} ${dismissible ? 'alert-dismissible fade show' : ''}`;
             element.innerHTML = message + (dismissible ? `<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>` : '');
             element.style.display = 'block';
+            setTimeout(() => { // Auto-hide success/info messages after a few seconds
+                if (type === 'success' || type === 'info') element.style.display = 'none';
+            }, 5000);
         };
         const hideMessage = (element) => {
              element.style.display = 'none';
-        }
+        };
 
         const showAdminView = (view) => {
             Object.values(mainViews).forEach(v => v.style.display = 'none');
-            editorContainer.style.display = 'none';
+            editorContainer.style.display = 'none'; // Hide editor when switching views
+            if (tinymceEditor) tinymceEditor.destroy(); // Destroy editor to prevent multiple instances/memory leaks
+            tinymceEditor = null; // Reset editor instance
+
             Object.values(navButtons).forEach(b => b.classList.remove('active'));
             // Close mobile sidebar if open
             const adminWrapperEl = document.getElementById('admin-wrapper');
@@ -781,7 +858,7 @@
             }
 
             mainViews[view].style.display = 'block';
-            navButtons[view].classList.add('active'); // Highlight active nav item
+            if (navButtons[view]) navButtons[view].classList.add('active'); // Highlight active nav item
             
             // Special handling for comments/user posts
             if (view === 'comments') renderCommentsAdmin();
@@ -792,7 +869,7 @@
 
         const startAdminSession = async () => {
             const userToken = document.getElementById('token-input').value.trim();
-            if (!userToken && !token) { showMessage(initialMessageEl, 'GitHub Token 不能为空。', 'warning'); return; }
+            if (!userToken && !token) { showMessage(initialMessageEl, '<i class="fas fa-exclamation-triangle me-2"></i>GitHub Token 不能为空。', 'warning'); return; }
             if (userToken) token = userToken;
 
             setButtonsDisabled(true);
@@ -801,18 +878,25 @@
             try {
                 const user = await GitHubAPI.getUser(token);
                 owner = user.login;
-                repo = `${owner}.github.io`; // Assuming user page repo
-                // For project pages (username.github.io/reponame), adjust repo:
-                const pathParts = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'admin.html');
-                if (pathParts.length > 0) {
-                    repo = pathParts[0]; // For `username.github.io/project-repo/admin.html`
+                repo = `${owner}.github.io`; 
+                
+                // Determine `repo` and `basePath` more robustly for project pages
+                const hrefPathParts = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'admin.html');
+                if (hrefPathParts.length > 0) {
+                     // For `username.github.io/project-name/admin.html` OR `custom.com/project-name/admin.html`
+                     // The actual GitHub repo for project pages is `project-name`.
+                    repo = hrefPathParts[0]; // project-name
+                    basePath = hrefPathParts.join('/'); // project-name if in a subdir, or empty if root.
+                } else {
+                    // For `username.github.io/admin.html` or `custom.com/admin.html` pointing to root of `username.github.io` repo
+                    repo = `${owner}.github.io`; 
+                    basePath = '';
                 }
-                basePath = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'admin.html').join('/');
 
                 // Fetch or initialize config.json
                 let configData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
                 if (!configData) {
-                    showMessage(initialMessageEl, '未检测到配置，正在为您初始化系统...', 'info', false);
+                    showMessage(initialMessageEl, '<div class="spinner-border spinner-border-sm me-2" role="status"></div> 未检测到配置，正在为您初始化系统文件 (config.json, posts.json, images/.gitkeep)...', 'info', false);
                     const initialConfig = {
                         site: { title: `${user.login}的博客`, description: "由GitHub驱动的现代化博客", logoUrl: "", faviconUrl: "" },
                         styling: { backgroundColor: "#f8f9fa", textColor: "#212529", headingColor: "#343a40", accentColor: "#0d6efd", linkHoverColor: "#0a58ca", borderColor: "#dee2e6", cardBgColor: "#ffffff", cardShadow: "0 4px 12px rgba(0, 0, 0, 0.08)", metaColor: "#6c757d", codeBgColor: "#282c34", codeTextColor: "#abb2bf", backgroundImageUrl: "", darkModeToggle: true },
@@ -829,7 +913,8 @@
                     configSha = configRes.content.sha;
                     posts = [];
                     postsSha = postsRes.content.sha;
-                    showMessage(initialMessageEl, '系统激活成功！', 'success');
+                    showMessage(initialMessageEl, '<i class="fas fa-check-circle me-2"></i>系统激活成功！请刷新页面。', 'success');
+                    // location.reload(); // Refresh to ensure everything is loaded correctly with new config
                 } else {
                     const postsData = await GitHubAPI.getFile(token, owner, repo, getPath('posts.json'));
                     config = JSON.parse(configData.content);
@@ -839,23 +924,24 @@
                 }
 
                 localStorage.setItem('github_pat', token); // Store token safely
-                AdminAPI.API_ENDPOINT = config.features.commentSystem.adminApiEndpoint; // Set Admin API endpoint
+                // Set Admin API endpoint from config
+                AdminAPI.API_ENDPOINT = config.features.commentSystem.adminApiEndpoint;
                 
                 loginWrapper.style.display = 'none';
                 adminWrapper.style.display = 'flex';
                 renderPostList();
                 populateSettings();
-                determineInitialView(); // Show the correct view based on initial hash
+                determineInitialView();
                 
                 // Show/hide user posts nav item based on config
                 if (config.features.userPostingEnabled) {
-                     document.getElementById('nav-user-posts-item').style.display = 'block';
+                    userPostsNavItem.style.display = 'list-item'; // Use 'list-item' for li elements
                 } else {
-                    document.getElementById('nav-user-posts-item').style.display = 'none';
+                    userPostsNavItem.style.display = 'none';
                 }
 
             } catch (error) {
-                showMessage(initialMessageEl, `登录或加载失败: ${error.message}`, 'danger');
+                showMessage(initialMessageEl, `<i class="fas fa-times-circle me-2"></i>登录或加载失败: ${error.message}。请检查Token权限或网络。`, 'danger');
                 console.error("Admin start error:", error);
                 token = null;
                 localStorage.removeItem('github_pat'); // Clear invalid token
@@ -877,14 +963,14 @@
             hideMessage(document.getElementById('posts-message-alert'));
             postListBody.innerHTML = '';
             if (posts.length === 0) {
-                postListBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">暂无文章。</td></tr>';
+                postListBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted"><p class="mb-0">暂无文章。</p><button class="btn btn-sm btn-primary mt-3" onclick="openEditor()"><i class="fas fa-plus me-2"></i>撰写第一篇新文章</button></td></tr>';
                 return;
             }
             [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(post => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><a href="#editor" class="text-primary" data-id="${post.id}">${post.title}</a></td>
-                    <td>${post.tags && post.tags.length > 0 ? post.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('') : '无标签'}</td>
+                    <td><a href="#editor" class="text-primary text-decoration-none" data-id="${post.id}">${post.title}</a></td>
+                    <td>${post.tags && post.tags.length > 0 ? post.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('') : '<span class="text-muted">无标签</span>'}</td>
                     <td>${new Date(post.createdAt).toLocaleDateString()}</td>
                     <td>${post.updatedAt ? new Date(post.updatedAt).toLocaleDateString() : 'N/A'}</td>
                     <td class="actions">
@@ -893,6 +979,81 @@
                     </td>
                 `;
                 postListBody.appendChild(tr);
+            });
+        };
+
+        const initTinyMCE = (content) => {
+            if (tinymceEditor) {
+                tinymceEditor.setContent(content);
+                return;
+            }
+            tinymce.init({
+                selector: '#post-content',
+                plugins: 'advlist autolink autoresize lists link image charmap print preview hr anchor pagebreak searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media table paste emoticons nonbreaking save directionality template codesample quickbars autosave',
+                toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | image media link codesample fullscreen preview',
+                height: 500,
+                menubar: 'file edit view insert format tools table help',
+                images_upload_url: '/post_image_upload', // Placeholder for TinyMCE's internal upload handling
+                images_upload_handler: async (blobInfo, success, failure) => {
+                    const file = blobInfo.blob(); // Get the File object
+                    try {
+                        const uploadResult = await uploadFile(file, false, true); // Admin upload, for TinyMCE
+                        if (uploadResult && uploadResult.url) {
+                            success(uploadResult.url);
+                        } else {
+                            failure('图片上传失败: 未知错误');
+                        }
+                    } catch (error) {
+                        failure(`图片上传失败: ${error.message}`);
+                    }
+                },
+                file_picker_callback: (cb, value, meta) => {
+                    // For selecting images from already uploaded or local device
+                    const input = document.createElement('input');
+                    input.setAttribute('type', 'file');
+                    input.setAttribute('accept', 'image/*');
+                    input.click();
+                    input.onchange = async () => {
+                        const file = input.files[0];
+                        try {
+                            const uploadResult = await uploadFile(file, false, true);
+                            if (uploadResult && uploadResult.url) {
+                                cb(uploadResult.url);
+                            } else {
+                                alert('图片上传失败: 未知错误');
+                            }
+                        } catch (error) {
+                            alert(`图片上传失败: ${error.message}`);
+                        }
+                    };
+                },
+                quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote codesample',
+                toolbar_mode: 'sliding',
+                paste_data_images: true, // Allow pasting images directly
+                codesample_languages: [
+                    {text: 'HTML/XML', value: 'markup'},
+                    {text: 'JavaScript', value: 'javascript'},
+                    {text: 'CSS', value: 'css'},
+                    {text: 'PHP', value: 'php'},
+                    {text: 'Ruby', value: 'ruby'},
+                    {text: 'Python', value: 'python'},
+                    {text: 'Java', value: 'java'},
+                    {text: 'C', value: 'c'},
+                    {text: 'C#', value: 'csharp'},
+                    {text: 'Clojure', value: 'clojure'},
+                    {text: 'Bash/Shell', value: 'bash'},
+                    {text: 'Go', value: 'go'},
+                    {text: 'SQL', value: 'sql'},
+                    {text: 'Typescript', value: 'typescript'}
+                ],
+                skin: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'oxide-dark' : 'oxide',
+                content_css: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
+                setup: function (editor) {
+                    editor.on('init', () => {
+                        tinymceEditor = editor;
+                        editor.setContent(content || ''); // Set initial content after init
+                    });
+                }
             });
         };
 
@@ -909,43 +1070,21 @@
             document.getElementById('post-title').value = post?.title || '';
             document.getElementById('post-tags').value = post?.tags?.join(', ') || '';
 
-            if (simplemde) {
-                simplemde.value(post?.content || '');
-            } else {
-                simplemde = new SimpleMDE({
-                    element: document.getElementById('post-content'),
-                    spellChecker: false,
-                    autosave: { enabled: true, uniqueId: "blog_post_editor", delay: 1000 },
-                    status: ["lines", "words", "cursor"], // Display word/line count
-                    toolbar: [ // Customize toolbar
-                        "bold", "italic", "heading", "|",
-                        "quote", "unordered-list", "ordered-list", "|",
-                        "link", "image", "table", "|",
-                        "preview", "side-by-side", "fullscreen", "|",
-                        "guide" // Help guide
-                    ]
-                });
-                simplemde.value(post?.content || ''); // Set content after init
-            }
-            
-            document.getElementById('image-upload').value = ''; // Clear file input
-            uploadedImageUrls = [];
-            renderUploadedImageUrls();
-
+            initTinyMCE(post?.content || ''); // Initialize TinyMCE with content
             document.getElementById('delete-post-btn').style.display = post ? 'inline-block' : 'none';
         };
 
         const savePost = async () => {
             const id = document.getElementById('post-id').value;
             const title = document.getElementById('post-title').value.trim();
-            const content = simplemde.value().trim(); // Get content from SimpleMDE
+            const content = tinymceEditor ? tinymceEditor.getContent().trim() : ''; // Get content from TinyMCE
             const tags = document.getElementById('post-tags').value.split(',').map(t => t.trim()).filter(Boolean);
 
-            if (!title || !content) { showMessage(document.getElementById('editor-alert'), '标题和内容不能为空！', 'warning'); return; }
-            if (content.length < 50) { showMessage(document.getElementById('editor-alert'), '文章内容太短，请至少输入50个字符。', 'warning'); return; }
+            if (!title || !content) { showMessage(document.getElementById('editor-alert'), '<i class="fas fa-exclamation-triangle me-2"></i>标题和内容不能为空！', 'warning'); return; }
+            if (content.length < 50) { showMessage(document.getElementById('editor-alert'), '<i class="fas fa-exclamation-triangle me-2"></i>文章内容太短，请至少输入50个字符。', 'warning'); return; }
             
             setButtonsDisabled(true);
-            hideMessage(document.getElementById('editor-alert')); // Hide previous alerts
+            hideMessage(document.getElementById('editor-alert'));
 
             const postIndex = posts.findIndex(p => p.id === id);
             let commitMessage = '';
@@ -962,7 +1101,7 @@
             try {
                 const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, commitMessage);
                 postsSha = res.content.sha;
-                showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>文章保存成功！`, 'success', true);
+                showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>文章保存成功！请刷新前台页面查看更新。`, 'success', true);
                 renderPostList();
                 showAdminView('posts');
             } catch (error) {
@@ -978,7 +1117,7 @@
             if (!confirm('确定要删除这篇文章吗？此操作不可逆！')) return;
             
             setButtonsDisabled(true);
-            hideMessage(document.getElementById('posts-message-alert')); // Hide previous alerts
+            hideMessage(document.getElementById('posts-message-alert'));
             hideMessage(document.getElementById('editor-alert'));
 
             const postToDelete = posts.find(p => p.id === postId);
@@ -990,7 +1129,7 @@
                 postsSha = res.content.sha;
                 showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>文章 "${postToDelete.title}" 已成功删除！`, 'success', true);
                 renderPostList();
-                showAdminView('posts'); // Go back to post list
+                showAdminView('posts');
             } catch (error) {
                 showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>文章删除失败: ${error.message}`, 'danger');
                 console.error("Delete post error:", error);
@@ -1035,7 +1174,7 @@
                 textColor: document.getElementById('setting-text-color').value,
                 headingColor: document.getElementById('setting-heading-color').value,
                 accentColor: document.getElementById('setting-accent-color').value,
-                linkHoverColor: newConfig.styling.linkHoverColor, // Keep if not directly editable
+                linkHoverColor: newConfig.styling.linkHoverColor, // Retain previously set values if not directly editable
                 borderColor: newConfig.styling.borderColor,
                 cardBgColor: newConfig.styling.cardBgColor,
                 cardShadow: newConfig.styling.cardShadow,
@@ -1062,13 +1201,13 @@
                 const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(newConfig, null, 2), configSha, 'docs: update site settings');
                 configSha = res.content.sha;
                 config = newConfig; // Update local config with new values
-                // Update AdminAPI endpoint if changed
+                // Update AdminAPI endpoint if changed, though it's usually static
                 AdminAPI.API_ENDPOINT = config.features.commentSystem.adminApiEndpoint;
                 // Update user posts nav item visibility
                 if (config.features.userPostingEnabled) {
-                     document.getElementById('nav-user-posts-item').style.display = 'block';
+                     userPostsNavItem.style.display = 'list-item';
                 } else {
-                    document.getElementById('nav-user-posts-item').style.display = 'none';
+                    userPostsNavItem.style.display = 'none';
                 }
                 showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-check-circle me-2"></i>网站设置已保存成功！刷新前台页面可见更新。`, 'success', true);
             } catch (error) {
@@ -1083,7 +1222,7 @@
             const socialLinksList = document.getElementById('social-links-list');
             socialLinksList.innerHTML = '';
              if (!config.socialLinks || config.socialLinks.length === 0) {
-                 socialLinksList.innerHTML = `<div class="alert alert-secondary text-center py-2" role="alert">暂无社交链接，点击“添加社交链接”按钮创建。</div>`;
+                 socialLinksList.innerHTML = `<div class="alert alert-secondary text-center py-2" role="alert"><i class="fas fa-info-circle me-2"></i>暂无社交链接，点击“添加社交链接”按钮创建。</div>`;
                  return;
              }
             config.socialLinks.forEach((link, index) => {
@@ -1094,7 +1233,7 @@
                     <input type="text" class="form-control social-link-name" value="${link.name}" placeholder="名称 (e.g., GitHub)">
                     <input type="text" class="form-control social-link-url" value="${link.url}" placeholder="URL">
                     <input type="text" class="form-control social-link-icon" value="${link.icon}" placeholder="Font Awesome图标类名 (e.g., fab fa-github)">
-                    <button class="btn btn-danger remove-social-link-btn" type="button" data-index="${index}"><i class="fas fa-times"></i></button>
+                    <button class="btn btn-danger remove-social-link-btn" type="button" data-index="${index}" title="删除此链接"><i class="fas fa-times"></i></button>
                 `;
                 socialLinksList.appendChild(item);
             });
@@ -1115,75 +1254,55 @@
             renderSocialLinksEditor();
         };
 
-        // Image upload function
-        const uploadFile = async (file, isBgImage = false) => {
-            if (!file) return;
+        // Image upload function (General purpose, for TinyMCE and background image)
+        // isBgImage: boolean for background image upload
+        // forEditor: boolean, if true, resolves with { url: string } for TinyMCE images_upload_handler
+        const uploadFile = async (file, isBgImage = false, forEditor = false) => {
+            if (!file) {
+                 if (!forEditor) showMessage(document.getElementById('editor-alert'), `<i class="fas fa-exclamation-triangle me-2"></i>请选择要上传的文件。`, 'warning', true);
+                throw new Error("没有选择文件。");
+            }
             setButtonsDisabled(true);
             const alertElement = isBgImage ? document.getElementById('settings-message-alert') : document.getElementById('editor-alert');
             
             showMessage(alertElement, `<div class="spinner-border spinner-border-sm me-2" role="status"></div> 正在上传图片: ${file.name}...`, 'info', false);
 
             const reader = new FileReader();
-            reader.onload = async (e) => {
-                const content = e.target.result.split(',')[1]; // Base64 content
-                const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-                const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`; // Sanitize filename
-                const path = getPath(`images/${fileName}`);
-                try {
-                    const result = await GitHubAPI.createFile(token, owner, repo, path, content, `feat: upload image ${fileName}`, true);
-                    const url = result.content.download_url; // Direct CDN URL if GitHub serves it statically
+            return new Promise((resolve, reject) => {
+                reader.onload = async (e) => {
+                    const content = e.target.result.split(',')[1]; // Base64 content
+                    const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+                    const originalFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, ''); // Sanitize filename
+                    const fileName = `${timestamp}_${originalFileName}`;
+                    const path = getPath(`images/${fileName}`);
+                    try {
+                        const result = await GitHubAPI.createFile(token, owner, repo, path, content, `feat: upload image ${fileName}`, true);
+                        const url = result.content.download_url; // Direct CDN URL if GitHub serves it statically
 
-                    if (isBgImage) {
-                        document.getElementById('setting-bg-image-url').value = url;
-                        showMessage(alertElement, `<i class="fas fa-check-circle me-2"></i>背景图片上传成功，URL已填入。`, 'success', true);
-                    } else {
-                        uploadedImageUrls.push({ name: file.name, url: url, markdown: `![${file.name}图片](<${url}>)` });
-                        renderUploadedImageUrls();
-                        showMessage(alertElement, `<i class="fas fa-camera me-2"></i>图片 "${file.name}" 上传成功，URL已在下方列表。`, 'success', true);
+                        showMessage(alertElement, `<i class="fas fa-check-circle me-2"></i>图片 "${file.name}" 上传成功！`, 'success', true);
+                        if (isBgImage) {
+                            document.getElementById('setting-bg-image-url').value = url;
+                        }
+                        resolve({ url: url });
+                    } catch (error) {
+                        showMessage(alertElement, `<i class="fas fa-times-circle me-2"></i>图片上传失败: ${error.message}`, 'danger', true);
+                        console.error("Image upload error:", error);
+                        reject(error);
+                    } finally {
+                        setButtonsDisabled(false);
                     }
-                } catch (error) {
-                    showMessage(alertElement, `<i class="fas fa-times-circle me-2"></i>图片上传失败: ${error.message}`, 'danger', true);
-                    console.error("Image upload error:", error);
-                } finally {
-                    setButtonsDisabled(false);
-                }
-            };
-            reader.readAsDataURL(file);
-        };
-
-        const renderUploadedImageUrls = () => {
-            const urlsListEl = document.getElementById('uploaded-image-urls');
-            urlsListEl.innerHTML = '';
-             if (uploadedImageUrls.length === 0) {
-                 urlsListEl.style.display = 'none';
-                 return;
-             }
-            urlsListEl.style.display = 'block';
-            uploadedImageUrls.forEach(img => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <div class="flex-grow-1">${img.markdown}</div>
-                    <button class="btn btn-sm btn-outline-primary copy-btn" data-clipboard-text="${img.markdown}" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i></button>
-                `;
-                urlsListEl.appendChild(li);
+                };
+                reader.onerror = (error) => {
+                    showMessage(alertElement, `<i class="fas fa-times-circle me-2"></i>文件读取失败: ${error.message}`, 'danger', true);
+                    reject(error);
+                };
+                reader.readAsDataURL(file);
             });
         };
-
-        const copyToClipboard = (button) => {
-            const textToCopy = button.dataset.clipboardText;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                button.textContent = '已复制!';
-                setTimeout(() => { button.innerHTML = '<i class="fas fa-copy"></i>'; }, 1500);
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-                alert('复制失败，请手动复制。');
-            });
-        };
-
 
         // Comments Admin Logic
         const renderCommentsAdmin = async () => {
-            commentsListAdmin.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border text-primary me-2" role="status"></div>加载评论中...</div>';
+             commentsListAdmin.innerHTML = '<div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div><p class="mb-0">加载评论中...</p></div>';
             hideMessage(document.getElementById('comments-message-alert'));
             if (!config.features.commentSystem.enabled || !AdminAPI.API_ENDPOINT) {
                 commentsListAdmin.innerHTML = `<div class="alert alert-warning text-center" role="alert"><i class="fas fa-exclamation-triangle me-2"></i>评论管理功能未启用或API未配置。请检查网站设置。</div>`;
@@ -1191,17 +1310,17 @@
             }
 
             try {
-                const { comments } = await AdminAPI.getComments(); // Assumes API returns { comments: [...] }
-                commentsListAdmin.innerHTML = ''; // Clear loading
+                const { comments } = await AdminAPI.getComments();
+                commentsListAdmin.innerHTML = '';
                 if (comments && comments.length > 0) {
-                    comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Newest first
+                    comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                     comments.forEach(comment => {
                         const post = posts.find(p => p.id === comment.postId);
                         const commentEl = document.createElement('div');
                         commentEl.className = 'list-group-item';
                         commentEl.innerHTML = `
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">${comment.author || '匿名用户'} 对文章 "<a href="#editor" data-id="${comment.postId}" class="text-primary">${post ? post.title : '未知文章'}</a>" 的评论</h6>
+                                <h6 class="mb-1">${comment.author || '匿名用户'} 对文章 "<a href="#editor" data-id="${comment.postId}" class="text-primary text-decoration-none">${post ? post.title : `未知文章 (ID: ${comment.postId.substring(5, 11)})`}</a>" 的评论</h6>
                                 <small class="text-muted"><i class="far fa-clock me-1"></i>${new Date(comment.createdAt).toLocaleString()}</small>
                             </div>
                             <p class="mb-1 text-break">${comment.content}</p>
@@ -1215,7 +1334,7 @@
                     commentsListAdmin.innerHTML = '<div class="alert alert-info text-center" role="alert"><i class="fas fa-info-circle me-2"></i>暂无任何评论。</div>';
                 }
             } catch (error) {
-                showMessage(document.getElementById('comments-message-alert'), `<i class="fas fa-times-circle me-2"></i>加载评论失败: ${error.message}`, 'danger');
+                showMessage(document.getElementById('comments-message-alert'), `<i class="fas fa-times-circle me-2"></i>加载评论失败: ${error.message || '未知错误'}`, 'danger');
                 console.error("Render comments admin error:", error);
             }
         };
@@ -1232,7 +1351,7 @@
                     throw new Error(result.message || '删除评论失败。');
                 }
             } catch (error) {
-                showMessage(document.getElementById('comments-message-alert'), `<i class="fas fa-times-circle me-2"></i>删除评论失败: ${error.message}`, 'danger');
+                showMessage(document.getElementById('comments-message-alert'), `<i class="fas fa-times-circle me-2"></i>删除评论失败: ${error.message || '未知错误'}`, 'danger');
                 console.error("Delete comment error:", error);
             } finally {
                 setButtonsDisabled(false);
@@ -1240,9 +1359,9 @@
         };
 
 
-        // User Posts Admin Logic (requires Serverless API to mock a database for pending posts)
+        // User Posts Admin Logic
         const renderUserPostsAdmin = async () => {
-             userPostsListAdmin.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border text-primary me-2" role="status"></div>加载用户投稿中...</div>';
+             userPostsListAdmin.innerHTML = '<div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div><p class="mb-0">加载用户投稿中...</p></div>';
              hideMessage(document.getElementById('user-posts-message-alert'));
 
             if (!config.features.userPostingEnabled || !AdminAPI.API_ENDPOINT) {
@@ -1251,7 +1370,7 @@
             }
 
             try {
-                const { userPosts } = await AdminAPI.getUserPosts(); // Assumes API returns { userPosts: [...] }
+                const { userPosts } = await AdminAPI.getUserPosts();
                 userPostsListAdmin.innerHTML = '';
                 if (userPosts && userPosts.length > 0) {
                     userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1267,7 +1386,7 @@
                             ${userPost.tags && userPost.tags.length > 0 ? `<div class="my-2">${userPost.tags.map(tag => `<span class="badge bg-info me-1">${tag}</span>`).join('')}</div>` : ''}
                             <div class="user-post-actions mt-2">
                                 <button class="btn btn-sm btn-success approve-user-post-btn me-2" data-id="${userPost.id}"><i class="fas fa-check me-1"></i>批准并发布</button>
-                                <button class="btn btn-sm btn-primary edit-user-post-btn me-2" data-id="${userPost.id}"><i class="fas fa-edit me-1"></i>编辑</button>
+                                <button class="btn btn-sm btn-info view-user-post-btn me-2" data-id="${userPost.id}"><i class="fas fa-eye me-1"></i>预览/编辑</button>
                                 <button class="btn btn-sm btn-danger reject-user-post-btn" data-id="${userPost.id}"><i class="fas fa-times me-1"></i>拒绝</button>
                             </div>
                         `;
@@ -1277,30 +1396,29 @@
                     userPostsListAdmin.innerHTML = '<div class="alert alert-info text-center" role="alert"><i class="fas fa-info-circle me-2"></i>暂无待审核的用户投稿。</div>';
                 }
             } catch (error) {
-                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>加载用户投稿失败: ${error.message}`, 'danger');
+                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>加载用户投稿失败: ${error.message || '未知错误'}`, 'danger');
                 console.error("Render user posts admin error:", error);
             }
         };
 
         const approveUserPost = async (userPostId) => {
-            if (!userPostId || !confirm('确定要批准并发布这篇用户投稿吗？')) return;
+            if (!userPostId || !confirm('确定要批准并发布这篇用户投稿吗？此操作将把文章添加到您的博客！')) return;
             setButtonsDisabled(true);
             try {
                 const result = await AdminAPI.approveUserPost(userPostId);
                 if (result.success && result.postContent) {
-                    // This is the critical step: convert user post to a regular post and save to GitHub
-                    posts.push(result.postContent); // result.postContent should be a formatted post object
-                    const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `feat: approve and publish user post "${result.postContent.title}"`);
+                    posts.push(result.postContent); 
+                    const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `feat: approve and publish user post "${result.postContent.title}" by ${result.postContent.author}`);
                     postsSha = res.content.sha;
 
-                    showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>用户投稿已成功发布！`, 'success', true);
-                    renderUserPostsAdmin(); // Refresh pending user posts
-                    renderPostList(); // Refresh main post list
+                    showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>用户投稿已成功发布！同时已从待审核列表移除。请刷新前台页面查看更新。`, 'success', true);
+                    renderUserPostsAdmin(); 
+                    renderPostList();
                 } else {
                     throw new Error(result.message || '批准用户投稿失败。');
                 }
             } catch (error) {
-                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>批准用户投稿失败: ${error.message}`, 'danger');
+                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>批准用户投稿失败: ${error.message || '未知错误'}`, 'danger');
                 console.error("Approve user post error:", error);
             } finally {
                 setButtonsDisabled(false);
@@ -1308,35 +1426,44 @@
         };
 
         const rejectUserPost = async (userPostId) => {
-            if (!userPostId || !confirm('确定要拒绝这篇用户投稿吗？')) return;
+            if (!userPostId || !confirm('确定要拒绝这篇用户投稿吗？此操作将永久删除投稿草稿（但不会影响已发布的文章）。')) return;
             setButtonsDisabled(true);
             try {
                 const result = await AdminAPI.rejectUserPost(userPostId);
                 if (result.success) {
-                    showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>用户投稿已成功拒绝。`, 'success', true);
-                    renderUserPostsAdmin(); // Refresh pending user posts
+                    showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>用户投稿已成功拒绝并移除。`, 'success', true);
+                    renderUserPostsAdmin();
                 } else {
                     throw new Error(result.message || '拒绝用户投稿失败。');
                 }
             } catch (error) {
-                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>拒绝用户投稿失败: ${error.message}`, 'danger');
+                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>拒绝用户投稿失败: ${error.message || '未知错误'}`, 'danger');
                 console.error("Reject user post error:", error);
             } finally {
                 setButtonsDisabled(false);
             }
         };
-
+        
         // Event Listeners
         document.getElementById('start-btn').onclick = startAdminSession;
         document.getElementById('logout-btn').onclick = () => {
             localStorage.removeItem('github_pat');
             token = null;
-            window.location.reload(); // Reload to login page
+            window.location.reload();
         };
         document.getElementById('mobile-menu-btn').onclick = () => document.getElementById('admin-wrapper').classList.toggle('sidebar-visible');
         document.getElementById('mobile-overlay').onclick = () => document.getElementById('admin-wrapper').classList.remove('sidebar-visible');
 
         // Navigation
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (Object.keys(mainViews).includes(hash)) {
+                showAdminView(hash);
+            } else if (hash === 'editor') { // Allow direct linking to editor for existing posts
+                const postId = document.getElementById('post-id').value; // if already editing a post
+                openEditor(postId);
+            }
+        });
         navButtons.posts.onclick = () => { window.location.hash = 'posts'; showAdminView('posts'); };
         navButtons.comments.onclick = () => { window.location.hash = 'comments'; showAdminView('comments'); };
         if (navButtons.userPosts) navButtons.userPosts.onclick = () => { window.location.hash = 'user-posts'; showAdminView('userPosts'); };
@@ -1349,13 +1476,17 @@
         document.getElementById('delete-post-btn').onclick = () => deletePost(document.getElementById('post-id').value);
 
         postListBody.addEventListener('click', (e) => {
-            if (e.target.classList.contains('edit-post-btn') || e.target.closest('.edit-post-btn')) {
+            let targetButton = e.target.closest('.edit-post-btn');
+            if (targetButton) {
                 e.preventDefault();
-                openEditor(e.target.closest('.edit-post-btn').dataset.id);
+                openEditor(targetButton.dataset.id);
+                return;
             }
-            if (e.target.classList.contains('delete-post-btn') || e.target.closest('.delete-post-btn')) {
+            targetButton = e.target.closest('.delete-post-btn');
+            if (targetButton) {
                 e.preventDefault();
-                deletePost(e.target.closest('.delete-post-btn').dataset.id);
+                deletePost(targetButton.dataset.id);
+                return;
             }
             if (e.target.localName === 'a' && e.target.dataset.id && e.target.href.includes('#editor')) { // For title links
                 e.preventDefault();
@@ -1366,50 +1497,72 @@
         // Settings Management
         document.getElementById('save-settings-btn').onclick = saveSettings;
         document.getElementById('add-social-link-btn').onclick = addSocialLink;
-        document.getElementById('setting-bg-image').onchange = (e) => uploadFile(e.target.files[0], true);
-        document.getElementById('upload-bg-image-btn').onclick = (e) => {
-            e.preventDefault(); // Prevent form submission
-            const fileInput = document.getElementById('setting-bg-image');
+
+        document.getElementById('upload-bg-image-btn').onclick = async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('setting-bg-image-upload');
             if (fileInput.files.length > 0) {
-                uploadFile(fileInput.files[0], true);
+                try {
+                    const result = await uploadFile(fileInput.files[0], true);
+                    if (result && result.url) {
+                        document.getElementById('setting-bg-image-url').value = result.url;
+                        fileInput.value = ''; // Clear file input
+                    }
+                } catch (error) {
+                    console.error("Background image upload failed:", error);
+                }
             } else {
                  showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-exclamation-triangle me-2"></i>请选择要上传的背景图片。`, 'warning', true);
             }
         };
+
         document.getElementById('clear-bg-image-btn').onclick = () => {
             document.getElementById('setting-bg-image-url').value = '';
-            showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-info-circle me-2"></i>背景图URL已清除，记得保存设置。`, 'warning', true);
+            showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-info-circle me-2"></i>背景图URL已清除，记得保存设置以应用变更。`, 'warning', true);
         };
-
-        // Image Upload (for post content)
-        document.getElementById('image-upload').onchange = (e) => {
-            Array.from(e.target.files).forEach(file => uploadFile(file, false));
-            e.target.value = ''; // Clear file input after selection
-        };
-
+        
         // Comments/User Posts Actions
         commentsListAdmin.addEventListener('click', (e) => {
-            if (e.target.classList.contains('delete-comment-btn') || e.target.closest('.delete-comment-btn')) {
+            let targetButton = e.target.closest('.delete-comment-btn');
+            if (targetButton) {
                 e.preventDefault();
-                deleteComment(e.target.closest('.delete-comment-btn').dataset.id);
+                deleteComment(targetButton.dataset.id);
+            }
+            if (e.target.localName === 'a' && e.target.dataset.id && e.target.href.includes('#editor')) { // Clicking comment-linked post title
+                e.preventDefault();
+                openEditor(e.target.dataset.id);
             }
         });
 
         userPostsListAdmin.addEventListener('click', (e) => {
-            if (e.target.classList.contains('approve-user-post-btn') || e.target.closest('.approve-user-post-btn')) {
+            let targetButton = e.target.closest('.approve-user-post-btn');
+            if (targetButton) {
                 e.preventDefault();
-                approveUserPost(e.target.closest('.approve-user-post-btn').dataset.id);
+                approveUserPost(targetButton.dataset.id);
+                return;
             }
-            // For editing user post content BEFORE publishing
-            if (e.target.classList.contains('edit-user-post-btn') || e.target.closest('.edit-user-post-btn')) {
+            targetButton = e.target.closest('.reject-user-post-btn');
+            if (targetButton) {
                 e.preventDefault();
-                alert('编辑用户投稿功能待实现。管理员可手动复制内容进行编辑、发布。'); // Placeholder
+                rejectUserPost(targetButton.dataset.id);
+                return;
             }
-            if (e.target.classList.contains('reject-user-post-btn') || e.target.closest('.reject-user-post-btn')) {
+            targetButton = e.target.closest('.view-user-post-btn');
+            if (targetButton) {
                 e.preventDefault();
-                rejectUserPost(e.target.closest('.reject-user-post-btn').dataset.id);
+                const userPostId = targetButton.dataset.id;
+                // In a real system, this would open a modal with TinyMCE pre-filled
+                // For simplicity, we can fetch the user post and display its content in an alert/new window
+                alert(`查看用户投稿 (ID: ${userPostId}): \n功能待实现在模态框或新页面中，请管理员此时手动复制粘贴内容到新文章。`);
+                 // Or, for a more advanced view:
+                 // const userPost = userPosts.find(p => p.id === userPostId); // need userPosts in scope
+                 // if(userPost) {
+                 //    // Open a modal with TinyMCE, pre-fill title/content/.
+                 //    // For this demo, let's keep it simple.
+                 // }
             }
         });
+
 
         // Initialize on page load
         if (token) {
