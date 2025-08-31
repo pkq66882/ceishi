@@ -513,6 +513,9 @@
             width: 100%;
             z-index: 100;
             box-shadow: var(--shadow);
+            top: 100%; /* Fix position */
+            left: 0;
+            margin-top: 5px; /* Spacing from input */
         }
         .suggestion-box div {
             padding: 10px;
@@ -593,7 +596,6 @@
                 <li><a href="#" id="nav-posts" class="active" data-view="posts"><i class="fas fa-newspaper"></i> 文章管理</a></li>
                 <li><a href="#" id="nav-settings" data-view="settings"><i class="fas fa-cog"></i> 网站设置</a></li>
                 <li><a href="#" id="nav-gitalk-settings" data-view="gitalk-settings"><i class="fas fa-comments"></i> 评论设置</a></li>
-                <!-- <li><a href="#" id="nav-about-edit" data-view="about-edit"><i class="fas fa-info-circle"></i> 关于我编辑</a></li> --> <!-- 合并到网站设置中 -->
                 <li><a href="index.html" target="_blank"><i class="fas fa-desktop"></i> 查看站点</a></li>
                 <li><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> 安全退出</a></li>
             </ul>
@@ -661,13 +663,6 @@
                     <textarea id="post-content"></textarea> <!-- EasyMDE 会接管这个 textarea -->
                     <p class="description">请使用 Markdown 格式编写文章。使用 `&lt;!--more--&gt;` 可定义文章摘要。</p>
                 </div>
-                <!-- 由于 EasyMDE 内部有图片上传功能，这里的独立图片上传可能不需要了，
-                     但为了与原逻辑兼容，如果EasyMDE没有，可以保留此上传并插入到编辑器 -->
-                <!-- <div class="form-group">
-                    <label for="image-upload">上传图片到文章</label>
-                    <input type="file" id="image-upload" accept="image/*">
-                </div> -->
-
                 <div class="button-group">
                     <button id="save-post-btn" class="btn-success"><i class="fas fa-upload"></i> 发布/更新文章</button>
                     <button id="cancel-edit-btn" class="btn-secondary"><i class="fas fa-times-circle"></i> 取消</button>
@@ -789,26 +784,27 @@
                     const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, documentation_url: response.url }));
                     const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}`;
                     console.error('GitHub API Error:', errorMessage, errorData);
-                    const specificError = errorData.documentation_url && errorData.documentation_url.includes('api.github.com/v3/auth') ? '你的 GitHub Token 可能无效或权限不足。请检查：[链接到Token生成页面](https://github.com/settings/tokens)' : '';
+                    const specificError = errorMessage.toLowerCase().includes('bad credentials') || errorMessage.toLowerCase().includes('requires authentication') || response.status === 401 || response.status === 403
+                        ? '你的 GitHub Token 可能无效或权限不足。请检查：[Token生成页面](https://github.com/settings/tokens)'
+                        : '';
                     throw new Error(`${errorMessage} ${specificError}`);
                 }
                 if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
                 return response.json();
             },
-            getUser: (token) => GitHubAPI.request(token, '/user'),
             async getFile(token, owner, repo, path) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content !== 'string') {
-                        // 如果内容为空或不是字符串，我们认为文件逻辑上不存在或不合格
-                        console.warn(`File content for ${path} is empty or invalid.`);
+                    // 检查响应结果是否存在且内容是字符串，并且不是空字符串
+                    if (!result || typeof result.content !== 'string' || b64_to_utf8(result.content).trim().length === 0) {
+                        console.warn(`File content for ${path} is empty, invalid, or file not found.`);
                         return null; 
                     }
                     return { content: b64_to_utf8(result.content), sha: result.sha };
                 } catch (error) {
-                    // 明确处理 404 错误
+                    // 明确处理 404 (Not Found) 错误
                     if (error.message.toLowerCase().includes('not found') || error.message.includes('file not found')) {
-                        console.info(`File not found: ${path}. This is expected during initialization.`);
+                        console.info(`File not found: ${path}. This is expected during initial setup.`);
                         return null;
                     }
                     console.error(`Error fetching file ${path}:`, error);
@@ -927,6 +923,8 @@
 
                 // 尝试获取 config.json 和 posts.json
                 let configData = null;
+                let postsData = null;
+
                 try {
                     configData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
                 } catch (e) {
@@ -934,7 +932,6 @@
                     throw e; // 重新抛出，停止后续操作
                 }
                 
-                let postsData = null;
                 try {
                     postsData = await GitHubAPI.getFile(token, owner, repo, getPath('posts.json'));
                 } catch (e) {
@@ -942,125 +939,110 @@
                     throw e; // 重新抛出，停止后续操作
                 }
 
-
                 const hasExistingConfig = !!configData;
-                const hasExistingPosts = !!postsData;
+                const hasExistingPosts = !!postsData; // 即使是空数组也视为存在
 
-                if (!hasExistingConfig || !hasExistingPosts) {
-                    initialMessageEl.innerHTML = '<i class="fas fa-hammer"></i> 检测到核心文件缺失，正在为您初始化系统...';
-
-                    const initialConfig = {
-                        site: {
-                            title: `${user.login}的博客`,
-                            description: "由GitHub驱动的现代化半静态博客",
-                            aboutContent: `# 关于我\n\n你好！我是 ${user.login}，一个热爱技术和分享的开发者。欢迎来到我的博客！\n\n在这里，我将分享我的技术心得、学习笔记以及一些生活感悟。希望我的内容能对你有所启发或帮助。\n\n**联系我:**\n\n*   GitHub: [${user.login}](https://github.com/${user.login})\n*   Email: your_email@example.com\n\n---`,
-                        },
-                        styling: {
-                            backgroundColor: "#f8f9fa",
-                            textColor: "#212529",
-                            accentColor: "#0d6efd",
-                            backgroundImageUrl: ""
-                        },
-                        gitalk: {
-                            enabled: false,
-                            clientID: '',
-                            clientSecret: '',
-                            repo: `${owner}.github.io`,
-                            owner: owner,
-                            admin: [owner],
-                        }
-                    };
-                    const initialPosts = [{
-                        id: `hello_world_${Date.now()}`,
-                        title: "欢迎来到我的博客！",
-                        content: "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
-                        category: "公告",
-                        tags: ["欢迎", "教程"],
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    }];
-
-                    // 确保images目录存在，否则图片上传会报错
-                    // 使用 .catch() 忽略文件已存在的错误
-                    await GitHubAPI.createFile(token, owner, repo, getPath('images/.gitkeep'), '', 'feat: initialize images directory').catch(err => {
-                        if (!err.message.includes('already exists')) { // 忽略 "file already exists" 错误
-                            console.warn("Could not create .gitkeep:", err);
-                        }
-                    });
-
-                    // 创建或更新 config.json
-                    let currentConfig = initialConfig;
-                    if (hasExistingConfig) {
-                        try {
-                            currentConfig = JSON.parse(configData.content);
-                            // 合并默认配置，保留用户已有设置
-                            Object.assign(currentConfig, initialConfig); 
-                            Object.assign(currentConfig.site, initialConfig.site);
-                            Object.assign(currentConfig.styling, initialConfig.styling);
-                            // 如果gitalk不存在或部分缺失，则补充
-                            if (!currentConfig.gitalk) currentConfig.gitalk = initialConfig.gitalk;
-                            else Object.assign(currentConfig.gitalk, initialConfig.gitalk);
-                        } catch (e) {
-                            console.warn("Invalid config.json, overwriting with default.", e);
-                            showAlert('config.json 内容无效，已使用默认配置覆盖。', 'warning');
-                        }
-                         const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(currentConfig, null, 2), configData.sha, 'feat: update config with default values');
-                         configSha = res.content.sha;
-                    } else {
-                         const res = await GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize config');
-                         configSha = res.content.sha;
-                         currentConfig = initialConfig;
+                // 默认配置和文章
+                const initialConfig = {
+                    site: {
+                        title: `${user.login}的博客`,
+                        description: "由GitHub驱动的现代化半静态博客",
+                        aboutContent: `# 关于我\n\n你好！我是 ${user.login}，一个热爱技术和分享的开发者。欢迎来到我的博客！\n\n在这里，我将分享我的技术心得、学习笔记以及一些生活感悟。希望我的内容能对你有所启发或帮助。\n\n**联系我:**\n\n*   GitHub: [${user.login}](https://github.com/${user.login})\n*   Email: your_email@example.com\n\n---`,
+                    },
+                    styling: {
+                        backgroundColor: "#f8f9fa",
+                        textColor: "#212529",
+                        accentColor: "#0d6efd",
+                        backgroundImageUrl: ""
+                    },
+                    gitalk: {
+                        enabled: false,
+                        clientID: '',
+                        clientSecret: '',
+                        repo: `${owner}.github.io`,
+                        owner: owner,
+                        admin: [owner],
                     }
-                    config = currentConfig;
+                };
+                const initialPosts = [{
+                    id: `hello_world_${Date.now()}`,
+                    title: "欢迎来到我的博客！",
+                    content: "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
+                    category: "公告",
+                    tags: ["欢迎", "教程"],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }];
 
-                    // 创建或更新 posts.json
-                    let currentPosts = initialPosts;
-                    if (hasExistingPosts) {
-                         try {
-                            currentPosts = JSON.parse(postsData.content);
-                            if (currentPosts.length === 0) { // 如果 posts.json 存在但为空，则填入初始文章
-                                currentPosts = initialPosts;
-                            }
-                         } catch (e) {
-                            console.warn("Invalid posts.json, overwriting with default post.", e);
-                            showAlert('posts.json 内容无效，已使用默认文章覆盖。', 'warning');
-                            currentPosts = initialPosts;
-                         }
-                         // 检查是否已经有了初始文章，避免重复添加。简单通过 title 判断
-                         if (!currentPosts.some(p => p.title === initialPosts[0].title)) {
-                             currentPosts.push(initialPosts[0]);
-                         }
-                         currentPosts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)); // 再次排序确保最新文章在前
-
-                         const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(currentPosts, null, 2), postsData.sha, 'feat: update posts with initial entries');
-                         postsSha = res.content.sha;
-
-                    } else {
-                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), 'feat: initialize first post');
-                        postsSha = res.content.sha;
-                        currentPosts = initialPosts;
-                    }
-                    posts = currentPosts;
-
-                    showAlert('系统初始化或更新成功！', 'success');
-                } else {
-                    // 如果文件都存在，则直接解析
+                // 核心文件处理逻辑
+                let currentConfig = initialConfig;
+                if (hasExistingConfig) {
                     try {
-                        config = JSON.parse(configData.content); configSha = configData.sha;
-                        posts = postsData.content ? JSON.parse(postsData.content) : [];
-                        postsSha = postsData.sha;
+                        let parsedConfig = JSON.parse(configData.content);
+                        // 合并默认配置，保留用户已有设置，如果没有则使用初始值
+                        Object.assign(currentConfig, parsedConfig);
+                        currentConfig.site = Object.assign({}, initialConfig.site, parsedConfig.site); // 深度合并site
+                        currentConfig.styling = Object.assign({}, initialConfig.styling, parsedConfig.styling); // 深度合并styling
+                        currentConfig.gitalk = Object.assign({}, initialConfig.gitalk, parsedConfig.gitalk); // 深度合并gitalk
+
                     } catch (e) {
-                        initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 解析文件内容失败，可能 JSON 格式错误: ${e.message}`;
-                        throw e;
+                        console.warn("Invalid config.json content, using default config.", e);
+                        showAlert('config.json' + (configData.content ? '内容无效' : '文件不存在或为空') + '，已使用默认配置覆盖。', 'warning');
                     }
+                    // 更新文件（即使是默认内容，也需要以最新的sha更新）
+                    const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(currentConfig, null, 2), configData.sha, 'conf: update config with default/existing values');
+                    configSha = res.content.sha;
+                } else {
+                    // 文件不存在，直接创建
+                    const res = await GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize config');
+                    configSha = res.content.sha;
+                    currentConfig = initialConfig; // 使用初始值
                 }
-                
+                config = currentConfig; // 设置全局 config
+
+                let currentPostsArray = [];
+                if (hasExistingPosts) {
+                    try {
+                        currentPostsArray = JSON.parse(postsData.content);
+                        // 如果 posts.json 存在但解析后为空（即 `[]`），且没有初始文章，则添加
+                        if (currentPostsArray.length === 0 && !currentPostsArray.some(p => p.id === initialPosts[0].id)) {
+                             currentPostsArray.push(initialPosts[0]);
+                             showAlert('posts.json 文件之前为空，已添加默认欢迎文章。', 'info');
+                        }
+                    } catch (e) {
+                        console.warn("Invalid posts.json content, overwriting with default post.", e);
+                        showAlert('posts.json' + (postsData.content ? '内容无效' : '文件不存在或为空') + '，已添加默认文章。', 'warning');
+                        currentPostsArray = initialPosts; // 覆盖为默认文章
+                    }
+                    if (!currentPostsArray.some(p => p.id === initialPosts[0].id)) { // 再次检查防止重复添加
+                        currentPostsArray.push(initialPosts[0]);
+                    }
+                    currentPostsArray.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)); // 确保排序
+                    const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(currentPostsArray, null, 2), postsData.sha, 'docs: update posts with initial/existing entries');
+                    postsSha = res.content.sha;
+                } else {
+                    // 文件不存在，直接创建
+                    const res = await GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), 'feat: initialize first post');
+                    postsSha = res.content.sha;
+                    currentPostsArray = initialPosts; // 使用初始值
+                }
+                posts = currentPostsArray; // 设置全局 posts
+
+                // 确保images目录存在，否则图片上传会报错
+                await GitHubAPI.createFile(token, owner, repo, getPath('images/.gitkeep'), '', 'feat: initialize images directory').catch(err => {
+                    if (!String(err).includes('already exists')) { // 忽略 "file already exists" 错误，只记录其他错误
+                        console.warn("Could not create .gitkeep:", err);
+                    }
+                });
+
+                // --- 初始化成功后界面渲染 ---
                 loginWrapper.style.display = 'none';
                 adminWrapper.style.display = 'flex';
                 showAdminView('posts');
                 renderPostList();
                 populateSettings();
                 populateGitalkSettings();
+                updateUniqueTags(); // 初始化标签建议列表
 
                 if (rememberTokenCheckbox.checked) {
                     localStorage.setItem('github_token', token);
@@ -1068,8 +1050,12 @@
                     localStorage.removeItem('github_token');
                 }
 
+                initialMessageEl.innerHTML = ``; // 清空加载信息
+                showAlert('博客后台管理系统已成功加载！', 'success');
+
             } catch (error) {
-                initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}<br>请仔细检查您的Token权限、GitHub Pages配置和网络连接。`;
+                console.error("Critical initialization failure:", error);
+                initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}<br>请仔细检查您的Token权限、GitHub Pages配置和网络连接。<br>详细错误请查看浏览器控制台。`;
                 initialMessageEl.style.color = 'var(--danger-color)';
                 token = null;
                 localStorage.removeItem('github_token'); // 失败清空token
@@ -1078,7 +1064,7 @@
             }
         };
 
-        // ==================== 文章管理功能 ====================
+        // ==================== 文章管理功能 (保持不变，已在上一轮优化) ====================
         const renderPostList = () => {
             postListBody.innerHTML = '';
             if (posts.length === 0) {
@@ -1197,7 +1183,7 @@
             }
         };
 
-        // ==================== 网站设置功能 ====================
+        // ==================== 网站设置功能 (保持不变，已在上一轮优化) ====================
         const populateSettings = () => {
             document.getElementById('setting-title').value = config.site.title || '';
             document.getElementById('setting-description').value = config.site.description || '';
@@ -1245,7 +1231,7 @@
             }
         };
         
-        // ==================== Gitalk 评论设置功能 ====================
+        // ==================== Gitalk 评论设置功能 (保持不变，已在上一轮优化) ====================
         const populateGitalkSettings = () => {
             const gitalkConfig = config.gitalk || {};
             document.getElementById('gitalk-enabled').checked = !!gitalkConfig.enabled;
@@ -1292,7 +1278,7 @@
         };
 
 
-        // ==================== 文件上传功能 (通用，用于图片) ====================
+        // ==================== 文件上传功能 (通用，用于图片) (保持不变，已在上一轮优化) ====================
         const uploadFile = async (file, uploadPath, message) => {
             if (!file) return;
             setButtonsDisabled(true);
@@ -1323,7 +1309,7 @@
             });
         };
 
-        // ==================== EasyMDE 初始化及图片上传集成 ====================
+        // ==================== EasyMDE 初始化及图片上传集成 (保持不变，已在上一轮优化) ====================
         const initializeEasyMDE = () => {
             if (easyMDE) return; // 避免重复初始化
 
@@ -1378,7 +1364,7 @@
         };
 
 
-        // ==================== 标签输入管理 ====================
+        // ==================== 标签输入管理 (保持不变，已在上一轮优化) ====================
         const allUniqueTags = new Set(); // 存储所有文章中出现的唯一标签
         const updateUniqueTags = () => {
             allUniqueTags.clear();
@@ -1418,11 +1404,6 @@
             const tagsContainer = document.getElementById('tag-token-container');
             tagsContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
             currentTags.forEach(tag => addTagToInput(tag, inputElement));
-
-            // ensure the input field is re-focused if it was active
-            // if (document.activeElement === tagsInput) {
-            //     tagsInput.focus();
-            // }
         };
 
         document.addEventListener('DOMContentLoaded', () => {
