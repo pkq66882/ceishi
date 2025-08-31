@@ -141,8 +141,8 @@
         }
         .post-card-image img {
             width: 100%;
-            height: auto; /* Preserve aspect ratio */
-            object-fit: cover; /* Crop to fill, maintain aspect ratio */
+            height: auto; /* Maintain aspect ratio */
+            object-fit: cover; /* Crop to fill, maintain ratio */
             min-height: 100%; /* Ensure height fills */
         }
         .post-card-content {
@@ -254,7 +254,7 @@
             font-size: 1.05rem;
             color: #34495e;
             line-height: 1.8;
-            word-wrap: break-word; /* Ensure long words break */
+            word-wrap: break-word; /* Ensure long words wrap */
         }
         .post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6 {
             color: #2c3e50;
@@ -294,7 +294,7 @@
         }
         /* Highlight.js code color variables needed for dark theme */
         .hljs {
-            background: #282c34 !important; /* Overwrite github-dark bg to match our pre */
+            background: #282c34 !important; 
             color: #abb2bf !important;
         }
         .post-content code {
@@ -356,7 +356,7 @@
              font-size: 1.05rem;
             color: #34495e;
             line-height: 1.8;
-            word-wrap: break-word; /* Ensure long words break */
+            word-wrap: break-word; /* Ensure long words wrap */
         }
         .about-content h2, .about-content h3 {
              color: #2c3e50;
@@ -372,7 +372,7 @@
             list-style-type: disc;
         }
 
-        /* Error/Loading State */
+        /* Error/Loading state */
         .loading, .error {
             text-align: center;
             padding: 50px;
@@ -474,7 +474,7 @@
                 align-items: flex-start;
                 gap: 5px;
             }
-            .post-card-image{
+            .post-card-image {
                 height: 180px; 
             }
         }
@@ -487,10 +487,10 @@
                 <h1 id="site-title"></h1>
                 <p id="site-description"></p>
                 <nav id="main-nav">
-                    <!-- Home link uses JS to clear hash entirely -->
+                    <!-- Nav links use javascript:void(0) and are controlled by JS for routing -->
                     <a href="javascript:void(0);" class="nav-link active" data-route="home">首页</a>
                     <a href="javascript:void(0);" class="nav-link" data-route="about">关于我</a>
-                    <!-- Admin link href will be set dynamically -->
+                    <!-- adminLinkEl's href will be set dynamically in initializeBlog -->
                     <a id="admin-link" target="_blank" class="nav-link admin-link">管理后台</a>
                 </nav>
             </div>
@@ -523,6 +523,23 @@
 
     <script>
         // ==================== Global Variables & Utility Functions ====================
+        const utf8_to_b64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        const b64_to_utf8 = (b64String) => {
+            try {
+                const binaryString = atob(b64String);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder('utf-8').decode(bytes);
+            } catch (e) {
+                console.error("Base64 decoding to UTF-8 failed:", e);
+                return atob(b64String); 
+            }
+        };
+
+        // GitHubAPI_Frontend: Used for fetching public JSON files from raw.githubusercontent.com
         const GitHubAPI_Frontend = {
             async getRawFile(owner, repo, path) {
                 const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
@@ -531,7 +548,7 @@
                 if (!response.ok) {
                     throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
                 }
-                return response.json();
+                return response.json(); // Assuming JSON file
             }
         };
 
@@ -571,6 +588,7 @@
 
         const getFilePath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
+        // Unified path parsing function (consistent with admin.html)
         const parseGitHubPath = (githubUsername) => {
             const hostname = window.location.hostname; 
             let pathSegments = window.location.pathname.split('/').filter(p => p); 
@@ -631,45 +649,6 @@
             return { owner: githubUsername, repo: currentRepo, basePath: currentBasePath };
         };
 
-        // Unified function to process image URLs for display (adds gh-proxy and handles encoding)
-        const processImageUrlForDisplay = (inputUrl) => {
-            if (!inputUrl) return '';
-
-            let processedUrl = inputUrl;
-
-            // 1. Check if it's already proxied. If so, strip the proxy and decode to get the original raw URL.
-            if (processedUrl.startsWith('https://gh-proxy.com/')) {
-                const urlAfterProxy = processedUrl.substring('https://gh-proxy.com/'.length);
-                try {
-                    // Try to decode to get the original raw.githubusercontent.com URL
-                    processedUrl = decodeURIComponent(urlAfterProxy);
-                    console.log(`[processImageUrl] Decoded existing proxied URL to: ${processedUrl}`);
-                } catch (e) {
-                    console.warn(`[processImageUrl] Could not decode part of image URL after gh-proxy, using as is: ${e}, ${urlAfterProxy}`);
-                    processedUrl = urlAfterProxy; // Fallback if decoding fails
-                }
-            }
-            
-            // 2. Now that we have the (hopefully) raw URL, apply gh-proxy and encode it properly.
-            // This ensures only one layer of gh-proxy and correct encoding of the target URL.
-            if (processedUrl) {
-                // We only proxy http/https URLs. Relative paths should ideally not reach here or be ignored.
-                if (processedUrl.startsWith('http://') || processedUrl.startsWith('https://')) {
-                    const encodedTargetUrl = encodeURIComponent(processedUrl);
-                    processedUrl = `https://gh-proxy.com/${encodedTargetUrl}`;
-                    console.log(`[processImageUrl] Final proxied URL: ${processedUrl}`);
-                } else {
-                    console.warn(`[processImageUrl] Non-absolute URL not proxied: ${processedUrl}`);
-                    // For non-absolute URLs (e.g., relative paths), we might return them as is,
-                    // or null if we only support absolute URLs for proxying.
-                    // For now, return as is (browser will try to resolve it).
-                }
-            }
-
-            return processedUrl;
-        };
-
-
         // ==================== Render Functions ====================
         const renderHomePage = () => {
             blogContentDiv.innerHTML = `<div class="post-list"></div>`;
@@ -688,6 +667,304 @@
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
                 
-                // Extract first image as cover image
-                // Match ![alt text](url) - group 1 is alt, group 2 is URL
-                const firstImageMatch = post.content.match(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/);
+                // Extract first image from markdown
+                const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); // Matches ![alt](url)
+                let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; // Capture group 2 is URL
+                let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title; // Capture group 1 is Alt Text
+
+                // Standardize image URL for display
+                imageUrl = processImageUrlForDisplay(imageUrl);
+                
+                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${imageUrl}" alt="${imageAlt}" loading="lazy"></div>` : '';
+
+                postCard.innerHTML = `
+                    ${imagePreviewHtml}
+                    <div class="post-card-content">
+                        <h2><a href="#/post/${post.id}">${post.title}</a></h2>
+                        <div class="meta">
+                            <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
+                            <span><i class="fas fa-tag"></i> ${post.category || '未分类'}</span>
+                            ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.join(', ')}</span>` : ''}
+                        </div>
+                        <div class="excerpt">${md.render(excerpt)}</div>
+                        <a href="#/post/${post.id}" class="read-more">阅读全文 <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                `;
+                postListContainer.appendChild(postCard);
+            });
+        };
+
+        const renderPostPage = (postId) => {
+            const post = blogPosts.find(p => p.id === postId);
+            if (!post) {
+                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 文章未找到！</div>`;
+                gitalkContainerEl.style.display = 'none';
+                return;
+            }
+
+            // Standardize all image URLs within the post content for display
+            let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                const finalUrl = processImageUrlForDisplay(url);
+                return `![${alt}](${finalUrl})`;
+            });
+
+            blogContentDiv.innerHTML = `
+                <article class="post-full">
+                    <h1>${post.title}</h1>
+                    <div class="meta">
+                        <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
+                        <span><i class="fas fa-edit"></i> ${new Date(post.updatedAt).toLocaleDateString()}</span>
+                        <span><i class="fas fa-tag"></i> ${post.category || '未分类'}</span>
+                        ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.join(', ')}</span>` : ''}
+                    </div>
+                    <div class="post-content">${md.render(processedContent)}</div>
+                </article>
+            `;
+            blogContentDiv.style.display = 'block';
+            hljs.highlightAll(); 
+
+            if (siteConfig && siteConfig.gitalk && siteConfig.gitalk.enabled) {
+                gitalkContainerEl.innerHTML = '';
+                gitalkContainerEl.style.display = 'block';
+
+                const safePostId = post.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 20); 
+                const safeTitleSlug = md.utils.slugify(post.title).replace(/[^a-zA-Z0-9-]/g, '').slice(0, 30); 
+                const gitalkId = `${safeTitleSlug}-${safePostId}`; 
+
+                try {
+                    const gitalk = new Gitalk({
+                        clientID: siteConfig.gitalk.clientID,
+                        clientSecret: siteConfig.gitalk.clientSecret,
+                        repo: siteConfig.gitalk.repo,
+                        owner: siteConfig.gitalk.owner,
+                        admin: siteConfig.gitalk.admin,
+                        id: gitalkId,
+                        distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
+                        title: post.title,
+                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])], 
+                        body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
+                        createIssueManually: false,
+                        perPage: siteConfig.gitalk.perPage || 10,
+                    });
+                    gitalk.render('gitalk-container');
+                } catch (e) {
+                     console.error("Gitalk initialization failed:", e);
+                     gitalkContainerEl.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> Gitalk 评论加载失败: ${e.message}。请检查管理后台的评论设置。</div>`;
+                }
+            } else {
+                gitalkContainerEl.style.display = 'none';
+            }
+        };
+
+        const renderAboutPage = () => {
+             blogContentDiv.innerHTML = `
+                <div class="about-page">
+                    <h1>关于我</h1>
+                    <div class="about-content">${siteConfig && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : `<p>暂无内容。请前往<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a>的“网站设置”编辑“关于我”页面。</p>`}</div>
+                </div>
+            `;
+            blogContentDiv.style.display = 'block';
+            gitalkContainerEl.style.display = 'none';
+        };
+
+        const render404Page = () => {
+            blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 页面未找到 (404)</div>`;
+            blogContentDiv.style.display = 'block';
+            gitalkContainerEl.style.display = 'none';
+        };
+
+        // Unified function to process image URLs for display
+        const processImageUrlForDisplay = (inputUrl) => {
+            if (!inputUrl) return '';
+
+            let rawUrl = inputUrl;
+
+            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
+            // This handles cases where URLs are saved with gh-proxy prefixes in markdown.
+            if (rawUrl.startsWith('https://gh-proxy.com/')) {
+                const urlAfterProxy = rawUrl.substring('https://gh-proxy.com/'.length);
+                try {
+                    rawUrl = decodeURIComponent(urlAfterProxy);
+                    // console.log("Decoded from proxy to raw URL:", rawUrl);
+                } catch (e) {
+                    console.warn("Could not decode part of URL after gh-proxy, using as is:", e, urlAfterProxy);
+                    rawUrl = urlAfterProxy; // Fallback
+                }
+            }
+
+            // Step 2: Now that we have the (hopefully) raw URL, apply gh-proxy and encode it once.
+            // Check if it's a raw.githubusercontent.com URL or another http(s) URL.
+            if (rawUrl.startsWith('https://raw.githubusercontent.com/') || rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+                const encodedRawUrl = encodeURIComponent(rawUrl);
+                return `https://gh-proxy.com/${encodedRawUrl}`;
+            }
+
+            // If it's a relative path or other unsupported format, return as is (might not load).
+            console.warn("Unsupported image URL format, not applying gh-proxy:", rawUrl);
+            return rawUrl;
+        };
+
+
+        // ==================== Router Handling ====================
+        const handleRoute = () => {
+            const path = window.location.hash.slice(1);
+            const navLinks = document.querySelectorAll('#main-nav .nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+
+            if (path.startsWith('/post/')) {
+                const postId = path.replace('/post/', '');
+                renderPostPage(postId);
+                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
+                if (homeNavLink) homeNavLink.classList.add('active'); 
+            } else if (path === '/about') {
+                renderAboutPage();
+                const aboutNavLink = document.querySelector('#main-nav a[data-route="about"]');
+                if (aboutNavLink) aboutNavLink.classList.add('active');
+            } else { // Home page
+                renderHomePage();
+                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
+                if (homeNavLink) homeNavLink.classList.add('active');
+            }
+        };
+
+        // ==================== Blog Initialization ====================
+        const initializeBlog = async () => {
+            loadingDiv.style.display = 'block';
+
+            try {
+                let tempOwner = window.location.hostname.split('.')[0];
+                if (!tempOwner || tempOwner.toLowerCase() === 'localhost' || tempOwner.toLowerCase() === '127.0.0.1') {
+                     tempOwner = prompt("请手动输入您的GitHub用户名 (例如: pkq66882):", "pkq66882");
+                     if (!tempOwner) throw new Error("GitHub用户名是必须的。");
+                }
+                const resolvedOwner = tempOwner; 
+                
+                const parsedPath = parseGitHubPath(resolvedOwner);
+                owner = parsedPath.owner; 
+                repo = parsedPath.repo;   
+                basePath = parsedPath.basePath; 
+
+                console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
+
+                const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`;
+                const configRawFilepath = getFilePath('config.json');
+                const postsRawFilepath = getFilePath('posts.json');
+
+                console.log(`[index.html] Attempting to fetch config.json from: ${rawBaseUrl}/${configRawFilepath}`);
+                console.log(`[index.html] Attempting to fetch posts.json from: ${rawBaseUrl}/${postsRawFilepath}`);
+
+                const fetchConfig = GitHubAPI_Frontend.getRawFile(owner, repo, configRawFilepath);
+                const fetchPosts = GitHubAPI_Frontend.getRawFile(owner, repo, postsRawFilepath);
+
+                const [configJson, postsJson] = await Promise.all([fetchConfig, fetchPosts]);
+
+                if (!configJson || !postsJson || !Array.isArray(postsJson)) { 
+                    throw new Error("博客核心文件 (config.json 或 posts.json) 未找到、为空或内容无效，请先前往管理后台初始化。");
+                }
+
+                siteConfig = configJson;
+                // Standardize image URLs in markdown content once during initialization
+                blogPosts = postsJson.map(post => {
+                    let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                        let processedUrl = url;
+                        // If URL is already a gh-proxy URL, decode it to get the original raw GitHub URL.
+                        if (processedUrl.startsWith('https://gh-proxy.com/')) {
+                            const urlAfterProxy = processedUrl.substring('https://gh-proxy.com/'.length);
+                            try {
+                                processedUrl = decodeURIComponent(urlAfterProxy);
+                            } catch (e) {
+                                console.warn("Error decoding URL part during post content standardization:", e, urlAfterProxy);
+                            }
+                        }
+                        return `![${alt}](${processedUrl})`; // Store the raw URL in post content
+                    });
+                    return { ...post, content: newContent };
+                });
+
+                const styleElement = document.createElement('style');
+                styleElement.textContent = `
+                    body {
+                        background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
+                        color: ${siteConfig.styling.textColor || '#212529'};
+                        ${siteConfig.styling.backgroundImageUrl ? `
+                            background-image: url("${processImageUrlForDisplay(siteConfig.styling.backgroundImageUrl)}");
+                            background-size: cover;
+                            background-attachment: fixed;
+                            background-position: center;
+                        ` : ''}
+                    }
+                    :root {
+                        --accent-color: ${siteConfig.styling.accentColor || '#0d6efd'};
+                        --accent-hover: ${siteConfig.styling.accentHover || '#2980b9'}; 
+                        --header-bg-color: ${siteConfig.styling.headerBgColor || '#fff'};
+                        --header-text-color: ${siteConfig.styling.headerTitleColor || '#2c3e50'}; 
+                        --header-description-color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
+                        --footer-bg-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
+                        --footer-text-color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
+                        --footer-link-color: ${siteConfig.styling.footerLinkColor || '#3498db'};
+                    }
+
+                    header {
+                        background-color: var(--header-bg-color);
+                    }
+                    header h1 {
+                         color: var(--header-text-color);
+                    }
+                    header p {
+                         color: var(--header-description-color);
+                    }
+                    footer {
+                        background-color: var(--footer-bg-color);
+                        color: var(--footer-text-color);
+                    }
+                    footer a {
+                        color: var(--footer-link-color);
+                    }
+                `;
+                document.head.appendChild(styleElement);
+
+                siteTitleEl.textContent = siteConfig.site.title || `${owner}的博客`;
+                siteDescriptionEl.textContent = siteConfig.site.description || "一个由GitHub Pages驱动的现代化博客。";
+                
+                if (adminLinkEl) {
+                    adminLinkEl.href = `${window.location.protocol}//${window.location.host}${basePath ? `/${basePath}` : ''}/admin.html`;
+                }
+
+                mainFooterEl.innerHTML = `
+                    <p>&copy; ${new Date().getFullYear()} ${siteConfig.site.title || `${owner}的博客`}. All rights reserved. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a></p>
+                `;
+
+                handleRoute();
+
+            } catch (error) {
+                console.error("博客初始化失败:", error);
+                document.title = "错误 - 博客";
+                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
+                blogContentDiv.style.display = 'block';
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        };
+
+        // Events
+        window.addEventListener('hashchange', handleRoute);
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeBlog(); 
+            // Fix for home navigation to truly remove hash
+            document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                const cleanUrl = window.location.origin + window.location.pathname;
+                if (window.location.href !== cleanUrl) {
+                    window.location.replace(cleanUrl); // Replace current history entry
+                } else {
+                    handleRoute(); // If URL is already clean, just re-render
+                }
+            });
+            document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = '/about';
+            });
+        });
+    </script>
+</body>
+</html>
