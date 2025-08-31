@@ -18,6 +18,12 @@
     "owner": "pkq66882",
     "admin": [
       "pkq66882"
-    ]
+    ],
+    "distractionFreeMode": false,
+    "labels": [
+      "Gitalk",
+      "评论"
+    ],
+    "perPage": 10
   }
 }
