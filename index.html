@@ -536,16 +536,18 @@
             linkify: true,
             typographer: true,
             highlight: function (str, lang) {
+                // Ensure the string passed to highlight.js is HTML-escaped to prevent XSS and warnings.
+                const escapedStr = md.utils.escapeHtml(str); 
                 if (lang && hljs.getLanguage(lang)) {
                     try {
                         return '<pre><code class="hljs">' +
-                               hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                               hljs.highlight(escapedStr, { language: lang, ignoreIllegals: true }).value + 
                                '</code></pre>';
                     } catch (__) {
                         console.warn('Highlight.js failed, falling back to basic escape.');
                     }
                 }
-                return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>';
+                return '<pre><code class="hljs">' + escapedStr + '</code></pre>'; // Fallback also uses escaped string
             }
         });
 
@@ -553,7 +555,7 @@
         let blogPosts = [];
         let owner = ''; 
         let repo = '';    
-        let publicUrlBase = ''; // e.g., '/ceishi'
+        let publicUrlBase = ''; 
 
         const appDiv = document.getElementById('app');
         const blogContentDiv = document.getElementById('blog-content');
@@ -570,7 +572,7 @@
             const hostname = window.location.hostname; 
             let pathSegments = window.location.pathname.split('/').filter(p => p); 
 
-            // Remove current HTML file if it's the last segment
+            // Remove current HTML file (admin.html or index.html) if it's the last segment
             if (pathSegments.length > 0 && 
                 (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
                  pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
@@ -580,34 +582,30 @@
             const usernameLow = githubUsername.toLowerCase();
             const hostnameLow = hostname.toLowerCase();
 
-            let finalOwner = usernameLow;
+            let finalOwner = githubUsername; 
             let finalRepo = '';
-            let finalPublicUrlBase = ''; // e.g., '/ceishi' for pkq66882.github.io/ceishi
+            let finalPublicUrlBase = ''; 
 
-            // Case 1: user.github.io (user/org page) or localhost
+            // Scenario 1: User/Organization site (e.g., user.github.io) or local environment
             if (hostnameLow === `${usernameLow}.github.io` || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
                 if (pathSegments.length > 0) {
-                    // Project site: e.g., pkq66882.github.io/ceishi/ -> repo="ceishi", publicUrlBase="/ceishi"
                     finalRepo = pathSegments[0];
                     finalPublicUrlBase = `/${pathSegments[0]}`;
                 } else {
-                    // User/Org site: e.g., pkq66882.github.io/ -> repo="pkq66882.github.io", publicUrlBase=""
-                    finalRepo = `${usernameLow}.github.io`;
+                    finalRepo = `${usernameLow}.github.io`; 
                     finalPublicUrlBase = '';
                 }
             } 
-            // Case 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
+            // Scenario 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
             else if (pathSegments.length > 0) {
-                // Assume first path segment is the repo name for project-like hosting
                 finalRepo = pathSegments[0];
                 finalPublicUrlBase = `/${pathSegments[0]}`;
             } else {
-                // Custom domain root. Assume it points to the user's main site repo without a path segment.
-                finalRepo = `${usernameLow}.github.io`;
+                finalRepo = `${usernameLow}.github.io`; 
                 finalPublicUrlBase = '';
             }
 
-            // Safety net: if repo is still empty, default to user's main site repo.
+            // Safety net: if repo is still empty (shouldn't happen with the above logic, but for robustness)
             if (!finalRepo || finalRepo.trim() === '') {
                 finalRepo = `${usernameLow}.github.io`;
                 finalPublicUrlBase = '';
@@ -627,7 +625,22 @@
                 if (!response.ok) {
                     throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
                 }
-                return response.json(); // Assuming JSON file
+                // Check if content-type is json. If not, it means file is not found or empty
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    // Try to read as text and handle empty/invalid JSON
+                    const textContent = await response.text();
+                    if (!textContent.trim()) {
+                         console.warn(`File ${rawUrl} is empty or non-JSON content. Returning empty JSON.`);
+                         return {}; // Or [] depending on expected structure
+                    }
+                    try {
+                        return JSON.parse(textContent);
+                    } catch (e) {
+                        throw new Error(`文件 ${rawUrl} 内容不是有效的JSON格式: ${e.message}`);
+                    }
+                }
+                return response.json(); 
             }
         };
 
@@ -635,42 +648,37 @@
         const getProxiedImageUrl = (inputUrl) => {
             if (!inputUrl) return '';
 
-            let urlToProxy = inputUrl;
+            let urlToProcess = inputUrl;
 
-            // Step 1: Normalize the URL to its most 'raw' form before applying a new proxy.
-            // If it's already a gh-proxy URL, decode it to get the original raw GitHub URL.
-            if (urlToProxy.startsWith('https://gh-proxy.com/')) {
+            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
+            if (urlToProcess.startsWith('https://gh-proxy.com/')) {
                 try {
-                    urlToProxy = decodeURIComponent(urlToProxy.substring('https://gh-proxy.com/'.length));
+                    urlToProcess = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
                 } catch (e) {
-                    console.warn("Could not decode part of URL from gh-proxy link, using as is:", e, urlToProxy);
+                    console.warn('Failed to decode existing gh-proxy URL, using as is for further processing:', e, urlToProcess);
                 }
             }
 
-            // Step 2: Now, urlToProxy should ideally be the raw.githubusercontent.com URL.
-            // However, GitHub itself might provide 'download_url' with already-encoded parts (like %7E for ~).
-            // To prevent double encoding of '%' if the URL is already percent-encoded (e.g., %257E),
-            // we will parse the URL, explicitly decode the path and search parts, and then re-encode the whole thing for the proxy.
-            try {
-                const urlObj = new URL(urlToProxy);
-                // Decode path component completely to remove any existing %-encoding like %7E
-                const decodedPath = decodeURIComponent(urlObj.pathname); 
-                urlObj.pathname = decodedPath; 
-                // Reconstruct URL. urlObj.toString() will correctly re-encode characters it needs to.
-                // It will NOT double-encode existing '%' characters if they are part of a percent-encoded sequence
-                // after the explicit decodeURIComponent.
-                urlToProxy = urlObj.toString(); 
-            } catch (e) {
-                console.warn("Could not parse or decode URL object, attempting simple re-encode:", e, urlToProxy);
-                // Fallback for invalid URLs or those not needing path decoding. Proceed as is.
+            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com),
+            // we will parse it, explicitly decode path components, then re-encode for the proxy.
+            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
+                try {
+                    const urlObj = new URL(urlToProcess);
+                    // Explicitly decode the path and search components fully.
+                    // This handles cases where GitHub's download_url might return partially encoded URLs
+                    // or contain characters like '~' that were not directly percent-encoded by GitHub but need it for the proxy.
+                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
+                    urlObj.search = decodeURIComponent(urlObj.search);
+                    urlToProcess = urlObj.toString();
+                } catch (e) {
+                    console.warn("URL parsing/decoding for path normalization failed, using raw URL for encoding:", e, urlToProcess);
+                }
+                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized) URL.
+                return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
             }
 
-            // Step 3: Apply gh-proxy and encode the *entire* (now normalized) raw URL once.
-            if (urlToProxy.startsWith('https://raw.githubusercontent.com/') || urlToProxy.startsWith('http://') || urlToProxy.startsWith('https://')) {
-                return `https://gh-proxy.com/${encodeURIComponent(urlToProxy)}`;
-            }
-
-            return urlToProxy; // Return as is for relative paths or others not meant for proxy
+            // For any other URL (e.g., relative paths, data URIs, etc.), return as is.
+            return inputUrl; 
         };
 
 
@@ -693,7 +701,7 @@
                 postCard.className = 'post-card';
                 
                 // Extract first image from markdown (raw URL will be processed by getProxiedImageUrl for display)
-                const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); // Matches ![alt](raw_url)
+                const firstImageMatch = post.content.match(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/); 
                 let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
                 let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
 
@@ -725,7 +733,7 @@
             }
 
             // Standardize all image URLs within the post content for display
-            let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+            let processedContent = post.content.replace(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/g, (match, alt, url) => {
                 return `![${alt}](${getProxiedImageUrl(url)})`;
             });
 
@@ -821,14 +829,12 @@
              loadingDiv.style.display = 'block';
 
             try {
-                // Try to infer GitHub username from GitHub Pages hostname
-                let tempOwner = window.location.hostname.split('.')[0];
-                if (tempOwner.toLowerCase() === 'localhost' || tempOwner.toLowerCase() === '127.0.0.1' || !tempOwner) {
-                    // Fallback for local development or custom domains without a clear user prefix
-                    tempOwner = "pkq66882"; // Default to your GitHub username for fallback
-                    console.warn(`[index.html] Running locally or on custom domain without clear user. Defaulting GitHub username to "${tempOwner}". If this is incorrect for fetching config/posts, please adjust the default manually or ensure your domain/path conforms to GitHub Pages structure.`);
+                let tempUsernameFromHost = window.location.hostname.split('.')[0];
+                if (tempUsernameFromHost.toLowerCase() === 'localhost' || tempUsernameFromHost.toLowerCase() === '127.0.0.1' || !tempUsernameFromHost) {
+                    tempUsernameFromHost = "pkq66882"; // Default fallback
+                    console.warn(`[index.html] Running locally or on custom domain. Defaulting GitHub username for repo detection to "${tempUsernameFromHost}".`);
                 }
-                const resolvedOwner = tempOwner; 
+                const resolvedOwner = tempUsernameFromHost; 
                 
                 const parsedPath = parseGitHubRepoAndBasePath(resolvedOwner);
                 owner = parsedPath.owner; 
@@ -848,7 +854,7 @@
 
                 const [configJson, postsJson] = await Promise.all([fetchConfig, fetchPosts]);
 
-                if (!configJson) {
+                if (!configJson || Object.keys(configJson).length === 0) {
                     throw new Error("config.json 文件未找到或为空，请先前往管理后台初始化。");
                 }
                 if (!postsJson || !Array.isArray(postsJson)) { 
@@ -857,17 +863,15 @@
 
                 siteConfig = configJson;
                 // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
-                // At this point, content should ideally contain raw.githubusercontent.com URLs if admin.html is updated.
                 blogPosts = postsJson.map(post => {
-                    // Normalize any stored URL to its raw form first (if it somehow got proxied or double-encoded from old logic)
-                    let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                    // This step ensures any potentially proxied/double-encoded URLs from older saves are normalized to raw URLs.
+                    let newContent = post.content.replace(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/g, (match, alt, url) => {
                         let originalUrl = url;
                         if (originalUrl.startsWith('https://gh-proxy.com/')) {
-                            // If it's a proxied URL, decode it back to the raw GitHub URL for internal storage
                             try {
                                 originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
                             } catch (e) {
-                                console.warn("Error decoding URL part during post content standardization:", e, originalUrl);
+                                console.warn("Error decoding URL part during post content normalization for storage:", e, originalUrl);
                             }
                         }
                         return `![${alt}](${originalUrl})`; // Store the raw URL in post content
@@ -900,7 +904,7 @@
                         --footer-link-color: ${siteConfig.styling.footerLinkColor || '#3498db'};
                     }
                     header nav a.active {
-                        color: var(--header-link-hover-color); /* Active link styling */
+                        color: var(--header-link-hover-color); 
                         text-decoration: underline;
                     }
 
@@ -937,12 +941,11 @@
             // Fix for home navigation to truly remove hash
             document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
                 e.preventDefault();
-                // Construct the clean URL including publicUrlBase
                 const cleanUrl = `${window.location.origin}${publicUrlBase}/index.html`;
                 if (window.location.href !== cleanUrl) {
-                    window.location.replace(cleanUrl); // Replace current history entry
+                    window.location.replace(cleanUrl); 
                 } else {
-                    handleRoute(); // If URL is already clean, just re-render
+                    handleRoute(); 
                 }
             });
             document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => {
