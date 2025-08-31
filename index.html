@@ -123,7 +123,7 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             display: flex;
             flex-direction: column;
-            text-align: left; /* 保持左对齐 */
+            text-align: left;
         }
         .post-card:hover {
             transform: translateY(-5px);
@@ -131,17 +131,17 @@
         }
         .post-card-image {
             width: 100%;
-            height: 200px; /* 固定图片高度 */
+            height: 200px; 
             overflow: hidden;
-            background-color: #e9ecef; /* Placeholder background */
+            background-color: #e9ecef;
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .post-card-image img {
-            width: 100%; /* 图片宽度填充 */
-            height: 100%; /* 图片高度填充 */
-            object-fit: cover; /* 裁剪以填充，保持比例 */
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .post-card-content {
             padding: 25px;
@@ -175,9 +175,8 @@
             color: #5d6d7e;
             margin-bottom: 20px;
             line-height: 1.7;
-            /* 限制摘要行数，增加... */
             display: -webkit-box;
-            -webkit-line-clamp: 3; /* 显示3行 */
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -203,7 +202,7 @@
             padding: 40px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            text-align: left; /* 确保内容左对齐 */
+            text-align: left;
         }
         .post-full h1 {
             font-size: 2.8rem;
@@ -252,7 +251,7 @@
             max-width: 100%;
             height: auto;
             border-radius: 8px;
-            margin: 1.5rem auto; /* 居中图片 */
+            margin: 1.5rem auto;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .post-content blockquote {
@@ -276,13 +275,13 @@
             padding: 2px 5px;
             border-radius: 3px;
             font-size: 0.9em;
-            word-break: break-all; /* 防止行内代码溢出 */
+            word-break: break-all;
         }
         .post-content pre code {
             background-color: transparent;
             padding: 0;
             font-size: 1em;
-            word-break: normal; /* 恢复正常换行 */
+            word-break: normal; 
         }
         .post-content ul, .post-content ol {
             margin-left: 25px;
@@ -299,8 +298,8 @@
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            overflow-x: auto; /* 针对表格的横向滚动 */
-            display: block; /* 使 table 可以滚动 */
+            overflow-x: auto;
+            display: block;
         }
         .post-content th, .post-content td {
             border: 1px solid #ddd;
@@ -374,10 +373,10 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .gt-container {
-            font-family: inherit; /* 继承body字体 */
+            font-family: inherit; 
         }
         .gt-hd-text strong {
-            color: inherit; /* 继承父元素颜色 */
+            color: inherit; 
         }
         .gt-hdr-btn {
             background-color: var(--accent-color);
@@ -447,7 +446,7 @@
                 gap: 5px;
             }
             .post-card-image {
-                height: 180px; /* 移动端调整图片高度 */
+                height: 180px; 
             }
         }
     </style>
@@ -459,9 +458,8 @@
                 <h1 id="site-title"></h1>
                 <p id="site-description"></p>
                 <nav id="main-nav">
-                    <a href="#/" class="nav-link active" data-route="home">首页</a>
-                    <a href="#/about" class="nav-link" data-route="about">关于我</a>
-                    <!-- 使用 basePath 构建 admin.html 链接 -->
+                    <a href="#" class="nav-link active" data-route="home">首页</a>
+                    <a href="#" class="nav-link" data-route="about">关于我</a>
                     <a id="admin-link" href="admin.html" target="_blank" class="nav-link admin-link">管理后台</a>
                 </nav>
             </div>
@@ -494,23 +492,18 @@
 
     <script>
         // ==================== 全局变量和工具函数 ====================
-        // 修正 b64_to_utf8 以正确处理中文乱码 (使用 TextDecoder)
         const utf8_to_b64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
         const b64_to_utf8 = (b64String) => {
             try {
-                // Decode from Base64 to a binary string
                 const binaryString = atob(b64String);
-                // Convert binary string to a Uint8Array
                 const len = binaryString.length;
                 const bytes = new Uint8Array(len);
                 for (let i = 0; i < len; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
-                // Use TextDecoder to decode Uint8Array to UTF-8 string
                 return new TextDecoder('utf-8').decode(bytes);
             } catch (e) {
                 console.error("Base64 decoding to UTF-8 failed:", e);
-                // Fallback to simpler atob, which will likely result in Mojibake for non-ASCII
                 return atob(b64String); 
             }
         };
@@ -522,7 +515,6 @@
                 const headers = { 
                     'Accept': 'application/vnd.github.v3+json', 
                 };
-                // 只有当提供了 token 时才添加 Authorization 头
                 if (token) {
                     headers['Authorization'] = `token ${token}`;
                 }
@@ -537,23 +529,9 @@
                 if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
                 return response.json();
             },
-            async getFile(owner, repo, path, token = null) {
-                try {
-                    const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content !== 'string' || result.encoding !== 'base64' || result.content.trim().length === 0) {
-                        console.warn(`File content for ${path} is empty, invalid, or file not found. Response details:`, result);
-                        return null; 
-                    }
-                    return { content: b64_to_utf8(result.content), sha: result.sha };
-                } catch (error) {
-                    if (String(error.message).toLowerCase().includes('not found') || String(error.message).includes('file not found') || String(error).includes('No content.')) {
-                        console.info(`File not found: ${path}. This is expected if not initialized.`);
-                        return null;
-                    }
-                    console.error(`Error fetching file ${path}:`, error);
-                    throw error;
-                }
-            }
+            // index.html 不再使用 GitHub API 的 getFile，而是直接从 raw.githubusercontent.com 获取
+            // 但为保持 GitHubAPI 对象的完整性，这里可以暂时留空或抛错，或者仅用于 authenticated 的情况
+            // 在 initializeBlog 中，我们将直接使用 fetch(rawUrl)
         };
 
         const md = new markdownit({
@@ -590,7 +568,6 @@
 
         const getFilePath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
-        // **通用路径解析函数** (与admin.html保持一致，确保行为统一)
         const parseGitHubPath = (githubUsername) => {
             const hostname = window.location.hostname; 
             let pathSegments = window.location.pathname.split('/').filter(p => p); 
@@ -611,20 +588,16 @@
             console.log(`[parseGitHubPath Debug] Hostname: ${hostname}, Username: ${githubUsername}, PathSegments: [${pathSegments.join(', ')}]`);
 
             if (userGithubIoPattern.test(hostnameLow) || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
-                // 情况1: hostname 是 user.github.io (如 pkq66882.github.io) 或本地调试
                 if (pathSegments.length > 0) {
-                    // 这是项目页面部署在子路径 (e.g., pkq66882.github.io/ceishi/)
-                    currentRepo = pathSegments[0]; // repo 是 "ceishi"
-                    currentBasePath = pathSegments.slice(1).join('/'); // basePath 是 "ceishi" 之后的部分 (通常为空字符串)
+                    currentRepo = pathSegments[0]; 
+                    currentBasePath = pathSegments.slice(1).join('/'); 
                     console.log(`[parseGitHubPath Debug] Case 1.1: Project Page under User.github.io or Local, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
-                    // 这是用户/组织页面根目录部署 (e.g., pkq66882.github.io/)
-                    currentRepo = hostnameLow; // repo 是 "pkq66882.github.io"
+                    currentRepo = hostnameLow; 
                     currentBasePath = '';
                     console.log(`[parseGitHubPath Debug] Case 1.2: User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             } else if (hostnameLow.endsWith('.github.io')) { 
-                // 情况2: hostname 是 .github.io 结尾，但不是当前用户的。 (不太可能出现在实际部署中，但为健壮性保留)
                  if (pathSegments.length > 0) {
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
@@ -635,7 +608,6 @@
                     console.log(`[parseGitHubPath Debug] Case 2.2: Generic .github.io No Path, Default to User Repo, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             } else { 
-                // 情况3: 自定义域名 (e.g., custom.com, custom.domain.com)
                 if (pathSegments.length > 0) {
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
@@ -647,7 +619,6 @@
                 }
             }
             
-            // 最终安全检查和修正：确保 repo 不为空
             if (!currentRepo || currentRepo.trim() === '') {
                 console.warn("[parseGitHubPath Debug] Final adjustment: currentRepo is empty or invalid, defaulting to user site repo.");
                 currentRepo = `${githubUsername}.github.io`;
@@ -679,9 +650,17 @@
                 
                 // 提取文章中的第一张图片作为封面图
                 const firstImageMatch = post.content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
-                const imageUrl = firstImageMatch ? firstImageMatch[1] : ''; 
-                // 添加图片预览 HTML (使用代理链接)
-                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="https://gh-proxy.com/${encodeURIComponent(imageUrl)}" alt="${post.title}" loading="lazy"></div>` : '';
+                let imageUrl = firstImageMatch ? firstImageMatch[1] : ''; 
+                // 确保图片 URL 经过代理，且只被代理一次
+                if (imageUrl && !imageUrl.startsWith('https://gh-proxy.com/')) {
+                    imageUrl = `https://gh-proxy.com/${encodeURIComponent(imageUrl)}`;
+                } else if (imageUrl) {
+                    // 如果已经代理过，也需要 ensure encodeURIComponent in case of special chars in URL
+                    imageUrl = imageUrl.split('https://gh-proxy.com/')[1] || imageUrl; // Remove existing proxy
+                    imageUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(imageUrl))}`; // Re-encode might fix issues
+                }
+                
+                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${imageUrl}" alt="${post.title}" loading="lazy"></div>` : '';
 
                 postCard.innerHTML = `
                     ${imagePreviewHtml}
@@ -709,6 +688,20 @@
             }
 
             // 对文章内容进行 Markdown 渲染
+            // 确保渲染前，文章内容中的图片URL也被正确代理和编码
+            let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                let proxiedUrl = url;
+                if (!proxiedUrl.startsWith('https://gh-proxy.com/')) {
+                    proxiedUrl = `https://gh-proxy.com/${encodeURIComponent(url)}`;
+                } else {
+                    // 如果已经代理过，也要确保正确编码
+                    proxiedUrl = proxiedUrl.split('https://gh-proxy.com/')[1] || proxiedUrl;
+                    proxiedUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(proxiedUrl))}`;
+                }
+                return `![${alt}](${proxiedUrl})`;
+            });
+
+
             blogContentDiv.innerHTML = `
                 <article class="post-full">
                     <h1>${post.title}</h1>
@@ -718,21 +711,19 @@
                         <span><i class="fas fa-tag"></i> ${post.category || '未分类'}</span>
                         ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.join(', ')}</span>` : ''}
                     </div>
-                    <div class="post-content">${md.render(post.content)}</div>
+                    <div class="post-content">${md.render(processedContent)}</div>
                 </article>
             `;
             blogContentDiv.style.display = 'block';
-            hljs.highlightAll(); // 突出显示代码块
+            hljs.highlightAll(); 
 
             if (siteConfig && siteConfig.gitalk && siteConfig.gitalk.enabled) {
                 gitalkContainerEl.innerHTML = '';
                 gitalkContainerEl.style.display = 'block';
 
-                // Gitalk 的 id 必须是唯一的，且只包含英文、数字、中划线。
-                // 推荐使用 slugify 工具处理标题，确保纯英文数字，并截断
-                const safePostId = post.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 20); // 从 post.id 中提取安全部分
-                const safeTitleSlug = md.utils.slugify(post.title).replace(/[^a-zA-Z0-9-]/g, '').slice(0, 30); // 标题的安全 slug
-                const gitalkId = `${safeTitleSlug}-${safePostId}`; // 组合生成唯一ID
+                const safePostId = post.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 20); 
+                const safeTitleSlug = md.utils.slugify(post.title).replace(/[^a-zA-Z0-9-]/g, '').slice(0, 30); 
+                const gitalkId = `${safeTitleSlug}-${safePostId}`; 
 
                 try {
                     const gitalk = new Gitalk({
@@ -744,7 +735,7 @@
                         id: gitalkId,
                         distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
                         title: post.title,
-                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])], // 确保标签唯一
+                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])], 
                         body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
                         createIssueManually: false,
                         perPage: siteConfig.gitalk.perPage || 10,
@@ -786,12 +777,12 @@
                 const postId = path.replace('/post/', '');
                 renderPostPage(postId);
                 const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
-                if (homeNavLink) homeNavLink.classList.add('active'); // 帖子页面也高亮首页
+                if (homeNavLink) homeNavLink.classList.add('active'); 
             } else if (path === '/about') {
                 renderAboutPage();
                 const aboutNavLink = document.querySelector('#main-nav a[data-route="about"]');
                 if (aboutNavLink) aboutNavLink.classList.add('active');
-            } else {
+            } else { // 首页
                 renderHomePage();
                 const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
                 if (homeNavLink) homeNavLink.classList.add('active');
@@ -810,7 +801,6 @@
                 }
                 const resolvedOwner = tempOwner; 
                 
-                // 确保 repo 和 basePath 是基于解析后的 owner
                 const parsedPath = parseGitHubPath(resolvedOwner);
                 owner = parsedPath.owner; 
                 repo = parsedPath.repo;   
@@ -818,8 +808,6 @@
 
                 console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
 
-                // *********** 关键修改：直接从 raw.githubusercontent.com 获取 JSON 文件 ***********
-                // 构造 raw 文件 URL
                 const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`;
                 const configRawUrl = `${rawBaseUrl}/${getFilePath('config.json')}`;
                 const postsRawUrl = `${rawBaseUrl}/${getFilePath('posts.json')}`;
@@ -827,27 +815,24 @@
                 console.log(`[index.html] Attempting to fetch config.json from: ${configRawUrl}`);
                 console.log(`[index.html] Attempting to fetch posts.json from: ${postsRawUrl}`);
 
-                // 使用 fetch API 直接获取 raw 文件内容，而不是 GitHub API
                 const fetchConfig = fetch(configRawUrl).then(res => {
-                    if (!res.ok) throw new Error(`无法加载 config.json (${res.status} ${res.statusText})`);
+                    if (!res.ok) throw new Error(`无法加载 config.json (${res.status} ${res.statusText} from ${configRawUrl})`);
                     return res.json();
                 });
                 const fetchPosts = fetch(postsRawUrl).then(res => {
-                    if (!res.ok) throw new Error(`无法加载 posts.json (${res.status} ${res.statusText})`);
+                    if (!res.ok) throw new Error(`无法加载 posts.json (${res.status} ${res.statusText} from ${postsRawUrl})`);
                     return res.json();
                 });
 
-                // 并行加载 config 和 posts
                 const [configJson, postsJson] = await Promise.all([fetchConfig, fetchPosts]);
 
-                if (!configJson || !postsJson || postsJson.length === 0) { // posts.json 即使是空数组也要处理
+                if (!configJson || !postsJson || postsJson.length === 0) { 
                     throw new Error("博客核心文件 (config.json 或 posts.json) 未找到、为空或内容无效，请先前往管理后台初始化。");
                 }
 
                 siteConfig = configJson;
                 blogPosts = postsJson;
 
-                // 应用动态样式 (注入到head)
                 const styleElement = document.createElement('style');
                 styleElement.textContent = `
                     body {
@@ -860,13 +845,11 @@
                             background-position: center;
                         ` : ''}
                     }
-                    /* 使用 --accent-color 变量，并在 Gitalk CSS 之前定义，以便覆盖 */
                     :root {
                         --accent-color: ${siteConfig.styling.accentColor || '#0d6efd'};
                         --accent-hover: ${siteConfig.styling.accentHover || '#2980b9'}; 
-                        /* 可以添加更多自定义颜色变量 */
                         --header-bg-color: ${siteConfig.styling.headerBgColor || '#fff'};
-                        --header-text-color: ${siteConfig.styling.headerTextColor || '#2c3e50'};
+                        --header-text-color: ${siteConfig.styling.headerTitleColor || '#2c3e50'}; /* 修正为headerTitleColor */
                         --header-description-color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
                         --footer-bg-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
                         --footer-text-color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
@@ -917,7 +900,19 @@
 
         // Events
         window.addEventListener('hashchange', handleRoute);
-        document.addEventListener('DOMContentLoaded', initializeBlog);
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeBlog(); // 页面加载后立即初始化
+            // 修复首页导航链接的 href，使其在点击后保持正确的 basePath
+            document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = '/'; // 仅修改 hash，不刷新页面
+            });
+            document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = '/about';
+            });
+        });
+
     </script>
 </body>
 </html>
