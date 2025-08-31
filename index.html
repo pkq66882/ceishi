@@ -92,13 +92,12 @@
         }
         .navbar.scrolled {
             box-shadow: var(--card-shadow); /* Shadow when scrolled */
-            background-color: var(--card-bg);
         }
         .navbar-brand, .nav-link {
-            color: var(--heading-color); /* Ensure high contrast */
+            color: var(--heading-color) !important; /* Ensure high contrast */
         }
         .navbar-brand:hover, .nav-link:hover {
-            color: var(--accent-color);
+            color: var(--accent-color) !important;
         }
         .offcanvas-header {
             background-color: var(--card-bg);
@@ -108,7 +107,7 @@
             background-color: var(--card-bg);
         }
         .offcanvas-btn-close {
-            filter: invert(var(--bs-btn-close-color-dark)); /* Ensure close button is visible */
+            filter: var(--bs-btn-close-color-filter); /* Use Bootstrap's filter variable directly */
         }
 
         .container-fluid.main-content {
@@ -326,7 +325,7 @@
         }
         .comment-content {
             margin-bottom: 0;
-            word-break: break-all;
+            word-break: break-word;
         }
         .comment-form textarea {
             min-height: 120px;
@@ -349,10 +348,16 @@
         .site-footer {
             text-align: center;
             padding: 2.5rem 0;
-            margin-top: 3rem;
+            margin-top: auto; /* Push footer to bottom */
             border-top: 1px solid var(--border-color);
             color: var(--meta-color);
             font-size: 0.95rem;
+        }
+        .site-footer a {
+            color: var(--meta-color);
+        }
+        .site-footer a:hover {
+            color: var(--accent-color);
         }
         .social-links a {
             color: var(--meta-color);
@@ -379,7 +384,6 @@
         }
 
         /* Dark Mode Toggle Switch */
-        /* Adjusted for better contrast on dark backgrounds */
         .theme-switch {
             display: flex;
             align-items: center;
@@ -440,9 +444,16 @@
             .post-full-content h1 { font-size: 2rem; }
             .post-full-content h2 { font-size: 1.8rem; }
             .post-full-content h3 { font-size: 1.6rem; }
-            .theme-switch { margin-left: 0; margin-top: 1rem; }
-             .navbar-nav .nav-item .nav-link { /* Adjust nav items in offcanvas */
-                padding: 10px 15px;
+            .theme-switch { margin-left: 0; }
+             /* Adjust nav items in offcanvas for mobile */
+            .offcanvas-body .navbar-nav > li:not(:last-child) {
+                margin-bottom: 0.5rem;
+            }
+            .offcanvas-body .navbar-nav .nav-link {
+                padding: 10px 1.5rem; /* Padding for mobile nav links */
+            }
+            .offcanvas-body #darkModeToggleMobile {
+                margin-left: 1.5rem;
             }
         }
     </style>
@@ -469,13 +480,13 @@
                             <a class="nav-link active" aria-current="page" href="#">首页</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#/about">关于</a> <!-- Example for an 'About' page -->
+                            <a class="nav-link" href="#/about">关于</a>
                         </li>
                         <li class="nav-item d-none" id="user-post-nav-item">
                             <a class="nav-link" href="#/submit-post">提交文章</a>
                         </li>
                         <li class="nav-item d-lg-none">
-                            <div class="theme-switch d-flex align-items-center mt-3 mb-3 ps-3">
+                            <div class="theme-switch d-flex align-items-center mt-3 mb-3">
                                 <span class="form-check-label me-2">深色模式</span>
                                 <input class="form-check-input" type="checkbox" id="darkModeToggleMobile">
                                 <label for="darkModeToggleMobile"></label>
@@ -525,7 +536,7 @@
                             </ul>
                             <p>感谢您的访问，如果您有任何建议或合作意向，请随时联系我们。</p>
                         </div>
-                        <a href="#" class="btn btn-primary mt-4 back-to-home"><i class="fas fa-arrow-left me-2"></i>返回首页</a>
+                        <a href="#" class="btn btn-secondary mt-4 back-to-home"><i class="fas fa-arrow-left me-2"></i>返回首页</a>
                     </div>
                 </div>
 
@@ -533,7 +544,7 @@
                 <div id="submit-post-view" class="card post-card" style="display: none;">
                     <div class="card-body">
                         <h2 class="card-title text-center mb-4"><i class="fas fa-edit me-2"></i>提交您的文章</h2>
-                        <div id="submit-post-form">
+                        <form id="submit-post-form">
                             <div class="mb-3">
                                 <label for="submit-post-title" class="form-label fw-bold">文章标题 <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="submit-post-title" placeholder="请输入文章标题" required maxlength="100">
@@ -556,10 +567,10 @@
                                 <input type="file" class="form-control" id="submit-post-images" accept="image/*" multiple>
                                 <div class="form-text">您可以上传多张图片，暂不支持直接插入到内容中，图片将作为附件显示或由管理员处理。</div>
                             </div>
-                            <button id="submit-user-post-btn" class="btn btn-primary mt-3"><i class="fas fa-paper-plane me-2"></i>提交文章</button>
-                            <button id="cancel-user-post-btn" class="btn btn-secondary mt-3 ms-2"><i class="fas fa-times me-2"></i>取消</button>
+                            <button type="submit" id="submit-user-post-btn" class="btn btn-primary mt-3"><i class="fas fa-paper-plane me-2"></i>提交文章</button>
+                            <button type="button" id="cancel-user-post-btn" class="btn btn-secondary mt-3 ms-2"><i class="fas fa-times me-2"></i>取消</button>
                             <div id="submit-post-message" class="mt-3"></div>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </main>
@@ -567,7 +578,9 @@
                 <div id="social-links" class="social-links mb-3">
                     <!-- Social links will be injected here -->
                 </div>
-                <p id="site-footer-text">Powered by GitHub</p>
+                <p id="site-footer-text">
+                    <a href="admin.html" target="_blank" rel="noopener noreferrer" class="text-decoration-none">管理员登录</a> | Powered by GitHub
+                </p>
             </footer>
         </div>
     </div>
@@ -638,21 +651,111 @@
 
         let allPosts = [];
         let siteConfig = {};
+        let GITHUB_OWNER = '';
+        let GITHUB_REPO = '';
+        let GITHUB_BASE_PATH = '';
+
+        /**
+         * Dynamically determines GitHub repository owner, name, and base path.
+         * This improved logic handles `username.github.io` (user pages) and `username.github.io/repo-name` (project pages).
+         * For custom domains, it falls back to hardcoded values which MUST be updated by the user.
+         * @returns {{owner: string, repo: string, basePath: string, ref: string}} - Contains GitHub repository details.
+         */
+        const _getRepoDetails = () => {
+            let owner = '';
+            let repo = '';
+            let basePath = '';
+            const ref = 'main'; // Default branch name
+
+            const hostname = window.location.hostname;
+            const pathname = window.location.pathname; // e.g., /my-repo-name/ or /
+
+            if (hostname.endsWith('.github.io')) {
+                const parts = hostname.split('.');
+                if (parts.length === 3) { // e.g., username.github.io
+                    owner = parts[0];
+                    if (pathname === '/' || pathname === '/index.html') { // user page root
+                        repo = `${owner}.github.io`;
+                        basePath = '';
+                    } else { // user page sub-directory (project name) e.g., username.github.io/blog
+                        // Pathname will be something like `/blog/` or `/blog/index.html`
+                        const pathSegments = pathname.split('/').filter(p => p && p !== 'index.html');
+                        if (pathSegments.length > 0) {
+                            repo = pathSegments[0]; // repo is 'blog'
+                            basePath = pathSegments.join('/'); // 'blog'
+                        } else {
+                            repo = `${owner}.github.io`;
+                            basePath = '';
+                        }
+                    }
+                } else { // Handle other potential github.io structures (e.g., repo.username.github.io)
+                    // This case is less common and might need hardcoding or more advanced parsing
+                    console.warn("Unexpected GitHub Pages hostname structure. Falling back to default or hardcoded values.");
+                    owner = 'rjdsq'; // Fallback to your username
+                    repo = 'rjdsq.github.io'; // Fallback to your main repo
+                    basePath = '';
+                }
+            } else { // Custom domain (e.g., myblog.com)
+                // For custom domains, it's impossible to reliably infer owner/repo from hostname or pathname alone.
+                // The user *must* manually configure these.
+                console.warn("Custom domain detected. Please ensure GITHUB_OWNER and GITHUB_REPO are correctly hardcoded in index.html main function.");
+                
+                // ⚠️ IMPORTANT: YOU MUST SET THESE MANUALLY FOR CUSTOM DOMAINS!
+                // Example: If custom.com points to `rjdsq/my-blog-repo` then:
+                owner = 'rjdsq'; // <-- REPLACE with your GitHub username/organization name
+                repo = 'rjdsq.github.io'; // <-- REPLACE with your GitHub repository name (e.g., 'my-blog-repo')
+                
+                // If custom.com/blog points to `rjdsq/my-blog-repo` and the entry point is `/blog/index.html`
+                const pathSegments = pathname.split('/').filter(p => p && p !== 'index.html');
+                if (pathSegments.length > 0) {
+                    basePath = pathSegments.join('/'); // e.g., `blog` if custom.com/blog
+                } else {
+                    basePath = '';
+                }
+            }
+
+            // Ensure repo name doesn't contain the owner.github.io part if it's a project repo
+            if (repo.includes('.github.io') && repo !== `${owner}.github.io` && repo.includes('/') ) {
+                 repo = repo.split('/')[0]; // For `owner.github.io/repo-name`, repo should be `repo-name` not `owner.github.io`
+            }
+            if (repo === `${owner}.github.io` && basePath !== '') {
+                // If it's a project page, the repo is the first path segment.
+                // Example: `username.github.io/my-project/`
+                // owner is `username`, repo should be `my-project`.
+                const pathSegments = pathname.split('/').filter(p => p && p !== 'index.html');
+                if(pathSegments.length > 0) {
+                  repo = pathSegments[0];
+                  basePath = pathSegments.join('/');
+                }
+            }
+
+            GITHUB_OWNER = owner;
+            GITHUB_REPO = repo;
+            GITHUB_BASE_PATH = basePath;
+
+            console.log(`Inferred GitHub details: Owner=${owner}, Repo=${repo}, BasePath=${basePath}, Ref=${ref}`);
+            return { owner, repo, basePath, ref };
+        };
+
 
         // GitHub API interaction for config and posts
-        const getFileFromApi = async (owner, repo, path) => {
-            // Using raw.githubusercontent.com for direct file access
-            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
+        const getFileFromApi = async (owner, repo, path, ref = 'main') => {
+            // Construct the raw.githubusercontent.com URL directly
+            // Path needs to be relative to the root of the *repo*.
+            // If basePath is 'blog' and file is 'config.json', then fullPathInRepo is 'blog/config.json'.
+            const fullPathInRepo = (path.startsWith('/') ? path.substring(1) : path); // remove leading slash if any
+            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${fullPathInRepo}`;
+            
             // If gh-proxy is needed, uncomment and use it. Note potential instability.
             // const proxyUrl = `https://gh-proxy.com/${encodeURIComponent(rawUrl)}`;
             // const urlToFetch = new URL(proxyUrl); // Use proxy for fetching
 
-            const urlToFetch = new URL(rawUrl); // Default to raw Github content
+            const urlToFetch = new URL(rawUrl); // Default to raw Github content for improved reliability
 
             const response = await fetchWithTimeout(urlToFetch.toString(), { cache: "no-store" });
             if (!response.ok) {
                 if (response.status === 404) {
-                    throw new Error(`文件未找到: ${path}。请确认仓库中 '${path}' 文件存在于 'main' 分支。`);
+                    throw new Error(`文件未找到: ${path} (在仓库 ${owner}/${repo} 的 ${ref} 分支)。请确认文件路径和分支。`);
                 }
                 throw new Error(`无法从GitHub获取文件: ${path} (HTTP ${response.status} - ${response.statusText})`);
             }
@@ -662,7 +765,7 @@
         // Comment system API interaction
         const CommentAPI = {
             async fetchComments(postId) {
-                if (!siteConfig.features.commentSystem.enabled || !siteConfig.features.commentSystem.apiEndpoint) return { comments: [] };
+                if (!siteConfig.features.commentSystem.enabled || !siteConfig.features.commentSystem.apiEndpoint) return { comments: [], error: "评论系统未启用或API未配置。" };
                 try {
                     const response = await fetchWithTimeout(`${siteConfig.features.commentSystem.apiEndpoint}?postId=${postId}`);
                     if (!response.ok) {
@@ -721,22 +824,20 @@
         const renderer = new marked.Renderer();
         renderer.link = (href, title, text) => {
             const external = /^(https?:)?\/\//.test(href);
-            // Add nofollow and ugc to external links, especially for comments to prevent spam influence
             return `<a href="${href}"${external ? ' target="_blank" rel="noopener noreferrer nofollow ugc"' : ''}${title ? ` title="${title}"` : ''}>${text}</a>`;
         };
         renderer.image = (href, title, text) => {
             return `<img src="${href}" alt="${text || 'Image'}" class="img-fluid rounded" ${title ? ` title="${title}"` : ''}>`;
         };
-        // Use custom renderer
         marked.setOptions({
             renderer: renderer,
             highlight: function(code, lang) {
                 const language = hljs.getLanguage(lang) ? lang : 'plaintext';
                 return hljs.highlight(code, { language }).value;
             },
-            gfm: true, // GitHub Flavored Markdown
-            breaks: true, // Allow line breaks with <br>
-            sanitize: true // Sanitize HTML output (prevent XSS)
+            gfm: true,
+            breaks: true,
+            sanitize: true
         });
 
 
@@ -752,11 +853,10 @@
                 let textContent = tempDiv.textContent || tempDiv.innerText || '';
                 summaryContent = textContent.substring(0, 200) + (textContent.length > 200 ? '...' : '');
             }
-            return marked.parse(summaryContent); // Render summary as Markdown
+            return marked.parse(summaryContent);
         };
 
         const renderPostList = () => {
-             // Show loading spinner while rendering
             postsListView.innerHTML = `
                 <div class="loading-spinner-wrapper">
                     <div class="spinner-border text-primary" role="status">
@@ -773,10 +873,10 @@
             navbarBlogTitle.style.display = 'block';
 
             if (siteConfig.site.logoUrl) { 
-                siteLogoEl.classList.remove('d-none'); // Show site logo in header
-                navbarSiteLogo.classList.remove('d-none'); // Show site logo in navbar
+                siteLogoEl.classList.remove('d-none');
+                navbarSiteLogo.classList.remove('d-none');
             } else {
-                siteLogoEl.classList.add('d-none'); // Hide if no logo
+                siteLogoEl.classList.add('d-none');
                 navbarSiteLogo.classList.add('d-none');
             }
 
@@ -873,7 +973,10 @@
                 hljs.highlightAll();
 
                 loadComments(postId);
-                document.getElementById('submit-comment-btn').onclick = () => submitUserComment(postId);
+                document.getElementById('submit-comment-btn').onclick = (e) => {
+                    e.preventDefault(); // Prevent form default submission
+                    submitUserComment(postId);
+                };
 
             } else {
                 document.title = `未找到文章 - ${siteConfig.site.title}`;
@@ -907,10 +1010,13 @@
                     comments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
                     commentsListEl.innerHTML = comments.map(comment => `
                         <div class="comment-item">
-                            <div class="comment-meta">
-                                <i class="fas fa-user me-1"></i> <strong>${comment.author || '匿名用户'}</strong>
-                                <span class="ms-2 me-2 text-muted">|</span>
-                                <i class="far fa-clock me-1"></i> ${new Date(comment.createdAt).toLocaleString()}
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="comment-meta">
+                                    <i class="fas fa-user me-1"></i> <strong>${comment.author || '匿名用户'}</strong>
+                                    <span class="ms-2 me-2 text-muted d-none d-sm-inline-block">|</span>
+                                    <i class="far fa-clock me-1 d-none d-sm-inline-block"></i> <span class="d-none d-sm-inline-block">${new Date(comment.createdAt).toLocaleString()}</span>
+                                    <small class="d-sm-none text-muted ms-2">${new Date(comment.createdAt).toLocaleDateString()}</small>
+                                </div>
                             </div>
                             <div class="comment-content">${marked.parse(comment.content, { sanitize: true })}</div>
                         </div>
@@ -951,7 +1057,7 @@
                     commentMessageEl.textContent = '评论提交成功！部分平台可能需要稍等片刻才能显示。';
                     document.getElementById('comment-author').value = '';
                     document.getElementById('comment-content').value = '';
-                    setTimeout(() => loadComments(postId), 1000); // Give serverless time to persist
+                    setTimeout(() => loadComments(postId), 1000);
                 } else {
                     throw new Error(result.message || '评论提交失败。');
                 }
@@ -985,7 +1091,7 @@
             const author = document.getElementById('submit-post-author').value.trim();
             const content = document.getElementById('submit-post-content').value.trim();
             const tags = document.getElementById('submit-post-tags').value.split(',').map(t => t.trim()).filter(Boolean);
-            const images = []; // Placeholder for images, real impl needs file upload to a CDN/storage
+            const images = [];
 
             const submitPostMessageEl = document.getElementById('submit-post-message');
             const submitBtn = document.getElementById('submit-user-post-btn');
@@ -1015,8 +1121,6 @@
                     document.getElementById('submit-post-title').value = '';
                     document.getElementById('submit-post-content').value = '';
                     document.getElementById('submit-post-tags').value = '';
-                    // Clear author if user wants, or keep
-                    // document.getElementById('submit-post-author').value = ''; 
                     document.getElementById('submit-post-images').value = '';
                 } else {
                     throw new Error(result.message || '文章提交失败。');
@@ -1043,7 +1147,6 @@
             const hash = window.location.hash;
             document.querySelectorAll('.navbar-nav .nav-link').forEach(link => link.classList.remove('active'));
 
-            // Close mobile offcanvas if open
             const offcanvasElement = document.getElementById('offcanvasNavbar');
             const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
             if (bsOffcanvas) {
@@ -1073,11 +1176,9 @@
         const applyTheme = (isDarkMode) => {
             if (isDarkMode) {
                 body.classList.add('dark-mode');
-                // Dynamically update Highlight.js theme. Use config theme for dark mode.
                 hlThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${siteConfig.features.highlightJsTheme || 'atom-one-dark'}.min.css`;
             } else {
                 body.classList.remove('dark-mode');
-                // Use default light theme for Highlight.js in light mode.
                 hlThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css`; 
             }
             localStorage.setItem('darkModeStatus', isDarkMode ? 'enabled' : 'disabled');
@@ -1092,7 +1193,7 @@
         document.getElementById('darkModeToggleDesktop').addEventListener('change', toggleDarkMode);
         document.getElementById('darkModeToggleMobile').addEventListener('change', toggleDarkMode);
 
-        // Navbar scroll shadow
+
         window.addEventListener('scroll', () => {
             if (window.scrollY > 0) {
                 navbar.classList.add('scrolled');
@@ -1101,79 +1202,47 @@
             }
         });
 
-
         const main = async () => {
             try {
-                // Infer owner and repo for GitHub Pages
-                // This logic needs to be robust for user.github.io, user.github.io/repo, custom.domain, custom.domain/repo
-                let owner = '';
-                let repo = '';
-                let basePath = '';
-                const hostname = window.location.hostname;
-                const pathParts = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'index.html');
+                // Get GitHub repo details
+                const { owner, repo, basePath } = _getRepoDetails();
+                GITHUB_OWNER = owner;
+                GITHUB_REPO = repo;
+                GITHUB_BASE_PATH = basePath; // Stored globally for debugging/reuse
 
-                if (hostname.endsWith('.github.io')) {
-                    const parts = hostname.split('.');
-                    if (parts.length === 3) { // username.github.io
-                        owner = parts[0];
-                        if (pathParts.length > 0) { // username.github.io/repo-name
-                            repo = pathParts[0]; // repo-name
-                            basePath = pathParts[0];
-                        } else { // username.github.io (root)
-                            repo = `${owner}.github.io`; // For fetching files directly from this repo
-                            basePath = '';
-                        }
-                    } else if (parts.length === 4) { // repo.username.github.io (rare, but possible)
-                         owner = parts[1]; // username
-                         repo = parts[0];   // repo
-                         basePath = '';
-                    }
-                } else { // Custom domain
-                     // This is the trickiest. If custom.com points to username/repo, we need to know username/repo.
-                     // The config.json and posts.json are usually in the *root* of the repo, not necessarily under basePath.
-                     // For simplicity, we assume custom.com points to a repo, and files are at its root.
-                     // If it's a project page using a custom domain: custom.com/blog -> we need owner/repo of 'blog'
-                     // A robust solution usually involves hardcoding owner/repo or fetching from a specific CNAME file
-                     // For now, let's hardcode a placeholder for custom domains pointing to a specific user/repo
-                     owner = 'rjdsq'; // Replace with YOUR GitHub username if using a custom domain
-                     repo = 'rjdsq.github.io'; // Replace with YOUR GitHub repo name if using a custom domain
-                     if (pathParts.length > 0) { // e.g., custom.com/blog
-                         basePath = pathParts.join('/'); // the 'blog' part
-                     }
-                }
-
-                if (!owner || !repo) {
-                    throw new Error("无法自动识别GitHub仓库拥有者和名称。请检查您的GitHub Pages配置或手动指定。");
-                }
-                
-                const getFilePath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
+                const getFilePath = (fileName) => GITHUB_BASE_PATH ? `${GITHUB_BASE_PATH}/${fileName}` : fileName;
 
                 try {
                     const configContent = await getFileFromApi(owner, repo, getFilePath('config.json'));
                     siteConfig = JSON.parse(configContent);
                 } catch (configError) {
-                    throw new Error(`加载 config.json 失败: ${configError.message}. 请确保文件存在且格式正确。`);
+                    throw new Error(`加载 config.json 失败: ${configError.message}. 请确保文件存在于仓库的根目录或正确配置的 'basePath' 下，并且是有效的 JSON 格式。`);
                 }
                 
-                // Apply dynamic favicon and logo as early as possible
                 if (siteConfig.site.faviconUrl) { faviconLink.href = siteConfig.site.faviconUrl; }
                 if (siteConfig.site.logoUrl) {
                     siteLogoEl.src = siteConfig.site.logoUrl;
                     navbarSiteLogo.src = siteConfig.site.logoUrl;
-                    siteLogoEl.classList.remove('d-none'); // Show site logo in header
-                    navbarSiteLogo.classList.remove('d-none'); // Show site logo in navbar
+                    siteLogoEl.classList.remove('d-none');
+                    navbarSiteLogo.classList.remove('d-none');
                 } else {
-                    siteLogoEl.classList.add('d-none'); // Hide if no logo
+                    siteLogoEl.classList.add('d-none');
+                    navbarSiteLogo.classList.add('d-none');
                 }
-
-                // Apply dynamic styles from config
+                
                 const root = document.documentElement;
                 root.style.setProperty('--bg-color', siteConfig.styling.backgroundColor);
                 root.style.setProperty('--text-color', siteConfig.styling.textColor);
                 root.style.setProperty('--heading-color', siteConfig.styling.headingColor || siteConfig.styling.textColor);
                 root.style.setProperty('--accent-color', siteConfig.styling.accentColor);
-                // Ensure link hover color is set, defaulting to a darker/lighter accent
-                root.style.setProperty('--link-hover-color', siteConfig.styling.linkHoverColor || (isDarkMode ? hexToRgb(siteConfig.styling.accentColor).map(c => Math.min(255, c + 30)).join(',') : hexToRgb(siteConfig.styling.accentColor).map(c => Math.max(0, c - 30)).join(',')));
+                if (siteConfig.styling.linkHoverColor) {
+                    root.style.setProperty('--link-hover-color', siteConfig.styling.linkHoverColor);
+                } else { // Dynamically generate hover color if not specified
+                    const isDarkModeBrowser = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const accentRgb = hexToRgb(siteConfig.styling.accentColor);
+                    const hoverRgb = isDarkModeBrowser ? accentRgb.map(c => Math.min(255, c + 30)) : accentRgb.map(c => Math.max(0, c - 30));
+                    root.style.setProperty('--link-hover-color', `rgb(${hoverRgb.join(',')})`);
+                }
                 root.style.setProperty('--border-color', siteConfig.styling.borderColor);
                 root.style.setProperty('--card-bg', siteConfig.styling.cardBgColor);
                 root.style.setProperty('--card-shadow', siteConfig.styling.cardShadow);
@@ -1182,12 +1251,10 @@
                 root.style.setProperty('--code-text', siteConfig.styling.codeTextColor || '#abb2bf');
                 root.style.setProperty('--accent-color-rgb', hexToRgb(siteConfig.styling.accentColor).join(','));
 
-                // Set Highlight.js theme
                 if (siteConfig.features.highlightJsTheme) {
                     hlThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${siteConfig.features.highlightJsTheme}.min.css`;
                 }
 
-                // Initial Dark Mode check
                 if (siteConfig.styling.darkModeToggle) {
                     const savedTheme = localStorage.getItem('darkModeStatus');
                     const isDarkModeInitial = (savedTheme === 'enabled' || (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches));
@@ -1196,23 +1263,19 @@
                     document.querySelectorAll('.theme-switch').forEach(el => el.style.display = 'none');
                 }
 
-                // Apply site title and description
                 document.title = siteConfig.site.title;
                 blogTitleEl.textContent = siteConfig.site.title;
                 blogDescriptionEl.textContent = siteConfig.site.description;
                 document.getElementById('blog-title-nav').textContent = siteConfig.site.title;
 
-                // Load background image
                 if (siteConfig.styling.backgroundImageUrl) {
                     body.style.backgroundImage = `url(${siteConfig.styling.backgroundImageUrl})`;
                 } else {
                     body.style.backgroundImage = 'none';
                 }
 
-                // Set footer text
-                siteFooterText.textContent = siteConfig.footerText || `© ${new Date().getFullYear()} ${siteConfig.site.title}. All rights reserved.`;
+                siteFooterText.innerHTML = `<a href="admin.html" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted">管理员登录</a> | ${siteConfig.footerText || `© ${new Date().getFullYear()} ${siteConfig.site.title}. All rights reserved.`}`;
 
-                // Render social links
                 if (siteConfig.socialLinks && siteConfig.socialLinks.length > 0) {
                     socialLinksContainer.innerHTML = siteConfig.socialLinks.map(link => `
                         <a href="${link.url}" target="_blank" rel="noopener noreferrer" title="${link.name}">
@@ -1224,18 +1287,21 @@
                     socialLinksContainer.style.display = 'none';
                 }
 
-                // Show user post nav item if enabled
                 if (siteConfig.features.userPostingEnabled) {
                     userPostNavItem.classList.remove('d-none');
                 } else {
                     userPostNavItem.classList.add('d-none');
                 }
 
-                const postsContent = await getFileFromApi(owner, repo, getFilePath('posts.json'));
-                allPosts = JSON.parse(postsContent);
+                try {
+                    const postsContent = await getFileFromApi(owner, repo, getFilePath('posts.json'));
+                    allPosts = JSON.parse(postsContent);
+                } catch (postsError) {
+                    throw new Error(`加载 posts.json 失败: ${postsError.message}. 请确保文件存在于仓库的根目录或正确配置的 'basePath' 下，并且是有效的 JSON 格式。`);
+                }
 
                 window.addEventListener('hashchange', handleRoute);
-                handleRoute(true); // Initial route handling
+                handleRoute(true);
 
             } catch (error) {
                 document.title = '博客加载失败';
@@ -1247,10 +1313,10 @@
                         <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>加载错误</h4>
                         <p>抱歉，博客内容无法正常加载。请检查以下可能原因：</p>
                         <ul>
-                            <li><b>GitHub仓库/文件路径:</b> 无法从 GitHub 仓库获取 <code>config.json</code> 或 <code>posts.json</code> 文件。请确保您的 <b>GitHub 用户名/组织名</b> 和 <b>仓库名</b>, 以及这两个文件的路径是正确的。对于项目页，文件路径通常是 <code>repo-name/config.json</code>。</li>
-                            <li><b>文件内容:</b> <code>config.json</code> 或 <code>posts.json</code> 文件不存在，或者文件内容不是有效的 JSON 格式。</li>
-                            <li><b>网络连接:</b> 您可能存在网络连接问题，或者访问 GitHub API (或您的 `gh-proxy` 代理) 受阻。</li>
-                            <li><b>浏览器缓存:</b> 尝试清除浏览器缓存后重新加载页面。</li>
+                            <li><b>GitHub仓库/文件路径:</b> 无法从 GitHub 仓库获取文件。</li>
+                            <li>请检查您的 <b>GitHub 用户名/组织名</b> 和 <b>仓库名</b> (例如，`your_username`, `your_username.github.io` 或 `your_project_repo`) 是否在 `index.html` 的 `_getRepoDetails` 函数中**硬编码**正确，特别是对于自定义域名的情况。</li>
+                            <li>文件 <code>config.json</code> 或 <code>posts.json</code> 是否存在于**仓库的正确路径**下 (例如，如果 `basePath` 是 `blog`，则文件路径是 `blog/config.json`)，并且内容是否是有效的 JSON 格式。</li>
+                            <li><b>网络连接:</b> 您可能存在网络连接问题。</li>
                             <li><b>Serverless API:</b> (如果涉及到评论/用户投稿) 检查 <code>config.json</code> 中的 Serverless API <b>`apiEndpoint`</b> 配置是否正确且已部署。</li>
                         </ul>
                         <hr>
@@ -1259,7 +1325,7 @@
                     </div>
                 `;
                  console.error("Critical blog loading error:", error);
-                 siteHeader.style.display = 'none'; // Hide header on critical error
+                 siteHeader.style.display = 'none';
                  postsListView.style.display = 'block';
                  postDetailView.style.display = 'none';
                  aboutPage.style.display = 'none';
@@ -1268,22 +1334,23 @@
         };
 
         document.addEventListener('DOMContentLoaded', main);
-        // Back to home button listener for dynamically added elements
+        document.getElementById('submit-post-form').addEventListener('submit', (e) => { // Listen to form submit
+            e.preventDefault();
+            submitUserPost();
+        });
+
+
+        // Global click listener for dynamically added elements
         document.addEventListener('click', (e) => {
             const target = e.target.closest('.back-to-home');
             if (target) {
                 e.preventDefault();
-                window.location.hash = ''; // Go back to home hash
+                window.location.hash = '';
             }
             const cancelUserPostBtn = e.target.closest('#cancel-user-post-btn');
              if (cancelUserPostBtn) {
                 e.preventDefault();
-                window.history.back(); // Go back to previous page
-            }
-            const submitUserPostBtn = e.target.closest('#submit-user-post-btn');
-            if (submitUserPostBtn) {
-                e.preventDefault();
-                submitUserPost();
+                window.history.back();
             }
         });
     </script>
