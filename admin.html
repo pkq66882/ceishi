@@ -741,6 +741,12 @@
             max-height: 100%;
             object-fit: contain;
         }
+        .media-item-thumbnail .thumbnail-error {
+            color: var(--danger-color);
+            font-size: 0.9em;
+            text-align: center;
+            padding: 10px;
+        }
         .media-item-info {
             padding: 15px;
             flex-grow: 1;
@@ -1077,7 +1083,9 @@
             async request(token, endpoint, options = {}) {
                 const url = `${this.BASE_URL}${endpoint}`;
                 const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', ...options.headers };
-                const response = await fetch(url, { ...options, headers });
+                // Add cache: 'no-store' to ensure fresh data for certain requests
+                const cacheOption = options.cache !== undefined ? options.cache : 'default'; 
+                const response = await fetch(url, { ...options, headers, cache: cacheOption });
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, documentation_url: response.url || endpoint }));
                     const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}, endpoint: ${endpoint}`;
@@ -1096,7 +1104,8 @@
             async getUser(token) { return this.request(token, '/user'); },
             async getDirectoryContents(token, owner, repo, path) {
                 try {
-                    const contents = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
+                    // Force no-store cache for directory contents
+                    const contents = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`, {cache: 'no-store'});
                     if (!Array.isArray(contents)) {
                         console.warn(`Path ${path} is not a directory or empty. Response:`, contents);
                         return [];
@@ -1351,41 +1360,42 @@
 
         // Unified function to process image URLs for display (always return proxied URL)
         const getProxiedImageUrl = (inputUrl) => {
-            if (!inputUrl) return '';
+            if (!inputUrl || typeof inputUrl !== 'string' || inputUrl.trim() === '') {
+                return ''; // Return empty string for invalid input.
+            }
 
-            let urlToProcess = inputUrl;
+            let finalTargetUrl = inputUrl;
 
-            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
-            if (urlToProcess.startsWith('https://gh-proxy.com/')) {
+            // Step 1: If it's already a gh-proxy URL, decode it to get the raw target.
+            if (finalTargetUrl.startsWith('https://gh-proxy.com/')) {
                 try {
-                    urlToProcess = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
+                    finalTargetUrl = decodeURIComponent(finalTargetUrl.substring('https://gh-proxy.com/'.length));
                 } catch (e) {
-                    console.warn('Failed to decode existing gh-proxy URL, using as is for further processing:', e, urlToProcess);
+                    console.warn('[getProxiedImageUrl] Failed to decode existing gh-proxy URL, proceeding with original:', e, finalTargetUrl);
+                    // If decoding fails, the original gh-proxy URL was likely malformed.
+                    // Fallback: don't attempt further transformations, just return the (potentially bad) proxied URL.
+                    return inputUrl; 
                 }
             }
 
-            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com),
-            // we will parse it, explicitly decode path components, then re-encode for the proxy.
-            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
+            // Step 2: Now `finalTargetUrl` should be the raw.githubusercontent.com URL or a generic HTTP URL.
+            // We need to get its *fully unescaped* raw form, then encode *that* for gh-proxy.
+            if (finalTargetUrl.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(finalTargetUrl)) {
+                let unescapedRawUrl;
                 try {
-                    const urlObj = new URL(urlToProcess);
-                    // Explicitly decode the path and search components fully.
-                    // This handles cases where GitHub's download_url might return partially encoded URLs
-                    // or contain characters like '~' that were not directly percent-encoded by GitHub but need it for the proxy.
-                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
-                    urlObj.search = decodeURIComponent(urlObj.search);
-                    // Reconstruct the URL. urlObj.toString() will re-encode what's necessary,
-                    // but on the now fully-decoded segments, avoiding double-encoding.
-                    urlToProcess = urlObj.toString();
+                    // Use decodeURI on the entire URL string. This decodes common URI escape sequences like %20, %7E.
+                    // This is the key to preventing double encoding for proxy.
+                    unescapedRawUrl = decodeURI(finalTargetUrl);
                 } catch (e) {
-                    console.warn("URL parsing/decoding for path normalization failed, using raw URL for encoding:", e, urlToProcess);
-                     // Fallback: If URL parsing fails, assume the original URL is the target for encoding.
+                    console.warn('[getProxiedImageUrl] Failed to decodeURI raw URL, using original:', e, finalTargetUrl);
+                    unescapedRawUrl = finalTargetUrl; // Fallback
                 }
-                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized) URL.
-                return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
+                
+                // Then encode this *unescaped* raw URL for gh-proxy.
+                return `https://gh-proxy.com/${encodeURIComponent(unescapedRawUrl)}`;
             }
 
-            // For any other URL (e.g., relative paths, data URIs, etc.), return as is.
+            // If it's not a recognizable external HTTP/HTTPS URL, return as is.
             return inputUrl; 
         };
 
@@ -1449,7 +1459,9 @@
             uploadProgressContainer.style.display = 'block';
             uploadProgressBar.style.width = `${percentage}%`;
             uploadProgressBar.textContent = `${Math.round(percentage)}%`;
-            uploadProgressText.textContent = message || `${Math.round(percentage)}%`;
+            // Explicitly set text content to avoid garbled display
+            uploadProgressText.textContent = message ? `${message} (${Math.round(percentage)}%)` : `${Math.round(percentage)}%`;
+
             if (percentage >= 100) {
                 setTimeout(() => {
                     uploadProgressContainer.style.display = 'none';
@@ -1625,7 +1637,7 @@
 
                         // Store raw GitHub URLs from content (if any old proxied URLs exist)
                         currentPostsArray = currentPostsArray.map(post => {
-                            let newContent = post.content.replace(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/g, (match, alt, url) => {
+                            let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
                                 let originalUrl = url;
                                 if (originalUrl.startsWith('https://gh-proxy.com/')) {
                                     try {
@@ -1994,6 +2006,7 @@
             mediaLibraryGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;"><i class="fas fa-spinner fa-spin"></i> 加载图像中...</p>';
             setButtonsDisabled(true);
             try {
+                // Using cache:'no-store' in getDirectoryContents to ensure fresh data.
                 const imageContents = await GitHubAPI.getDirectoryContents(token, owner, repo, 'images');
                 mediaLibraryGrid.innerHTML = '';
                 let imagesFound = false;
@@ -2002,9 +2015,13 @@
                         imagesFound = true;
                         const mediaItem = document.createElement('div');
                         mediaItem.className = 'media-item';
+                        
+                        // Use onerror for client-side fallback
+                        const imageUrlToDisplay = getProxiedImageUrl(item.download_url);
                         mediaItem.innerHTML = `
                             <div class="media-item-thumbnail">
-                                <img src="${getProxiedImageUrl(item.download_url)}" alt="${item.name}" loading="lazy">
+                                <img src="${imageUrlToDisplay}" alt="${item.name}" loading="lazy" 
+                                     onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'15\' text-anchor=\'middle\' dominant-baseline=\'central\' fill=\'#e74c3c\'>❌ Load Failed</text></svg>'; this.classList.add('thumbnail-error');">
                             </div>
                             <div class="media-item-info">
                                 <div class="name" title="${item.name}">${item.name}</div>
@@ -2025,7 +2042,6 @@
                  mediaLibraryGrid.querySelectorAll('.copy-url').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const rawUrl = e.currentTarget.dataset.rawUrl;
-                        // Use the unified function to get the proxied URL for copying
                         navigator.clipboard.writeText(getProxiedImageUrl(rawUrl)).then(() => {
                             showAlert('图片 URL 已复制！', 'success');
                         }).catch(err => {
@@ -2038,7 +2054,6 @@
                     button.addEventListener('click', async (e) => {
                         const filename = e.currentTarget.dataset.filename;
                         const rawUrl = e.currentTarget.dataset.rawUrl;
-                        // Use the unified function to get the proxied URL for markdown
                         const proxiedUrl = getProxiedImageUrl(rawUrl);
                         const markdown = `![${filename.split('.')[0]}](${proxiedUrl})`;
                         navigator.clipboard.writeText(markdown).then(() => {
@@ -2073,7 +2088,7 @@
             try {
                 await GitHubAPI.deleteFile(token, owner, repo, filePath, fileSha, `feat: delete media file ${filePath.split('/').pop()}`);
                 showAlert('图片删除成功！', 'success');
-                renderMediaLibrary();
+                renderMediaLibrary(); // Re-render after delete
             } catch (error) {
                 showAlert(`图片删除失败: ${error.message}`, 'danger');
             } finally {
@@ -2094,12 +2109,14 @@
                 const uploadPromises = Array.from(files).map(file => {
                     return new Promise(async (resolve, reject) => {
                         try {
+                            // Sanitize filename to prevent URI encoding issues with complex characters
+                            const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9_\-.]/g, '_');
                             const rawImageUrl = await uploadFile(
                                 file,
                                 'images', // Target folder relative to repo root
-                                `feat: upload image "${file.name}"`,
+                                `feat: upload image "${sanitizedFileName}"`,
                                 (progress) => {
-                                    updateProgressBar(progress, `上传 ${file.name}: ${Math.round(progress)}%`);
+                                    updateProgressBar(progress, `上传 ${sanitizedFileName}`);
                                 }
                             );
                             resolve(rawImageUrl); // Return raw.githubusercontent.com URL
@@ -2122,7 +2139,7 @@
                     }
                 });
 
-                updateProgressBar(100, '上传完成！'); // Finalization
+                updateProgressBar(100, '上传完成'); // Finalization
                 if (successCount > 0) {
                     showAlert(`${successCount} 张图片上传成功！`, 'success');
                 }
@@ -2132,11 +2149,13 @@
                 if (successCount === 0 && failureCount === 0) {
                      showAlert('没有图片被上传。', 'info');
                 }
+                // Immediately re-render media library after all uploads are processed
+                renderMediaLibrary(); 
+                
                 setTimeout(() => {
                     uploadProgressContainer.style.display = 'none'; // Hide progress bar after showing results
                 }, 2000);
 
-                renderMediaLibrary();
             } catch (error) {
                  showAlert(`图片上传过程中发生未知错误: ${error.message}`, 'danger');
                  uploadProgressContainer.style.display = 'none';
@@ -2253,7 +2272,9 @@
                 const reader = new FileReader(); // Use FileReader for binary data to base64
                 reader.onload = async (e) => {
                     const contentBase64 = e.target.result.split(',')[1];
-                    const blobPath = `${uploadDirectory}/${new Date().toISOString().replace(/[-:.]/g, '')}_${file.name}`;
+                    // Sanitize filename to prevent URI encoding issues with complex characters
+                    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9_\-.]/g, '_');
+                    const blobPath = `${uploadDirectory}/${new Date().toISOString().replace(/[-:.]/g, '')}_${sanitizedFileName}`;
                     try {
                         await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress);
                         const rawGithubUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${blobPath}`;
@@ -2319,16 +2340,17 @@
 
                         const updateEditorProgressBar = (percentage, msg = '') => {
                             editorProgressBar.style.width = `${percentage}%`;
-                            editorProgressText.textContent = msg || `${Math.round(percentage)}%`;
+                            editorProgressBar.textContent = `${Math.round(percentage)}%`;
+                            editorProgressText.textContent = msg ? `${msg} (${Math.round(percentage)}%)` : `${Math.round(percentage)}%`;
                         };
-                        updateEditorProgressBar(0, '初始化上传...');
+                        updateEditorProgressBar(0, '初始化上传');
 
                         try {
                             const rawImageUrl = await uploadFile(
                                 file,
                                 'images', 
                                 `feat: upload image "${file.name}" for post`,
-                                (progress) => updateEditorProgressBar(progress, `上传 ${file.name}: ${Math.round(progress)}%`)
+                                (progress) => updateEditorProgressBar(progress, `上传 ${file.name}`)
                             );
                             // IMPORTANT: Insert the RAW GitHub URL into markdown content.
                             // The blog's frontend (index.html) will handle proxying for display.
@@ -2338,7 +2360,7 @@
                             const pos = cm.getCursor();
                             cm.replaceRange(markdownImage, pos);
                             showAlert(`图片 ${file.name} 上传成功并已插入！`, 'success', uploadAlertId);
-                            updateEditorProgressBar(100, '完成！');
+                            updateEditorProgressBar(100, '完成');
                         } catch (error) {
                             showAlert(`图片 ${file.name} 上传失败: ${error.message}`, 'danger', uploadAlertId);
                         } finally {
