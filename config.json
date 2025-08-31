@@ -1,41 +1,24 @@
 {
   "site": {
-    "title": "期望AI的博客",
-    "description": "一个由 GitHub Pages 驱动的半静态博客，由期望AI打造。",
-    "favicon": "https://example.com/favicon.ico"
+    "title": "期望ai的博客",
+    "description": "一个由GitHub Pages驱动的现代化半静态博客，专注于技术分享和个人成长。",
+    "aboutContent": "# 关于我\n\n你好！我是期望ai，一个致力于用AI技术赋能开发者的专家。欢迎来到我的个人博客，这里是我的数字花园，我将在这里记录我对技术、生活和未来的思考。\n\n**我的使命**：帮助开发者提高效率，激发创新，共同探索AI与代码的无限可能。\n\n**你可以期待在这里看到**：\n\n*   深度技术教程 (Python, JavaScript, Go, React 等)\n*   AI 代码生成与优化实践\n*   个人项目开发日志\n*   行业趋势分析与观点\n*   以及一些关于学习、成长和哲学的随笔\n\n---",
+    "email": "your_email@example.com"
   },
   "styling": {
     "backgroundColor": "#f8f9fa",
-    "textColor": "#343a40",
-    "headingColor": "#212529",
+    "textColor": "#212529",
+    "headingColor": "#343a40",
     "accentColor": "#0d6efd",
-    "linkHoverColor": "#0b5ed7",
-    "borderColor": "#e9ecef",
-    "cardBg": "#ffffff",
-    "cardShadow": "0 4px 12px rgba(0, 0, 0, 0.06)",
-    "metaColor": "#6c757d",
-    "codeBg": "#2d2d2d",
-    "codeText": "#f8f8f2",
-    "footerBg": "#f1f3f5",
-    "darkModeEnabled": false,
     "backgroundImageUrl": ""
   },
-  "giscus": {
-    "repo": "",           
-    "repoId": "",       
-    "category": "",     
-    "categoryId": ""  
-  },
-  "socialLinks": [
-    {
-      "name": "GitHub",
-      "url": "https://github.com/rjdsq",
-      "icon": "github" 
-    },
-    {
-      "name": "Twitter",
-      "url": "https://twitter.com/your-username",
-      "icon": "twitter"
-    }
-  ]
+  "gitalk": {
+    "enabled": true,
+    "clientID": "YOUR_GITALK_CLIENT_ID",       
+    "clientSecret": "YOUR_GITALK_CLIENT_SECRET", 
+    "repo": "your-github-username.github.io",  
+    "owner": "your-github-username",         
+    "admin": ["your-github-username"],       
+    "language": "zh-CN"
+  }
 }
