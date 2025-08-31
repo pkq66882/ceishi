@@ -888,7 +888,7 @@
                 </div>
                 <div id="media-library-grid">
                     <!-- 图片列表将在此处动态生成 -->
-                    <p style="grid-column: 1 / -1; text-align: center;">加载中...</p>
+                    <p style="grid-column: 1 / -1; text-align: center;">加载图像中...</p>
                 </div>
             </div>
 
@@ -1009,8 +1009,9 @@
                     const specificError = errorMessage.toLowerCase().includes('bad credentials') || errorMessage.toLowerCase().includes('requires authentication') || response.status === 401 || response.status === 403
                         ? '你的 GitHub Token 可能无效或权限不足。请检查：[Token生成页面](https://github.com/settings/tokens)'
                         : '';
-                    if (response.status === 404 && errorData.documentation_url.includes('create-or-update-file-contents')) {
-                        throw new Error(`${errorMessage} (路径：${endpoint})。可能是由于 GitHub API 无法在不存在的父目录下创建文件。`);
+                    if (response.status === 404 && (errorData.documentation_url.includes('create-or-update-file-contents') || errorData.documentation_url.includes('get content'))) {
+                        // 更具体的404错误提示，例如创建文件时目录不存在，或获取文件时仓库不存在等
+                        throw new Error(`${errorMessage} (路径：${endpoint})。这通常意味着目标文件或其父目录不存在。`);
                     }
                     throw new Error(`${errorMessage} ${specificError}`);
                 }
@@ -1023,14 +1024,14 @@
                 try {
                     const contents = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
                     if (!Array.isArray(contents)) {
-                        console.warn(`Path ${path} is not a directory or empty.`);
+                        console.info(`Path ${path} is not a directory or empty.`); // 提示而非警告
                         return [];
                     }
                     return contents;
                 } catch (error) {
-                    if (String(error).includes('Not Found') || String(error).includes('This is not a directory')) {
-                        console.info(`Directory not found or not a directory: ${path}.`);
-                        return []; // 目录不存在或不是目录，返回空数组
+                    if (String(error.message).toLowerCase().includes('not found') || String(error.message).includes('This is not a directory') || String(error.message).includes('No content.')) {
+                        console.info(`Directory not found or not a directory: ${path}. Returning empty array.`);
+                        return []; 
                     }
                     throw error;
                 }
@@ -1038,13 +1039,14 @@
             async getFile(token, owner, repo, path) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content !== 'string' || b64_to_utf8(result.content).trim().length === 0) {
-                        console.warn(`File content for ${path} is empty, invalid, or file not found.`);
+                    if (!result || typeof result.content !== 'string' || result.encoding !== 'base64') { // 确保encoding是base64
+                        console.warn(`File content for ${path} is empty, invalid, or not base64 encoded.`);
                         return null; 
                     }
-                    return { content: b64_to_utf8(result.content), sha: result.sha };
+                    const decodedContent = b64_to_utf8(result.content); // 使用b64_to_utf8确保正确解码
+                    return { content: decodedContent, sha: result.sha };
                 } catch (error) {
-                    if (error.message.toLowerCase().includes('not found') || error.message.includes('file not found') || String(error).includes('No content.')) {
+                    if (String(error.message).toLowerCase().includes('not found') || String(error.message).includes('file not found') || String(error.message).includes('No content.')) {
                         console.info(`File not found: ${path}. This is expected during initial setup.`);
                         return null;
                     }
@@ -1075,48 +1077,111 @@
             dashboard: document.getElementById('dashboard-view'),
             posts: document.getElementById('posts-view'),
             editor: document.getElementById('editor-container'),
-            mediaLibrary: document.getElementById('media-library-view'), // 新增媒体库视图
+            mediaLibrary: document.getElementById('media-library-view'),
             settings: document.getElementById('settings-view'),
             gitalkSettings: document.getElementById('gitalk-settings-view'),
         };
         const navButtons = {
             dashboard: document.getElementById('nav-dashboard'),
             posts: document.getElementById('nav-posts'),
-            mediaLibrary: document.getElementById('nav-media-library'), // 新增媒体库导航
+            mediaLibrary: document.getElementById('nav-media-library'),
             settings: document.getElementById('nav-settings'),
             gitalkSettings: document.getElementById('nav-gitalk-settings'),
             logout: document.getElementById('nav-logout'),
         };
         const postListBody = document.getElementById('post-list');
-        const mediaLibraryGrid = document.getElementById('media-library-grid'); // 媒体库容器
+        const mediaLibraryGrid = document.getElementById('media-library-grid');
 
         let token = null, owner = '', repo = '', basePath = '';
         let posts = [], postsSha = '';
         let config = {}, configSha = '';
-        let easyMDE; // EasyMDE 实例
+        let easyMDE;
 
-        // 统一获取文件路径，处理basePath为空或不为空的情况
         const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
-        // 尝试创建目录及其.gitkeep文件
-        async function createGitHubDirectory(apiToken, apiOwner, apiRepo, directoryPath) {
-            const gitkeepPath = `${directoryPath}/.gitkeep`;
-            console.log(`Checking/Creating directory: ${gitkeepPath}`);
-            try {
-                const fileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
-                if (!fileData) { // 文件不存在，尝试创建
-                    await GitHubAPI.createFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', `feat: create directory ${directoryPath}`);
-                    console.log(`Directory ${directoryPath} created successfully.`);
-                    return true;
-                } else {
-                    console.log(`Directory ${directoryPath} already exists.`);
-                    return true;
-                }
-            } catch (error) {
-                console.error(`Failed to create directory ${directoryPath}:`, error);
-                throw error;
+        // 精确解析 owner, repo, basePath 的通用函数
+        // 确保它能正确处理 pkq66882.github.io/ceishi/admin.html 这种情况
+        const parseGitHubPath = (githubUsername) => {
+            const hostname = window.location.hostname; // e.g., pkq66882.github.io, localhost, custom.domain.com
+            let pathSegments = window.location.pathname.split('/').filter(p => p); // e.g., ["ceishi", "admin.html"] or ["admin.html"]
+
+            // 移除路径末尾的 admin.html 或 index.html
+            if (pathSegments.length > 0 && 
+                (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
+                 pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
+                pathSegments.pop();
             }
-        }
+
+            let currentRepo = '';
+            let currentBasePath = '';
+
+            // 情况1: GitHub Pages 域名 (username.github.io)
+            if (hostname.endsWith('.github.io')) {
+                const userDomainPrefix = hostname.split('.')[0]; // e.g., "pkq66882"
+                
+                if (userDomainPrefix.toLowerCase() === githubUsername.toLowerCase()) {
+                    // 这是用户/组织页面 (e.g., pkq66882.github.io)
+                    // 或者是一个项目页面，但项目名也和用户名前缀相同（不常见但可能）
+                    // 默认Repo是 hostname, basePath是pathSegments剩余部分
+                    currentRepo = hostname; // 比如 pkq66882.github.io
+                    currentBasePath = pathSegments.join('/'); // 比如 "ceishi" (如果URL是pkq66882.github.io/ceishi/)
+
+                    // 进一步判断：如果pathSegments[0]（例如 "ceishi"）是一个实际的repo
+                    // 而不是用户页面的子目录，那么应该将其视为repo
+                    // 很难100%自动判断，但可以基于约定：如果repo名等于userDomainPrefix，则认为是User Pages
+                    // else if (pathSegments.length > 0 && pathSegments[0].toLowerCase() !== userDomainPrefix.toLowerCase()) {
+                    //      // 这更像是一个Project Page，且仓库名不同于userDomainPrefix
+                    //     currentRepo = pathSegments[0]; // 将pathSegments[0]作为repo
+                    //     currentBasePath = pathSegments.slice(1).join('/');
+                    // }
+                    // 上述逻辑是错误的，因为pathSegments[0]已经是子目录了，不是repo
+
+                    // 重新调整针对 *.github.io 的处理：
+                    if (pathSegments.length > 0 && pathSegments[0].toLowerCase() !== userDomainPrefix.toLowerCase()) {
+                        // 例如：URL是 pkq66882.github.io/ceishi/，而userName是pkq66882
+                        // 那么 repo 应该是 'ceishi', basePath 应该是 ''
+                        currentRepo = pathSegments[0]; // 'ceishi'
+                        currentBasePath = pathSegments.slice(1).join('/'); // ''
+                    } else {
+                        // 例如：URL是 pkq66882.github.io/ 或 pkq66882.github.io/blog/
+                        currentRepo = hostname; // 'pkq66882.github.io'
+                        currentBasePath = pathSegments.join('/'); // '' 或 'blog'
+                    }
+
+                } else {
+                    // URL Hostname 不以 username 开头，这通常是自定义域名或非常规部署
+                    // 或是一个 Project Page (例如: anotheruser.github.io/myrepo)
+                    // 对于这种复杂情况，最好的做法是依赖 pathSegments[0] 作为 repo
+                    if (pathSegments.length > 0) {
+                        currentRepo = pathSegments[0];
+                        currentBasePath = pathSegments.slice(1).join('/');
+                    } else {
+                        // 实在无法判断，提示用户手动输入 repo，或使用默认
+                        console.warn("无法从URL自动识别仓库名，可能为非标准GitHub Pages部署或自定义域名。");
+                        currentRepo = prompt("无法自动识别您的GitHub仓库名，请手动输入(如 'my-blog-repo' 或 'username.github.io'):", `${githubUsername}.github.io`) || `${githubUsername}.github.io`;
+                        currentBasePath = '';
+                    }
+                }
+            } else {
+                // 情况2: 其他域名 (可能是自定义域名或本地开发)
+                if (pathSegments.length > 0) {
+                     currentRepo = pathSegments[0];
+                     currentBasePath = pathSegments.slice(1).join('/');
+                } else {
+                    // 如果是自定义域名直接指向仓库根目录，pathSegments为空，那么repo就是user.github.io
+                    currentRepo = `${githubUsername}.github.io`; 
+                    currentBasePath = '';
+                }
+            }
+
+            // 最终检查：确保 repo 不是空的，或不是"github.io"这种不完整形式
+            if (!currentRepo || currentRepo.toLowerCase().endsWith('.github.io') && currentRepo.split('.')[0].length === 0 ) {
+                 currentRepo = `${githubUsername}.github.io`;
+            }
+
+            return { owner: githubUsername, repo: currentRepo, basePath: currentBasePath };
+        };
+
 
         // ==================== UI 辅助函数 ====================
         const showAdminView = (viewName) => {
@@ -1132,7 +1197,7 @@
             if (currentNavLink) {
                  currentNavLink.classList.add('active');
             } else if (viewName === 'editor') {
-                navButtons.posts.classList.add('active');
+                navButtons.posts.classList.add('active'); // 编辑器时高亮文章管理
             }
             
             adminViews[viewName].style.display = 'block';
@@ -1177,62 +1242,6 @@
              }
         };
 
-         // 用于解析owner, repo, basePath的通用函数
-        const parseGitHubPath = (username) => {
-            const hostname = window.location.hostname;
-            let pathSegments = window.location.pathname.split('/').filter(p => p); // ['ceishi', 'admin.html']
-
-            if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html') {
-                pathSegments.pop(); // Remove "admin.html" or "index.html"
-            }
-
-            let currentRepo = '';
-            let currentBasePath = '';
-
-            if (hostname.endsWith('.github.io')) {
-                const userDomain = hostname.split('.')[0]; // e.g., "pkq66882" from "pkq66882.github.io"
-                if (userDomain.toLowerCase() === username.toLowerCase()) { // User/Organization Page: <username>.github.io
-                    currentRepo = hostname; // e.g., "pkq66882.github.io"
-                    currentBasePath = pathSegments.join('/'); // Remaining path is the actual base path, e.g., "ceishi"
-                } else { // Project Page deployed to <username>.github.io/<repo-name>
-                    // This situation is for custom domain or non-<username>.github.io for project page
-                    // For example, if hostname is 'example.com' and pathSegments starts with 'my-repo'
-                    console.warn(`Unexpected hostname structure: ${hostname}. Assuming project page repo from first path segment.`);
-                    if (pathSegments.length > 0) {
-                        currentRepo = pathSegments[0]; // e.g., 'ceishi'
-                        currentBasePath = pathSegments.slice(1).join('/'); // e.g., '', or 'some/sub/dir'
-                    } else {
-                        // Fallback: If no path segments and it's not the user.github.io, try to prompt or default
-                        // In most project page cases, there will be at least one path segment.
-                        console.error("Could not determine repository name from URL path for project page. Defaulting to empty basePath and assuming repo is hostname if it makes sense.");
-                        currentRepo = prompt("Could not automatically determine your GitHub repository name. Please enter it (e.g., 'my-blog-repo'):", "") || "";
-                        currentBasePath = '';
-                    }
-                }
-            } else {
-                // Custom domain case or potentially raw file access
-                // If a custom domain is used, it usually points to the root of a repo (user.github.io or project repo)
-                // We'll assume the primary repo is the one where admin.html and index.html reside.
-                // For simplicity, for custom domains, we'll try to use the *first path segment* as the repo IF it exists.
-                // Otherwise, it’s likely a user/org page at the root, so the repo is 'username.github.io'
-                if (pathSegments.length > 0) {
-                     currentRepo = pathSegments[0]; // e.g., 'ceishi' if admin.html is at example.com/ceishi/admin.html
-                     currentBasePath = pathSegments.slice(1).join('/');
-                } else {
-                    currentRepo = `${username}.github.io`; // Assuming custom domain points to user/org repo root
-                    currentBasePath = '';
-                }
-            }
-
-            // A final check: if repo is still empty, or just github.io, use username.github.io as a safe fallback
-            if (!currentRepo || currentRepo.toLowerCase() === 'github.io') {
-                currentRepo = `${username}.github.io`;
-            }
-
-            return { owner: username, repo: currentRepo, basePath: currentBasePath };
-        };
-
-
         const startAdmin = async () => {
             const userToken = tokenInput.value.trim();
             if (!userToken) { initialMessageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Token 不能为空。'; return; }
@@ -1257,14 +1266,12 @@
                 // **STEP 1: 自动化创建必要的子目录**
                 initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在检查并创建所需文件目录...`;
                 try {
-                    // 确保 basePath 的所有层级都存在
-                    const baseDirParts = basePath.split('/').filter(p =>p); // 避免空字符串
+                    const baseDirParts = basePath.split('/').filter(p =>p);
                     let currentPathAccumulated = '';
                     for (const part of baseDirParts) {
                         currentPathAccumulated = currentPathAccumulated ? `${currentPathAccumulated}/${part}` : part;
                         await createGitHubDirectory(token, owner, repo, currentPathAccumulated);
                     }
-                    // 确保 images 目录存在于 basePath 下
                     const imagesDirPath = getPath('images');
                     await createGitHubDirectory(token, owner, repo, imagesDirPath); 
 
@@ -1312,7 +1319,7 @@
                         enabled: false,
                         clientID: '',
                         clientSecret: '',
-                        repo: repo, // 使用动态解析的repo
+                        repo: repo,
                         owner: owner,
                         admin: [owner],
                     }
@@ -1332,16 +1339,14 @@
                 if (hasExistingConfig) {
                     try {
                         let parsedConfig = JSON.parse(existingConfigData.content);
-                        Object.assign(currentConfig, parsedConfig); // 浅合并
-                        // 确保站点设置深合并
+                        Object.assign(currentConfig, parsedConfig);
                         currentConfig.site = Object.assign({}, initialConfig.site, parsedConfig.site);
                         currentConfig.styling = Object.assign({}, initialConfig.styling, parsedConfig.styling);
                         currentConfig.gitalk = Object.assign({}, initialConfig.gitalk, parsedConfig.gitalk);
-                        // 强制更新Gitalk配置中的repo/owner/admin，以防之前解析错误或缺失
                         currentConfig.gitalk.repo = repo; 
                         currentConfig.gitalk.owner = owner;
                         if (!currentConfig.gitalk.admin || currentConfig.gitalk.admin.length === 0 || !currentConfig.gitalk.admin.includes(owner)) {
-                            currentConfig.gitalk.admin = [owner]; // 确保admin是当前的owner
+                            currentConfig.gitalk.admin = [owner];
                         }
                     } catch (e) {
                         console.warn("Invalid config.json content, using default config.", e);
@@ -1411,8 +1416,8 @@
                 // --- 初始化成功后界面渲染 ---
                 loginWrapper.style.display = 'none';
                 adminWrapper.style.display = 'flex';
-                showAdminView('dashboard'); // 默认显示仪表盘
-                renderDashboard(); // 渲染仪表盘数据
+                showAdminView('dashboard');
+                renderDashboard();
                 renderPostList();
                 populateSettings();
                 populateGitalkSettings();
@@ -1451,37 +1456,47 @@
             posts.forEach(p => p.tags && p.tags.forEach(tag => tags.add(tag)));
             document.getElementById('total-tags').textContent = tags.size.toString();
 
-            // 示例活动列表 (可以根据实际commit记录生成，这里简化为静态或初始化信息)
             const activityListEl = document.getElementById('activity-list');
-            activityListEl.innerHTML = ''; // 清空现有活动
+            activityListEl.innerHTML = '';
             if (posts.length > 0) {
-                const latestPost = posts.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-                const activityItem = document.createElement('div');
-                activityItem.className = 'activity-item';
-                activityItem.innerHTML = `
-                    <i class="fas fa-pen-nib"></i>
-                    <div class="content">
-                        <p>最近更新文章: <a href="#" class="edit" data-id="${latestPost.id}">${latestPost.title}</a></p>
-                        <span class="time">${timeAgo(new Date(latestPost.updatedAt))}</span>
-                    </div>
-                `;
-                activityListEl.appendChild(activityItem);
-                
-                // 添加一个创建文章的活动
-                if (posts.length > 1) { // 避免和欢迎文章重复
-                    const createdPost = posts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-                    if (createdPost.id !== latestPost.id) { // 如果最近创建的和最近更新的是同一篇，则不重复显示
+                const sortedPosts = [...posts].sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                let activityCount = 0;
+
+                for (const post of sortedPosts) {
+                    if (activityCount >= 5) break; // 最多显示5条活动
+
+                    // 更新活动
+                    const updatedActivity = document.createElement('div');
+                    updatedActivity.className = 'activity-item';
+                    updatedActivity.innerHTML = `
+                        <i class="fas fa-pen-nib"></i>
+                        <div class="content">
+                            <p>更新文章: <a href="#" class="edit-post-link" data-id="${post.id}">${post.title}</a></p>
+                            <span class="time">${timeAgo(new Date(post.updatedAt))}</span>
+                        </div>
+                    `;
+                    activityListEl.appendChild(updatedActivity);
+                    activityCount++;
+
+                    // 如果更新时间和创建时间相差较大，或者这是第一篇文章，也可以显示创建活动
+                    const createdAtDate = new Date(post.createdAt);
+                     const updatedAtDate = new Date(post.updatedAt);
+                     const diffHours = Math.abs(updatedAtDate - createdAtDate) / (1000 * 60 * 60);
+                     // 如果是新创建的，或者创建和更新时间间隔超过1小时，则认为创建也是一个独立活动
+                     if (diffHours > 1 || post.id.startsWith('hello_world')) {
+                        if (activityCount >= 5) break; 
                         const createdActivity = document.createElement('div');
                         createdActivity.className = 'activity-item';
                         createdActivity.innerHTML = `
                              <i class="fas fa-plus"></i>
                             <div class="content">
-                                <p>最近发布文章: <a href="#" class="edit" data-id="${createdPost.id}">${createdPost.title}</a></p>
-                                <span class="time">${timeAgo(new Date(createdPost.createdAt))}</span>
+                                <p>发布文章: <a href="#" class="edit-post-link" data-id="${post.id}">${post.title}</a></p>
+                                <span class="time">${timeAgo(new Date(post.createdAt))}</span>
                             </div>
                         `;
                         activityListEl.appendChild(createdActivity);
-                    }
+                        activityCount++;
+                     }
                 }
             } else {
                 activityListEl.innerHTML = `
@@ -1494,11 +1509,11 @@
                     </div>
                 `;
             }
-             // 重新添加事件监听器给新渲染的活动链接
-            activityListEl.querySelectorAll('.edit').forEach(link => {
+             activityListEl.querySelectorAll('.edit-post-link').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
-                    openEditor(e.target.dataset.id);
+                    history.pushState(null, '', `admin.html#/editor/${e.target.dataset.id}`); // 模拟路由跳转
+                    openEditor(e.target.dataset.id); // 直接打开编辑器
                 });
             });
         };
@@ -1599,7 +1614,7 @@
                 showAlert('文章保存成功！', 'success');
                 updateUniqueTags();
                 renderPostList();
-                renderDashboard(); // 更新仪表盘
+                renderDashboard();
                 showAdminView('posts');
             } catch (error) {
                 showAlert(`文章保存失败: ${error.message}`, 'danger');
@@ -1613,9 +1628,9 @@
             setButtonsDisabled(true);
             const postToDelete = posts.find(p => p.id === postId);
             if (!postToDelete) {
-                 showAlert('文章未找到！', 'danger');
-                 setButtonsDisabled(false);
-                 return;
+                showAlert('文章未找到！', 'danger');
+                setButtonsDisabled(false);
+                return;
             }
             posts = posts.filter(p => p.id !== postId);
             try {
@@ -1624,7 +1639,7 @@
                 showAlert('文章删除成功！', 'success');
                 updateUniqueTags();
                 renderPostList();
-                renderDashboard(); // 更新仪表盘
+                renderDashboard();
                 showAdminView('posts');
             } catch (error) {
                 showAlert(`文章删除失败: ${error.message}`, 'danger');
@@ -1642,7 +1657,6 @@
                 mediaLibraryGrid.innerHTML = ''; // 清空加载中提示
                 let imagesFound = false;
                 for (const item of imageContents) {
-                    // 仅显示文件，并排除 .gitkeep
                     if (item.type === 'file' && item.name !== '.gitkeep') {
                         imagesFound = true;
                         const mediaItem = document.createElement('div');
@@ -1667,8 +1681,7 @@
                     mediaLibraryGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">媒体库为空。点击“上传新图片”或拖拽图片到上方区域。</p>';
                 }
 
-                 // 绑定事件
-                mediaLibraryGrid.querySelectorAll('.copy-url').forEach(button => {
+                 mediaLibraryGrid.querySelectorAll('.copy-url').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const url = e.currentTarget.dataset.url;
                         navigator.clipboard.writeText(url).then(() => {
@@ -1683,7 +1696,7 @@
                     button.addEventListener('click', async (e) => {
                         const filename = e.currentTarget.dataset.filename;
                         const url = e.currentTarget.dataset.url;
-                        const proxyUrl = `https://gh-proxy.com/${url}`; // 使用代理加速
+                        const proxyUrl = `https://gh-proxy.com/${url}`;
                         const markdown = `![${filename.split('.')[0]}](${proxyUrl})`;
                         navigator.clipboard.writeText(markdown).then(() => {
                             showAlert('图片 Markdown 链接已复制！', 'success');
@@ -1717,7 +1730,7 @@
             try {
                 await GitHubAPI.deleteFile(token, owner, repo, filePath, fileSha, `feat: delete media file ${filePath.split('/').pop()}`);
                 showAlert('图片删除成功！', 'success');
-                renderMediaLibrary(); // 刷新媒体库
+                renderMediaLibrary();
             } catch (error) {
                 showAlert(`图片删除失败: ${error.message}`, 'danger');
             } finally {
@@ -1731,13 +1744,13 @@
             initialMessageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传图片...';
             initialMessageEl.style.color = 'var(--text-color)';
             try {
-                for (const file of files) {
-                    await uploadFile(file, 'images', `feat: upload image "${file.name}"`);
-                }
+                const uploadPromises = Array.from(files).map(file => uploadFile(file, 'images', `feat: upload image "${file.name}"`));
+                await Promise.all(uploadPromises); // 等待所有文件上传完成
                 showAlert(`${files.length} 张图片上传成功！`, 'success');
-                renderMediaLibrary(); // 刷新媒体库
+                renderMediaLibrary();
             } catch (error) {
-                showAlert(`图片上传失败: ${error.message}`, 'danger');
+                // 部分或全部文件上传失败，错误已经在uploadFile中弹出了
+                showAlert(`部分图片上传失败。详情请查看控制台。`, 'danger');
             } finally {
                 setButtonsDisabled(false);
                 initialMessageEl.innerHTML = '';
@@ -1840,7 +1853,6 @@
         // ==================== 文件上传功能 (通用，用于图片) ====================
         const uploadFile = async (file, uploadPath, message) => {
             if (!file) return;
-            // setButtonsDisabled(true); // Don't disable all buttons for each file in multi-upload
             const reader = new FileReader();
             return new Promise((resolve, reject) => {
                 reader.onload = async (e) => {
@@ -1848,7 +1860,6 @@
                     const blobPath = getPath(`${uploadPath}/${new Date().toISOString().replace(/[-:.]/g, '')}_${file.name}`);
                     try {
                         const result = await GitHubAPI.createFile(token, owner, repo, blobPath, content, message, true);
-                        // showAlert(`文件 ${file.name} 上传成功！`, 'success'); // Too many alerts for multi-upload
                         resolve(result.content.download_url);
                     } catch (error) {
                         showAlert(`文件 ${file.name} 上传失败: ${error.message}`, 'danger', `upload-error-${file.name}`);
@@ -2042,11 +2053,11 @@
             startBtn.onclick = startAdmin;
             tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAdmin(); });
             
-            navButtons.dashboard.onclick = () => { showAdminView('dashboard'); renderDashboard(); }; // 绑定仪表盘
+            navButtons.dashboard.onclick = () => { showAdminView('dashboard'); renderDashboard(); };
             navButtons.posts.onclick = () => { showAdminView('posts'); renderPostList(); };
-            navButtons.mediaLibrary.onclick = () => { showAdminView('mediaLibrary'); renderMediaLibrary(); }; // 绑定媒体库
+            navButtons.mediaLibrary.onclick = () => { showAdminView('mediaLibrary'); renderMediaLibrary(); };
             navButtons.settings.onclick = () => { showAdminView('settings'); populateSettings(); };
-            navButtons.gitalkSettings.onclick = () => { showAdminView('gitalkSettings'); populateGitalkSettings(); }; // 修复绑定
+            navButtons.gitalkSettings.onclick = () => { showAdminView('gitalkSettings'); populateGitalkSettings(); };
             navButtons.logout.onclick = () => {
                 if (confirm('确定要安全退出吗？')) {
                     localStorage.removeItem('github_token');
@@ -2135,10 +2146,9 @@
             const mediaUploadInput = document.getElementById('media-upload-input');
             const mediaUploadDroparea = document.getElementById('media-upload-droparea');
 
-            mediaUploadInput.onchange = (e) => handleMediaFileUpload(e.target.files);
+            if (mediaUploadInput && mediaUploadDroparea) { // 确保元素存在再绑定
+                mediaUploadInput.onchange = (e) => handleMediaFileUpload(e.target.files);
 
-            // 拖拽上传事件处理
-            if (mediaUploadDroparea) {
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                     mediaUploadDroparea.addEventListener(eventName, preventDefaults, false);
                 });
