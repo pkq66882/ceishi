@@ -1146,11 +1146,11 @@
                     throw error;
                 }
             },
-            async createFile(token, owner, repo, path, content, message, isBinary = false, onProgress = null) { 
+            async createFile(token, owner, repo, path, content, message, isBinary = false, onProgress = null, fileName = '文件') { 
                 const body = JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content) });
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('PUT', `${this.BASE_URL}/repos/${owner}/${repo}/contents/${path}`, true); // Synchronous for XHR, true for async
+                    xhr.open('PUT', `${this.BASE_URL}/repos/${owner}/${repo}/contents/${path}`, true); 
                     xhr.setRequestHeader('Authorization', `token ${token}`);
                     xhr.setRequestHeader('Accept', this.DEFAULT_HEADERS.Accept);
                     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -1159,7 +1159,7 @@
                         xhr.upload.onprogress = (event) => {
                             if (event.lengthComputable) {
                                 const percentComplete = (event.loaded / event.total) * 100;
-                                onProgress(percentComplete, file.name || '文件');
+                                onProgress(percentComplete, fileName);
                             }
                         };
                     }
@@ -1184,7 +1184,7 @@
                     xhr.send(body);
                 });
             },
-            async updateFile(token, owner, repo, path, content, sha, message, isBinary = false, onProgress = null) {
+            async updateFile(token, owner, repo, path, content, sha, message, isBinary = false, onProgress = null, fileName = '文件') {
                 if (!sha) {
                     throw new Error("SHA is required to update a file.");
                 }
@@ -1200,7 +1200,7 @@
                         xhr.upload.onprogress = (event) => {
                             if (event.lengthComputable) {
                                 const percentComplete = (event.loaded / event.total) * 100;
-                                onProgress(percentComplete, file.name || '文件');
+                                onProgress(percentComplete, fileName);
                             }
                         };
                     }
@@ -1664,7 +1664,9 @@
 
                         // Store raw GitHub URLs from content (if any old proxied URLs exist)
                         currentPostsArray = currentPostsArray.map(post => {
-                            let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                            // This step ensures any potentially proxied/double-encoded URLs from older saves are normalized to raw URLs.
+                            // Crucially, this regex now ensures it ONLY captures the URL itself, not extra attributes.
+                            let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)(?: ["'].*?["'])?\)/g, (match, alt, url) => {
                                 let originalUrl = url;
                                 if (originalUrl.startsWith('https://gh-proxy.com/')) {
                                     try {
@@ -1677,6 +1679,7 @@
                             });
                             return { ...post, content: newContent };
                         });
+
 
                         const commitMessage = 'docs: update posts with initial/existing entries';
                         // Use a fresh SHA from getFile if available, or current postsSha
@@ -1975,7 +1978,8 @@
             const id = document.getElementById('post-id').value;
             const title = document.getElementById('post-title').value.trim();
             const category = document.getElementById('post-category').value.trim() || '未分类';
-            const content = easyMDE.value().trim(); 
+            // EasyMDE content should have raw image URLs after upload
+            let content = easyMDE.value().trim(); 
             if (!title || !content) { showAlert('标题和内容不能为空！', 'danger'); return; }
             
             setButtonsDisabled(true);
@@ -2115,7 +2119,8 @@
             try {
                 await GitHubAPI.deleteFile(token, owner, repo, filePath, fileSha, `feat: delete media file ${filePath.split('/').pop()}`);
                 showAlert('图片删除成功！', 'success');
-                // Ensure media library is rendered from fresh data after a short interval
+                // Ensure media library is rendered from fresh data after a short interval (500ms for faster UI feedback)
+                // This delay helps account for potential GitHub CDN propagation time.
                 setTimeout(() => renderMediaLibrary(), 500); 
             } catch (error) {
                 showAlert(`图片删除失败: ${error.message}`, 'danger');
@@ -2141,7 +2146,8 @@
                                 `feat: upload image "${file.name}"`,
                                 (progress) => {
                                     updateProgressBar(progress, `上传 "${file.name}": ${Math.round(progress)}%`);
-                                }
+                                },
+                                file.name // Pass fileName for progress update message
                             );
                             resolve(rawImageUrl); 
                         } catch (error) {
@@ -2256,10 +2262,11 @@
         const populateGitalkSettings = () => {
             const gitalkConfig = config.gitalk || {};
             document.getElementById('gitalk-enabled').checked = !!gitalkConfig.enabled;
+            // Provide fallback values if config.gitalk is missing or incomplete
             document.getElementById('gitalk-clientID').value = gitalkConfig.clientID || '';
             document.getElementById('gitalk-clientSecret').value = gitalkConfig.clientSecret || '';
-            document.getElementById('gitalk-repo').value = gitalkConfig.repo || '';
-            document.getElementById('gitalk-owner').value = gitalkConfig.owner || '';
+            document.getElementById('gitalk-repo').value = gitalkConfig.repo || repo; // Fallback to detected repo
+            document.getElementById('gitalk-owner').value = gitalkConfig.owner || owner; // Fallback to detected owner
             document.getElementById('gitalk-admin').value = (gitalkConfig.admin && Array.isArray(gitalkConfig.admin) ? gitalkConfig.admin.join(', ') : gitalkConfig.admin || '');
         };
 
@@ -2276,9 +2283,9 @@
                 repo: document.getElementById('gitalk-repo').value.trim(),
                 owner: document.getElementById('gitalk-owner').value.trim(),
                 admin: gitalkAdminArray,
-                distractionFreeMode: newConfig.gitalk.distractionFreeMode, 
-                labels: newConfig.gitalk.labels || ['Gitalk', '评论'], 
-                perPage: newConfig.gitalk.perPage || 10,
+                distractionFreeMode: newConfig.gitalk.distractionFreeMode || false, // Keep existing or set default
+                labels: newConfig.gitalk.labels || ['Gitalk', '评论'], // Keep existing or set default
+                perPage: newConfig.gitalk.perPage || 10, // Keep existing or set default
             };
 
             if (newConfig.gitalk.enabled && (!newConfig.gitalk.clientID || !newConfig.gitalk.clientSecret || !newConfig.gitalk.repo || !newConfig.gitalk.owner)) {
@@ -2290,7 +2297,7 @@
             try {
                 const res = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(newConfig, null, 2), configSha, 'conf: update Gitalk settings');
                 configSha = res.content.sha;
-                config = newConfig; // Update local config
+                config = newConfig; 
                 showAlert('Gitalk 评论设置已保存！', 'success');
             } catch (error) {
                 showAlert(`Gitalk 评论设置保存失败: ${error.message}`, 'danger');
@@ -2300,7 +2307,7 @@
         };
 
         // ==================== File Upload Functions (Generic, for images) ====================
-        const uploadFile = async (file, uploadDirectory, message, onProgress = null) => {
+        const uploadFile = async (file, uploadDirectory, message, onProgress = null, displayFileName = '文件') => {
             if (!file) throw new Error("No file provided for upload.");
             
             return new Promise((resolve, reject) => {
@@ -2322,7 +2329,7 @@
                     const blobPath = `${uploadDirectory}/${finalFileName}`;
                     
                     try {
-                        const uploadResult = await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress);
+                        const uploadResult = await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress, displayFileName);
                         // GitHub's API response directly contains the raw_url
                         const rawGithubUrl = uploadResult.content.download_url || `https://raw.githubusercontent.com/${owner}/${repo}/main/${blobPath}`; // Fallback if download_url is missing
                         resolve(rawGithubUrl); 
@@ -2399,7 +2406,8 @@
                                 file,
                                 'images', 
                                 `feat: upload image "${file.name}" for post`,
-                                (progress) => updateEditorProgressBar(progress, `上传 "${file.name}": ${Math.round(progress)}%`)
+                                (progress) => updateEditorProgressBar(progress, `上传 "${file.name}": ${Math.round(progress)}%`),
+                                file.name // Pass fileName for progress update message
                             );
                             // IMPORTANT: Insert the RAW GitHub URL into markdown content.
                             // The blog's frontend (index.html) will handle proxying for display.
@@ -2467,7 +2475,7 @@
             // Re-render all tags to ensure correct removal visually
             const tagsContainer = document.getElementById('tag-token-container');
             tagsContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
-            currentTags.forEach(tag => addTagToInput(tag, tagsInput)); // Use the correct tagsInput for re-adding
+            currentTags.forEach(tag => addTagToInput(tag, document.getElementById('post-tags-input'))); // Using direct ID to be safe
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2631,7 +2639,7 @@
                 if (file) {
                     try {
                         showAlert(`正在上传背景图片 "${file.name}"...`, 'info');
-                        const rawImageUrl = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`); // Upload to 'images' folder
+                        const rawImageUrl = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`, null, file.name); // Upload to 'images' folder
                         document.getElementById('setting-bg-image-url').value = rawImageUrl; // Stores raw URL
                         settingBgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(rawImageUrl)}" alt="背景图预览" loading="lazy">`; 
                         uploadBgImageBtn.style.display = 'none';
