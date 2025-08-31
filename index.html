@@ -145,6 +145,19 @@
             object-fit: cover; /* Crop to fill, maintain ratio */
             min-height: 100%; /* Ensure height fills */
         }
+        /* Fallback for error images */
+        .post-card-image .image-error-placeholder {
+            padding: 20px;
+            color: #888;
+            font-size: 0.9em;
+            text-align: center;
+            background-color: #f0f0f0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .post-card-content {
             padding: 25px;
             flex-grow: 1;
@@ -536,18 +549,20 @@
             linkify: true,
             typographer: true,
             highlight: function (str, lang) {
-                // Ensure the string passed to highlight.js is HTML-escaped to prevent XSS and warnings.
+                // ALWAYS explicitly escape the code block content before highlight.js
+                // This is the correct way to prevent XSS and address highlight.js's security warning.
                 const escapedStr = md.utils.escapeHtml(str); 
                 if (lang && hljs.getLanguage(lang)) {
                     try {
                         return '<pre><code class="hljs">' +
                                hljs.highlight(escapedStr, { language: lang, ignoreIllegals: true }).value + 
                                '</code></pre>';
-                    } catch (__) {
-                        console.warn('Highlight.js failed, falling back to basic escape.');
+                    } catch (e) {
+                        console.warn('Highlight.js failed, falling back to basic escape:', e);
                     }
                 }
-                return '<pre><code class="hljs">' + escapedStr + '</code></pre>'; // Fallback also uses escaped string
+                // Fallback for non-highlighted code or errors also uses escaped string
+                return '<pre><code class="hljs">' + escapedStr + '</code></pre>'; 
             }
         });
 
@@ -621,18 +636,16 @@
             async getRawFile(owner, repo, path) {
                 const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
                 console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
-                const response = await fetch(rawUrl);
+                const response = await fetch(rawUrl, {cache: 'no-store'}); // Added cache: 'no-store'
                 if (!response.ok) {
                     throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
                 }
-                // Check if content-type is json. If not, it means file is not found or empty
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
-                    // Try to read as text and handle empty/invalid JSON
                     const textContent = await response.text();
                     if (!textContent.trim()) {
                          console.warn(`File ${rawUrl} is empty or non-JSON content. Returning empty JSON.`);
-                         return {}; // Or [] depending on expected structure
+                         return {}; 
                     }
                     try {
                         return JSON.parse(textContent);
@@ -646,38 +659,40 @@
 
         // Unified function to process image URLs for display (always return proxied URL)
         const getProxiedImageUrl = (inputUrl) => {
-            if (!inputUrl) return '';
+            if (!inputUrl || typeof inputUrl !== 'string' || inputUrl.trim() === '') {
+                return ''; // Return empty string for invalid input.
+            }
+            
+            let finalTargetUrl = inputUrl;
 
-            let urlToProcess = inputUrl;
-
-            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
-            if (urlToProcess.startsWith('https://gh-proxy.com/')) {
+            // Step 1: If it's already a gh-proxy URL, decode it to get the raw target.
+            if (finalTargetUrl.startsWith('https://gh-proxy.com/')) {
                 try {
-                    urlToProcess = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
+                    finalTargetUrl = decodeURIComponent(finalTargetUrl.substring('https://gh-proxy.com/'.length));
                 } catch (e) {
-                    console.warn('Failed to decode existing gh-proxy URL, using as is for further processing:', e, urlToProcess);
+                    console.warn('[getProxiedImageUrl] Failed to decode existing gh-proxy URL, proceeding with original:', e, finalTargetUrl);
+                    return inputUrl; 
                 }
             }
 
-            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com),
-            // we will parse it, explicitly decode path components, then re-encode for the proxy.
-            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
+            // Step 2: Now `finalTargetUrl` should be the raw.githubusercontent.com URL or a generic HTTP URL.
+            // We need to get its *fully unescaped* raw form, then encode *that* for gh-proxy.
+            if (finalTargetUrl.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(finalTargetUrl)) {
+                let unescapedRawUrl;
                 try {
-                    const urlObj = new URL(urlToProcess);
-                    // Explicitly decode the path and search components fully.
-                    // This handles cases where GitHub's download_url might return partially encoded URLs
-                    // or contain characters like '~' that were not directly percent-encoded by GitHub but need it for the proxy.
-                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
-                    urlObj.search = decodeURIComponent(urlObj.search);
-                    urlToProcess = urlObj.toString();
+                    // Use decodeURI on the entire URL string. This decodes common URI escape sequences like %20, %7E.
+                    // This is the key to preventing double encoding for proxy.
+                    unescapedRawUrl = decodeURI(finalTargetUrl);
                 } catch (e) {
-                    console.warn("URL parsing/decoding for path normalization failed, using raw URL for encoding:", e, urlToProcess);
+                    console.warn('[getProxiedImageUrl] Failed to decodeURI raw URL, using original:', e, finalTargetUrl);
+                    unescapedRawUrl = finalTargetUrl; // Fallback
                 }
-                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized) URL.
-                return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
+                
+                // Then encode this *unescaped* raw URL for gh-proxy.
+                return `https://gh-proxy.com/${encodeURIComponent(unescapedRawUrl)}`;
             }
 
-            // For any other URL (e.g., relative paths, data URIs, etc.), return as is.
+            // If it's not a recognizable external HTTP/HTTPS URL, return as is.
             return inputUrl; 
         };
 
@@ -701,11 +716,21 @@
                 postCard.className = 'post-card';
                 
                 // Extract first image from markdown (raw URL will be processed by getProxiedImageUrl for display)
-                const firstImageMatch = post.content.match(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/); 
+                const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); 
                 let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
-                let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
+                let imageAlt = firstImageMatch ? firstImageMatch[1] : `图片 - ${post.title}`; // Default alt text
 
-                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${getProxiedImageUrl(imageUrl)}" alt="${imageAlt}" loading="lazy"></div>` : '';
+                let imagePreviewHtml = '';
+                if (imageUrl) {
+                    const proxiedUrl = getProxiedImageUrl(imageUrl);
+                    imagePreviewHtml = `
+                        <div class="post-card-image">
+                            <img src="${proxiedUrl}" alt="${imageAlt}" loading="lazy" 
+                                 onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'15\' text-anchor=\'middle\' dominant-baseline=\'central\' fill=\'#e74c3c\'>❌ Image Load Failed</text></svg>'; this.classList.add('image-error-placeholder');">
+                        </div>`;
+                } else {
+                    imagePreviewHtml = `<div class="post-card-image"><div class="image-error-placeholder">暂无图片</div></div>`;
+                }
 
                 postCard.innerHTML = `
                     ${imagePreviewHtml}
@@ -733,9 +758,14 @@
             }
 
             // Standardize all image URLs within the post content for display
-            let processedContent = post.content.replace(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/g, (match, alt, url) => {
-                return `![${alt}](${getProxiedImageUrl(url)})`;
+            // This replaces image markdown with HTML <img> tags, applying getProxiedImageUrl and onerror
+            let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                const proxiedUrl = getProxiedImageUrl(url);
+                // Directly return an HTML img tag with error fallback
+                return `<img src="${proxiedUrl}" alt="${alt}" loading="lazy" 
+                           onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'15\' text-anchor=\'middle\' dominant-baseline=\'central\' fill=\'#e74c3c\'>❌ Image Load Failed</text></svg>'; this.style.backgroundColor='#f0f0f0'; this.style.objectFit='contain'; this.style.padding='10px'; this.height='150'">`;
             });
+
 
             blogContentDiv.innerHTML = `
                 <article class="post-full">
@@ -831,7 +861,7 @@
             try {
                 let tempUsernameFromHost = window.location.hostname.split('.')[0];
                 if (tempUsernameFromHost.toLowerCase() === 'localhost' || tempUsernameFromHost.toLowerCase() === '127.0.0.1' || !tempUsernameFromHost) {
-                    tempUsernameFromHost = "pkq66882"; // Default fallback
+                    tempUsernameFromHost = "pkq66882"; // Default fallback to your username
                     console.warn(`[index.html] Running locally or on custom domain. Defaulting GitHub username for repo detection to "${tempUsernameFromHost}".`);
                 }
                 const resolvedOwner = tempUsernameFromHost; 
@@ -849,6 +879,7 @@
                 console.log(`[index.html] Attempting to fetch config.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${configRawFilepath}`);
                 console.log(`[index.html] Attempting to fetch posts.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${postsRawFilepath}`);
 
+                // Fetch with no-store to ensure fresh data
                 const fetchConfig = GitHubAPI_Frontend.getRawFile(owner, repo, configRawFilepath);
                 const fetchPosts = GitHubAPI_Frontend.getRawFile(owner, repo, postsRawFilepath);
 
@@ -865,7 +896,7 @@
                 // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
                 blogPosts = postsJson.map(post => {
                     // This step ensures any potentially proxied/double-encoded URLs from older saves are normalized to raw URLs.
-                    let newContent = post.content.replace(/!$$(.*?)$$$(https?:\/\/[^\s)]+)$/g, (match, alt, url) => {
+                    let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
                         let originalUrl = url;
                         if (originalUrl.startsWith('https://gh-proxy.com/')) {
                             try {
