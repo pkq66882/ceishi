@@ -1,0 +1,41 @@
+{
+  "site": {
+    "title": "期望AI的博客",
+    "description": "一个由 GitHub Pages 驱动的半静态博客，由期望AI打造。",
+    "favicon": "https://example.com/favicon.ico"
+  },
+  "styling": {
+    "backgroundColor": "#f8f9fa",
+    "textColor": "#343a40",
+    "headingColor": "#212529",
+    "accentColor": "#0d6efd",
+    "linkHoverColor": "#0b5ed7",
+    "borderColor": "#e9ecef",
+    "cardBg": "#ffffff",
+    "cardShadow": "0 4px 12px rgba(0, 0, 0, 0.06)",
+    "metaColor": "#6c757d",
+    "codeBg": "#2d2d2d",
+    "codeText": "#f8f8f2",
+    "footerBg": "#f1f3f5",
+    "darkModeEnabled": false,
+    "backgroundImageUrl": ""
+  },
+  "giscus": {
+    "repo": "",           
+    "repoId": "",       
+    "category": "",     
+    "categoryId": ""  
+  },
+  "socialLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/rjdsq",
+      "icon": "github" 
+    },
+    {
+      "name": "Twitter",
+      "url": "https://twitter.com/your-username",
+      "icon": "twitter"
+    }
+  ]
+}
