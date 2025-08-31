@@ -553,7 +553,7 @@
         let blogPosts = [];
         let owner = ''; 
         let repo = '';    
-        let basePath = ''; 
+        let publicUrlBase = ''; // e.g., '/ceishi'
 
         const appDiv = document.getElementById('app');
         const blogContentDiv = document.getElementById('blog-content');
@@ -565,69 +565,56 @@
         const adminLinkEl = document.getElementById('admin-link');
 
 
-        const getFilePath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
-
         // Unified path parsing function (consistent with admin.html)
-        const parseGitHubPath = (githubUsername) => {
+        const parseGitHubRepoAndBasePath = (githubUsername) => {
             const hostname = window.location.hostname; 
             let pathSegments = window.location.pathname.split('/').filter(p => p); 
 
+            // Remove current HTML file if it's the last segment
             if (pathSegments.length > 0 && 
                 (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
                  pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
                 pathSegments.pop();
             }
 
-            let currentRepo = '';
-            let currentBasePath = '';
-
-            const hostnameLow = hostname.toLowerCase();
             const usernameLow = githubUsername.toLowerCase();
-            const userGithubIoPattern = new RegExp(`^${usernameLow}(\\.github\\.io)?$`); // Allow both user.github.io and user for consistency
-            
-            console.log(`[parseGitHubPath Debug] Hostname: ${hostname}, Username: ${githubUsername}, PathSegments: [${pathSegments.join(', ')}]`);
+            const hostnameLow = hostname.toLowerCase();
 
-            if (userGithubIoPattern.test(hostnameLow) || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
+            let finalOwner = usernameLow;
+            let finalRepo = '';
+            let finalPublicUrlBase = ''; // e.g., '/ceishi' for pkq66882.github.io/ceishi
+
+            // Case 1: user.github.io (user/org page) or localhost
+            if (hostnameLow === `${usernameLow}.github.io` || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
                 if (pathSegments.length > 0) {
-                    currentRepo = pathSegments[0]; 
-                    currentBasePath = pathSegments.slice(1).join('/'); 
-                    console.log(`[parseGitHubPath Debug] Case 1.1: Project Page under User.github.io or Local, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
+                    // Project site: e.g., pkq66882.github.io/ceishi/ -> repo="ceishi", publicUrlBase="/ceishi"
+                    finalRepo = pathSegments[0];
+                    finalPublicUrlBase = `/${pathSegments[0]}`;
                 } else {
-                    currentRepo = `${usernameLow}.github.io`; // Default to user page repo if root
-                    currentBasePath = '';
-                    console.log(`[parseGitHubPath Debug] Case 1.2: User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
+                    // User/Org site: e.g., pkq66882.github.io/ -> repo="pkq66882.github.io", publicUrlBase=""
+                    finalRepo = `${usernameLow}.github.io`;
+                    finalPublicUrlBase = '';
                 }
-            } else if (hostnameLow.endsWith('.github.io')) { 
-                 if (pathSegments.length > 0) {
-                    currentRepo = pathSegments[0];
-                    currentBasePath = pathSegments.slice(1).join('/');
-                    console.log(`[parseGitHubPath Debug] Case 2.1: Generic .github.io Project Page, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
-                } else {
-                    currentRepo = `${githubUsername}.github.io`; 
-                    currentBasePath = '';
-                    console.log(`[parseGitHubPath Debug] Case 2.2: Generic .github.io No Path, Default to User Repo, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
-                }
-            } else { 
-                // Custom domain case (or other non-github.io)
-                if (pathSegments.length > 0) {
-                    currentRepo = pathSegments[0]; // Assume first segment is repo if on custom domain
-                    currentBasePath = pathSegments.slice(1).join('/');
-                    console.log(`[parseGitHubPath Debug] Case 3.1: Custom Domain Project Page, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
-                } else {
-                    // Fallback for custom domains without path or assuming user.github.io for custom root
-                    currentRepo = `${githubUsername}.github.io`; 
-                    currentBasePath = '';
-                    console.log(`[parseGitHubPath Debug] Case 3.2: Custom Domain User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
-                }
-            }
-            
-            if (!currentRepo || currentRepo.trim() === '') {
-                console.warn("[parseGitHubPath Debug] Final adjustment: currentRepo is empty or invalid, defaulting to user site repo.");
-                currentRepo = `${githubUsername}.github.io`;
+            } 
+            // Case 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
+            else if (pathSegments.length > 0) {
+                // Assume first path segment is the repo name for project-like hosting
+                finalRepo = pathSegments[0];
+                finalPublicUrlBase = `/${pathSegments[0]}`;
+            } else {
+                // Custom domain root. Assume it points to the user's main site repo without a path segment.
+                finalRepo = `${usernameLow}.github.io`;
+                finalPublicUrlBase = '';
             }
 
-            console.log(`[parseGitHubPath Final] Owner: ${githubUsername}, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
-            return { owner: githubUsername, repo: currentRepo, basePath: currentBasePath };
+            // Safety net: if repo is still empty, default to user's main site repo.
+            if (!finalRepo || finalRepo.trim() === '') {
+                finalRepo = `${usernameLow}.github.io`;
+                finalPublicUrlBase = '';
+            }
+
+            console.log(`[parseGitHubRepoAndBasePath Final] Owner: ${finalOwner}, Repo: "${finalRepo}", PublicUrlBase: "${finalPublicUrlBase}"`);
+            return { owner: finalOwner, repo: finalRepo, publicUrlBase: finalPublicUrlBase };
         };
 
 
@@ -648,26 +635,42 @@
         const getProxiedImageUrl = (inputUrl) => {
             if (!inputUrl) return '';
 
-            let originalUrl = inputUrl;
+            let urlToProxy = inputUrl;
 
-            // If inputUrl is already a gh-proxy URL, decode it to get the original URL part.
-            // This is crucial to prevent double encoding if a URL was saved with a gh-proxy prefix by accident.
-            if (originalUrl.startsWith('https://gh-proxy.com/')) {
+            // Step 1: Normalize the URL to its most 'raw' form before applying a new proxy.
+            // If it's already a gh-proxy URL, decode it to get the original raw GitHub URL.
+            if (urlToProxy.startsWith('https://gh-proxy.com/')) {
                 try {
-                    originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
+                    urlToProxy = decodeURIComponent(urlToProxy.substring('https://gh-proxy.com/'.length));
                 } catch (e) {
-                    // console.warn("Error decoding URL from gh-proxy prefix, using as is:", e, originalUrl);
+                    console.warn("Could not decode part of URL from gh-proxy link, using as is:", e, urlToProxy);
                 }
             }
-            
-            // Now, apply gh-proxy and encode the *entire* original URL once.
-            // We proxy any standard HTTP(S) link, especially raw.githubusercontent.com.
-            if (originalUrl.startsWith('https://raw.githubusercontent.com/') || originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
-                return `https://gh-proxy.com/${encodeURIComponent(originalUrl)}`;
+
+            // Step 2: Now, urlToProxy should ideally be the raw.githubusercontent.com URL.
+            // However, GitHub itself might provide 'download_url' with already-encoded parts (like %7E for ~).
+            // To prevent double encoding of '%' if the URL is already percent-encoded (e.g., %257E),
+            // we will parse the URL, explicitly decode the path and search parts, and then re-encode the whole thing for the proxy.
+            try {
+                const urlObj = new URL(urlToProxy);
+                // Decode path component completely to remove any existing %-encoding like %7E
+                const decodedPath = decodeURIComponent(urlObj.pathname); 
+                urlObj.pathname = decodedPath; 
+                // Reconstruct URL. urlObj.toString() will correctly re-encode characters it needs to.
+                // It will NOT double-encode existing '%' characters if they are part of a percent-encoded sequence
+                // after the explicit decodeURIComponent.
+                urlToProxy = urlObj.toString(); 
+            } catch (e) {
+                console.warn("Could not parse or decode URL object, attempting simple re-encode:", e, urlToProxy);
+                // Fallback for invalid URLs or those not needing path decoding. Proceed as is.
             }
 
-            // For other cases (e.g., relative paths that are not handled as images directly), return as is.
-            return originalUrl;
+            // Step 3: Apply gh-proxy and encode the *entire* (now normalized) raw URL once.
+            if (urlToProxy.startsWith('https://raw.githubusercontent.com/') || urlToProxy.startsWith('http://') || urlToProxy.startsWith('https://')) {
+                return `https://gh-proxy.com/${encodeURIComponent(urlToProxy)}`;
+            }
+
+            return urlToProxy; // Return as is for relative paths or others not meant for proxy
         };
 
 
@@ -677,7 +680,7 @@
             const postListContainer = blogContentDiv.querySelector('.post-list');
 
             if (blogPosts.length === 0) {
-                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1;"><i class="fas fa-info-circle"></i> 暂无文章。去<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
+                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1;"><i class="fas fa-info-circle"></i> 暂无文章。去<a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
                 return;
             }
 
@@ -689,7 +692,7 @@
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
                 
-                // Extract first image from markdown (raw URL will be processed by getProxiedImageUrl)
+                // Extract first image from markdown (raw URL will be processed by getProxiedImageUrl for display)
                 const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); // Matches ![alt](raw_url)
                 let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
                 let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
@@ -778,7 +781,7 @@
              blogContentDiv.innerHTML = `
                 <div class="about-page">
                     <h1>关于我</h1>
-                    <div class="about-content">${siteConfig && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : `<p>暂无内容。请前往<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a>的“网站设置”编辑“关于我”页面。</p>`}</div>
+                    <div class="about-content">${siteConfig && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : `<p>暂无内容。请前往<a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank">管理后台</a>的“网站设置”编辑“关于我”页面。</p>`}</div>
                 </div>
             `;
             blogContentDiv.style.display = 'block';
@@ -820,22 +823,22 @@
             try {
                 // Try to infer GitHub username from GitHub Pages hostname
                 let tempOwner = window.location.hostname.split('.')[0];
-                if (tempOwner.toLowerCase() === 'localhost' || tempOwner.toLowerCase() === '127.0.0.1') {
+                if (tempOwner.toLowerCase() === 'localhost' || tempOwner.toLowerCase() === '127.0.0.1' || !tempOwner) {
                     // Fallback for local development or custom domains without a clear user prefix
                     tempOwner = "pkq66882"; // Default to your GitHub username for fallback
-                    console.warn(`[index.html] Running locally or on custom domain. Defaulting GitHub username to "${tempOwner}". If this is incorrect, manually specify in the code.`);
+                    console.warn(`[index.html] Running locally or on custom domain without clear user. Defaulting GitHub username to "${tempOwner}". If this is incorrect for fetching config/posts, please adjust the default manually or ensure your domain/path conforms to GitHub Pages structure.`);
                 }
                 const resolvedOwner = tempOwner; 
                 
-                const parsedPath = parseGitHubPath(resolvedOwner);
+                const parsedPath = parseGitHubRepoAndBasePath(resolvedOwner);
                 owner = parsedPath.owner; 
                 repo = parsedPath.repo;   
-                basePath = parsedPath.basePath; 
+                publicUrlBase = parsedPath.publicUrlBase; 
 
-                console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
+                console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, PublicUrlBase: "${publicUrlBase}"`);
 
-                const configRawFilepath = getFilePath('config.json');
-                const postsRawFilepath = getFilePath('posts.json');
+                const configRawFilepath = 'config.json';
+                const postsRawFilepath = 'posts.json';
 
                 console.log(`[index.html] Attempting to fetch config.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${configRawFilepath}`);
                 console.log(`[index.html] Attempting to fetch posts.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${postsRawFilepath}`);
@@ -854,11 +857,13 @@
 
                 siteConfig = configJson;
                 // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
+                // At this point, content should ideally contain raw.githubusercontent.com URLs if admin.html is updated.
                 blogPosts = postsJson.map(post => {
+                    // Normalize any stored URL to its raw form first (if it somehow got proxied or double-encoded from old logic)
                     let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
                         let originalUrl = url;
-                        // If it came from a proxied URL, decode it back to raw GitHub URL for storage
                         if (originalUrl.startsWith('https://gh-proxy.com/')) {
+                            // If it's a proxied URL, decode it back to the raw GitHub URL for internal storage
                             try {
                                 originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
                             } catch (e) {
@@ -906,7 +911,7 @@
                 siteDescriptionEl.textContent = siteConfig.site.description || "一个由GitHub Pages驱动的现代化博客。";
                 
                 if (adminLinkEl) {
-                    adminLinkEl.href = `${window.location.protocol}//${window.location.host}${basePath ? `/${basePath}` : ''}/admin.html`;
+                    adminLinkEl.href = `${window.location.origin}${publicUrlBase}/admin.html`;
                 }
 
                 mainFooterEl.innerHTML = `
@@ -918,7 +923,7 @@
             } catch (error) {
                 console.error("博客初始化失败:", error);
                 document.title = "错误 - 博客";
-                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${window.location.protocol}//${window.location.host}${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
+                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
                 blogContentDiv.style.display = 'block';
             } finally {
                 loadingDiv.style.display = 'none';
@@ -932,7 +937,8 @@
             // Fix for home navigation to truly remove hash
             document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
                 e.preventDefault();
-                const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+                // Construct the clean URL including publicUrlBase
+                const cleanUrl = `${window.location.origin}${publicUrlBase}/index.html`;
                 if (window.location.href !== cleanUrl) {
                     window.location.replace(cleanUrl); // Replace current history entry
                 } else {
