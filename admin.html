@@ -792,6 +792,8 @@
                 if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
                 return response.json();
             },
+            // 修正：将箭头函数改为ES6方法简写，确保this指向GitHubAPI对象
+            async getUser(token) { return this.request(token, '/user'); },
             async getFile(token, owner, repo, path) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
@@ -811,9 +813,18 @@
                     throw error;
                 }
             },
-            createFile: (token, owner, repo, path, content, message, isBinary = false) => GitHubAPI.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content) }) }),
-            updateFile: (token, owner, repo, path, content, sha, message, isBinary = false) => GitHubAPI.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content), sha }) }),
-            deleteFile: (token, owner, repo, path, sha, message) => GitHubAPI.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'DELETE', body: JSON.stringify({ message, sha }) }),
+            // 修正：将箭头函数改为ES6方法简写，确保this指向GitHubAPI对象
+            async createFile(token, owner, repo, path, content, message, isBinary = false) { 
+                return this.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content) }) });
+            },
+            // 修正：将箭头函数改为ES6方法简写，确保this指向GitHubAPI对象
+            async updateFile(token, owner, repo, path, content, sha, message, isBinary = false) {
+                return this.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content), sha }) });
+            },
+            // 修正：将箭头函数改为ES6方法简写，确保this指向GitHubAPI对象
+            async deleteFile(token, owner, repo, path, sha, message) { 
+                return this.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'DELETE', body: JSON.stringify({ message, sha }) });
+            },
         };
 
         // ==================== DOM 元素缓存 ====================
@@ -1064,7 +1075,7 @@
             }
         };
 
-        // ==================== 文章管理功能 (保持不变，已在上一轮优化) ====================
+        // ==================== 文章管理功能 (保持不变) ====================
         const renderPostList = () => {
             postListBody.innerHTML = '';
             if (posts.length === 0) {
@@ -1183,7 +1194,7 @@
             }
         };
 
-        // ==================== 网站设置功能 (保持不变，已在上一轮优化) ====================
+        // ==================== 网站设置功能 (保持不变) ====================
         const populateSettings = () => {
             document.getElementById('setting-title').value = config.site.title || '';
             document.getElementById('setting-description').value = config.site.description || '';
@@ -1231,7 +1242,7 @@
             }
         };
         
-        // ==================== Gitalk 评论设置功能 (保持不变，已在上一轮优化) ====================
+        // ==================== Gitalk 评论设置功能 (保持不变) ====================
         const populateGitalkSettings = () => {
             const gitalkConfig = config.gitalk || {};
             document.getElementById('gitalk-enabled').checked = !!gitalkConfig.enabled;
@@ -1278,7 +1289,7 @@
         };
 
 
-        // ==================== 文件上传功能 (通用，用于图片) (保持不变，已在上一轮优化) ====================
+        // ==================== 文件上传功能 (通用，用于图片) (保持不变) ====================
         const uploadFile = async (file, uploadPath, message) => {
             if (!file) return;
             setButtonsDisabled(true);
@@ -1309,7 +1320,7 @@
             });
         };
 
-        // ==================== EasyMDE 初始化及图片上传集成 (保持不变，已在上一轮优化) ====================
+        // ==================== EasyMDE 初始化及图片上传集成 (保持不变) ====================
         const initializeEasyMDE = () => {
             if (easyMDE) return; // 避免重复初始化
 
@@ -1364,7 +1375,7 @@
         };
 
 
-        // ==================== 标签输入管理 (保持不变，已在上一轮优化) ====================
+        // ==================== 标签输入管理 (保持不变) ====================
         const allUniqueTags = new Set(); // 存储所有文章中出现的唯一标签
         const updateUniqueTags = () => {
             allUniqueTags.clear();
@@ -1489,7 +1500,7 @@
         });
 
 
-        // ==================== 事件绑定 ====================
+        // ==================== 事件绑定 (保持不变) ====================
         document.addEventListener('DOMContentLoaded', () => {
             // 登录
             startBtn.onclick = startAdmin;
