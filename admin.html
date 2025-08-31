@@ -765,7 +765,8 @@
                 <li><a href="#" id="nav-media-library" data-view="media-library"><i class="fas fa-images"></i> 媒体库</a></li>
                 <li><a href="#" id="nav-settings" data-view="settings"><i class="fas fa-cog"></i> 网站设置</a></li>
                 <li><a href="#" id="nav-gitalk-settings" data-view="gitalk-settings"><i class="fas fa-comments"></i> 评论设置</a></li>
-                <li><a href="index.html" target="_blank"><i class="fas fa-desktop"></i> 查看站点</a></li>
+                <!-- 修正了查看站点链接的 href 为 /basePath/index.html -->
+                <li><a id="view-site-link" href="index.html" target="_blank"><i class="fas fa-desktop"></i> 查看站点</a></li>
                 <li><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> 安全退出</a></li>
             </ul>
             <footer>
@@ -934,12 +935,13 @@
                     <div id="setting-bg-image-preview" style="margin-top:10px;">
                         <span class="placeholder">无背景图</span>
                     </div>
+                    <!-- 背景图 URL 将直接存储 raw.githubusercontent.com 链接，前端渲染时再加代理 -->
                     <input type="text" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" readonly style="margin-top: 10px;">
                     <div class="button-group" style="margin-top: 10px; justify-content: flex-start;">
                         <button id="upload-bg-image-btn" class="btn-primary" style="display:none;"><i class="fas fa-upload"></i> 上传并设置</button>
                         <button id="clear-bg-image-btn" class="btn-danger"><i class="fas fa-trash-alt"></i> 清除背景图</button>
                     </div>
-                    <p class="description">可上传图片作为网站背景，或直接粘帖URL。</p>
+                    <p class="description">可上传图片作为网站背景，或直接粘帖原始图片URL (如 raw.githubusercontent.com)。</p>
                 </div>
             </div>
 
@@ -1105,6 +1107,8 @@
         let config = {}, configSha = '';
         let easyMDE; 
 
+        const viewSiteLink = document.getElementById('view-site-link'); // 获取查看站点链接
+
         // 统一获取文件路径
         const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
@@ -1124,27 +1128,21 @@
 
             const hostnameLow = hostname.toLowerCase();
             const usernameLow = githubUsername.toLowerCase();
-            // 修正拼写错误：userGithubIoPattern
             const userGithubIoPattern = new RegExp(`^${usernameLow}\\.github\\.io$`);
             
             console.log(`[parseGitHubPath Debug] Hostname: ${hostname}, Username: ${githubUsername}, PathSegments: [${pathSegments.join(', ')}]`);
 
-            // 修正了 userGithubIoIoPattern 拼写错误
             if (userGithubIoPattern.test(hostnameLow) || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
-                // 情况1: hostname 是 user.github.io (如 pkq66882.github.io) 或本地调试
                 if (pathSegments.length > 0) {
-                    // 这是项目页面部署在子路径 (e.g., pkq66882.github.io/ceishi/)
-                    currentRepo = pathSegments[0]; // repo 是 "ceishi"
-                    currentBasePath = pathSegments.slice(1).join('/'); // basePath 是 "ceishi" 之后的部分 (通常为空字符串)
+                    currentRepo = pathSegments[0]; 
+                    currentBasePath = pathSegments.slice(1).join('/'); 
                     console.log(`[parseGitHubPath Debug] Case 1.1: Project Page under User.github.io or Local, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
-                    // 这是用户/组织页面根目录部署 (e.g., pkq66882.github.io/)
-                    currentRepo = hostnameLow; // repo 是 "pkq66882.github.io"
+                    currentRepo = hostnameLow; 
                     currentBasePath = '';
                     console.log(`[parseGitHubPath Debug] Case 1.2: User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             } else if (hostnameLow.endsWith('.github.io')) { 
-                // 情况2: hostname 是 .github.io 结尾，但不是当前用户的。 (不太可能出现在实际部署中，但为健壮性保留)
                  if (pathSegments.length > 0) {
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
@@ -1155,7 +1153,6 @@
                     console.log(`[parseGitHubPath Debug] Case 2.2: Generic .github.io No Path, Default to User Repo, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             } else { 
-                // 情况3: 自定义域名 (e.g., custom.com, custom.domain.com)
                 if (pathSegments.length > 0) {
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
@@ -1167,7 +1164,6 @@
                 }
             }
             
-            // 最终安全检查和修正：确保 repo 不为空
             if (!currentRepo || currentRepo.trim() === '') {
                 console.warn("[parseGitHubPath Debug] Final adjustment: currentRepo is empty or invalid, defaulting to user site repo.");
                 currentRepo = `${githubUsername}.github.io`;
@@ -1183,7 +1179,7 @@
             const gitkeepPath = `${directoryPath}/.gitkeep`; 
             console.log(`Checking/Creating directory: ${apiOwner}/${apiRepo}/${gitkeepPath}`);
             try {
-                // 首先尝试获取 .gitkeep 文件
+                // 尝试获取 .gitkeep 文件
                 const fileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
                 
                 if (fileData === null) { // 文件不存在，创建新文件
@@ -1192,12 +1188,28 @@
                     console.log(`Directory ${directoryPath} created successfully.`);
                 } else { // 文件存在，更新文件 (传入 SHA)
                     console.log(`Updating existing .gitkeep for directory ${directoryPath}`);
-                    await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, fileData.content, fileData.sha, `ci: update .gitkeep content for directory ${directoryPath}`);
+                    // 要确保文件内容被正确传递，这里 content 是空的，所以传空字符串
+                    await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', fileData.sha, `ci: update .gitkeep content for directory ${directoryPath}`);
                     console.log(`Directory ${directoryPath} updated successfully.`);
                 }
                 return true;
             } catch (error) {
                 console.error(`Failed to create/update directory ${directoryPath}:`, error);
+                // 专门处理这个错误，表示创建失败可能是因为文件已存在而非其他问题
+                if (String(error.message).includes('sha wasn\'t supplied') && String(error.message).includes('Invalid request') && fileData !== null) {
+                    // 如果尝试创建失败，且错误是SHA问题，且我们知道文件存在（fileData不为null），则可能是逻辑冲突
+                    // 理论上这个分支不会走到，因为上方 `if (fileData === null)` 已经处理了
+                    // 但以防万一，如果仍出现此错误，说明 GitHub API 行为仍有特殊性
+                    console.warn(`Attempted create/update for Gitkeep failed due to SHA hint, despite fileData state. Retrying as update.`);
+                    try {
+                         await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', fileData.sha, `ci: force update .gitkeep content for directory ${directoryPath} after failed create attempt`);
+                         console.log(`Directory ${directoryPath} forced update successfully.`);
+                         return true;
+                    } catch (retryError) {
+                         console.error(`Retry update for ${directoryPath} also failed:`, retryError);
+                         throw retryError;
+                    }
+                }
                 throw error; 
             }
         }
@@ -1224,7 +1236,7 @@
                 initializeEasyMDE();
             }
             if (viewName === 'mediaLibrary') {
-                renderMediaLibrary();
+                if (mediaLibraryGrid) renderMediaLibrary(); // 确保DOM元素存在
             }
             if (viewName === 'dashboard') {
                 renderDashboard();
@@ -1284,6 +1296,11 @@
                 
                 console.log(`[admin.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
                 showAlert(`检测到仓库信息：Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`, 'info', 'path-detection-alert');
+
+                // 更新查看站点链接的 href
+                if (viewSiteLink) {
+                    viewSiteLink.href = `${window.location.origin}${basePath ? `/${basePath}` : ''}/index.html`;
+                }
 
                 initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在检查并创建所需文件目录...`;
                 try {
@@ -1349,7 +1366,7 @@
                 const initialPosts = [{
                     id: `hello_world_${Date.now()}`,
                     title: "欢迎来到我的博客！",
-                    content: "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
+                    content: "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](/admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
                     category: "公告",
                     tags: ["欢迎", "教程"],
                     createdAt: new Date().toISOString(),
@@ -1915,10 +1932,12 @@
             return new Promise((resolve, reject) => {
                 reader.onload = async (e) => {
                     const content = e.target.result.split(',')[1];
+                    // 存储为原始的 raw.githubusercontent.com 链接
                     const blobPath = getPath(`${uploadPath}/${new Date().toISOString().replace(/[-:.]/g, '')}_${file.name}`);
                     try {
                         const result = await GitHubAPI.createFile(token, owner, repo, blobPath, content, message, true);
-                        resolve(result.content.download_url);
+                        // 返回 raw.githubusercontent.com URL
+                        resolve(`https://raw.githubusercontent.com/${owner}/${repo}/main/${blobPath}`);
                     } catch (error) {
                         reject(error);
                     }
@@ -1963,9 +1982,11 @@
                         showAlert(`正在上传图片 ${file.name}...`, 'info', 'image-upload-alert');
 
                         try {
-                            const imageUrl = await uploadFile(file, 'images', `feat: upload image "${file.name}" for post`);
-                            const ghProxyUrl = `https://gh-proxy.com/${encodeURIComponent(imageUrl)}`;
-                            const markdownImage = `![${file.name.split('.')[0]}](${ghProxyUrl})`;
+                            // 获取原始 raw.githubusercontent.com URL
+                            const rawImageUrl = await uploadFile(file, 'images', `feat: upload image "${file.name}" for post`);
+                            // 在 Markdown 中插入时添加代理
+                            const proxiedImageUrl = `https://gh-proxy.com/${encodeURIComponent(rawImageUrl)}`;
+                            const markdownImage = `![${file.name.split('.')[0]}](${proxiedImageUrl})`;
                             
                             const cm = easyMDE.codemirror;
                             const pos = cm.getCursor();
@@ -2162,7 +2183,7 @@
                 const url = settingBgImageUrlInput.value.trim();
                 const displayUrl = url.startsWith('http') ? url : '';
                 if (displayUrl) {
-                    settingBgImagePreview.innerHTML = `<img src="https://gh-proxy.com/${encodeURIComponent(displayUrl)}" alt="背景图预览" loading="lazy">`; // 确保这里也用代理
+                    settingBgImagePreview.innerHTML = `<img src="https://gh-proxy.com/${encodeURIComponent(displayUrl)}" alt="背景图预览" loading="lazy">`;
                     uploadBgImageBtn.style.display = 'none';
                 } else {
                     settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
@@ -2179,7 +2200,7 @@
                     try {
                         showAlert(`正在上传背景图片 ${file.name}...`, 'info');
                         const url = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`);
-                        document.getElementById('setting-bg-image-url').value = url;
+                        document.getElementById('setting-bg-image-url').value = url; // 存储原始 URL
                         settingBgImagePreview.innerHTML = `<img src="https://gh-proxy.com/${encodeURIComponent(url)}" alt="背景图预览" loading="lazy">`; 
                         uploadBgImageBtn.style.display = 'none';
                         showAlert('背景图片上传并设置成功！请点击保存设置！', 'success');
