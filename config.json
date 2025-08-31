@@ -1,0 +1,47 @@
+{
+  "site": {
+    "title": "牡丹君的Github博客",
+    "description": "星辰大海，技术作伴——由GitHub驱动的灵感之地。",
+    "logoUrl": "https://example.com/your-logo.png",
+    "faviconUrl": "https://example.com/your-favicon.ico"
+  },
+  "styling": {
+    "backgroundColor": "#f8f9fa",
+    "textColor": "#212529",
+    "headingColor": "#343a40",
+    "accentColor": "#0d6efd",
+    "linkHoverColor": "#0a58ca",
+    "borderColor": "#dee2e6",
+    "cardBgColor": "#ffffff",
+    "cardShadow": "0 4px 8px rgba(0,0,0,.05)",
+    "metaColor": "#6c757d",
+    "codeBgColor": "#282c34",
+    "codeTextColor": "#abb2bf",
+    "backgroundImageUrl": "https://gh-proxy.com/https://raw.githubusercontent.com/rjdsq/rjdsq.github.io/main/blog/images/20250829T144158774Z_1000026984.png",
+    "darkModeToggle": true
+  },
+  "features": {
+    "commentSystem": {
+      "enabled": true,
+      "type": "custom-serverless", 
+      "apiEndpoint": "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/comments", 
+      "adminApiEndpoint": "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/admin",
+      "postSubmitApiEndpoint": "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/posts/submit"
+    },
+    "userPostingEnabled": false,
+    "highlightJsTheme": "atom-one-dark"
+  },
+  "socialLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/yourusername",
+      "icon": "fab fa-github"
+    },
+    {
+      "name": "Twitter",
+      "url": "https://twitter.com/yourusername",
+      "icon": "fab fa-twitter"
+    }
+  ],
+  "footerText": "© 2024 Your Blog Name. All rights reserved."
+}

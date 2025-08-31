@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正在加载...</title>
+    <!-- Favicon and Logo will be dynamically set from config -->
+    <link rel="icon" id="favicon-link" href="">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Highlight.js CSS theme (dynamic from config) -->
+    <link id="highlight-theme-link" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+
+    <style>
+        /* CSS Variables will be dynamically set by JS from config.json */
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --heading-color: #343a40;
+            --accent-color: #0d6efd;
+            --link-hover-color: #0a58ca;
+            --border-color: #dee2e6;
+            --card-bg: #fff;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --meta-color: #6c757d;
+            --code-bg: #282c34;
+            --code-text: #abb2bf;
+            --comment-bg: #f8f9fa;
+            --comment-border: #e9ecef;
+        }
+
+        /* Dark Mode Variables (default to light, toggle by JS) */
+        body.dark-mode {
+            --bg-color: #212529;
+            --text-color: #e0e0e0;
+            --heading-color: #f8f9fa;
+            --accent-color: #6a9cff;
+            --link-hover-color: #8bbaff;
+            --border-color: #495057;
+            --card-bg: #2c3e50;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            --meta-color: #adb5bd;
+            --code-bg: #1c1c1c;
+            --comment-bg: #2c3e50;
+            --comment-border: #3c4a5c;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 0;
+            transition: background-color .3s ease-in-out, color .3s ease-in-out;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: color .2s ease-in-out;
+        }
+
+        a:hover {
+            color: var(--link-hover-color);
+            text-decoration: underline;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--heading-color);
+        }
+
+        .navbar {
+            background-color: var(--card-bg) !important;
+            box-shadow: var(--card-shadow);
+        }
+        .navbar-brand, .nav-link {
+            color: var(--heading-color) !important;
+        }
+        .navbar-brand:hover, .nav-link:hover {
+            color: var(--accent-color) !important;
+        }
+        .offcanvas-header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .offcanvas-body {
+            background-color: var(--card-bg);
+        }
+
+        .container-fluid.main-content {
+            max-width: 960px;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        .site-header {
+            padding: 2.5rem 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 3rem;
+            background-color: var(--card-bg);
+            border-radius: 0.75rem;
+            box-shadow: var(--card-shadow);
+            animation: fadeIn 0.8s ease-out;
+        }
+        .site-title {
+            font-size: 2.5rem;
+            margin: 0;
+            color: var(--heading-color);
+        }
+        .site-description {
+            font-size: 1.1rem;
+            margin: 10px 0 0;
+            color: var(--meta-color);
+        }
+        .site-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .post-card {
+            background-color: var(--card-bg);
+            margin-bottom: 2.5rem;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .post-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+        }
+        .post-title {
+            margin: 0 0 10px;
+        }
+        .post-title a {
+            font-size: 1.8rem;
+            color: var(--heading-color);
+            transition: color .2s ease-in-out;
+        }
+        .post-title a:hover {
+            color: var(--accent-color);
+        }
+        .post-meta {
+            font-size: 0.9rem;
+            color: var(--meta-color);
+            margin-bottom: 1rem;
+        }
+        .post-summary {
+            color: var(--text-color); /* Adjusted to general text color */
+            margin-bottom: 1.5rem;
+            word-wrap: break-word;
+        }
+        .post-images-preview {
+            display: grid;
+            grid-gap: 10px;
+            margin-bottom: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Adjusted min-width for better small screen */
+        }
+        .post-images-preview img {
+            width: 100%;
+            height: 100px; /* Unified height */
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .read-more-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: #fff;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            transition: background-color .2s ease-in-out, transform .2s ease-in-out;
+        }
+        .read-more-btn:hover {
+            background-color: var(--link-hover-color);
+            transform: translateY(-2px);
+        }
+
+        #post-detail-view {
+            display: none; /* Initially hidden */
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: var(--card-shadow);
+            animation: fadeIn 0.8s ease-out;
+        }
+        .post-full-header {
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .post-full-title {
+            font-size: 2.8rem;
+            color: var(--heading-color);
+            margin: 0 0 1rem;
+        }
+        .post-full-meta {
+            font-size: 1rem;
+            color: var(--meta-color);
+            margin-bottom: 1.5rem;
+        }
+        .post-full-tags .badge {
+            background-color: var(--accent-color);
+            color: #fff;
+            margin-right: 5px;
+            padding: 0.5em 0.8em;
+            border-radius: 0.3rem;
+            font-weight: normal;
+        }
+
+        .post-full-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            word-wrap: break-word; /* Ensure full content wraps */
+        }
+        .post-full-content h1, .post-full-content h2, .post-full-content h3, .post-full-content h4, .post-full-content h5, .post-full-content h6 {
+            color: var(--heading-color);
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+        }
+        .post-full-content h1 { font-size: 2.5rem; }
+        .post-full-content h2 { font-size: 2.2rem; }
+        .post-full-content h3 { font-size: 1.9rem; }
+        .post-full-content p {
+            margin-bottom: 1.5rem;
+        }
+        .post-full-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            display: block; /* Center images if they are smaller than 100% width */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .post-full-content blockquote {
+            margin: 2rem 0;
+            padding: 1.2rem 2rem;
+            border-left: 5px solid var(--accent-color);
+            background-color: var(--bg-color); /* Lighter than card, darker than main bg */
+            border-radius: 0.5rem;
+            color: var(--meta-color);
+            font-style: italic;
+        }
+        .post-full-content pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Menlo', 'Monaco', 'Consolas', "Courier New", monospace;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+        .post-full-content table {
+            width: 100%;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            border-collapse: collapse;
+        }
+        .post-full-content table th, .post-full-content table td {
+            padding: 0.75rem;
+            vertical-align: top;
+            border: 1px solid var(--border-color);
+        }
+        .post-full-content table thead th {
+            vertical-align: bottom;
+            border-bottom: 2px solid var(--border-color);
+            background-color: var(--bg-color); /* Table header background */
+        }
+        .post-full-content code:not(pre code) {
+            background-color: rgba(var(--accent-color-rgb), 0.1); /* Lighter inline code */
+            color: var(--accent-color);
+            padding: 0.2em 0.4em;
+            border-radius: 0.2em;
+            font-size: 0.9em;
+        }
+
+        .comments-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+        .comment-item {
+            background-color: var(--comment-bg);
+            border: 1px solid var(--comment-border);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .comment-meta {
+            font-size: 0.85rem;
+            color: var(--meta-color);
+            margin-bottom: 0.5rem;
+        }
+        .comment-content {
+            margin-bottom: 0;
+            word-break: break-all; /* Ensure long words wrap */
+        }
+        .comment-form textarea {
+            min-height: 120px;
+        }
+
+        .back-to-home {
+            display: inline-block;
+            margin-top: 3rem;
+            font-size: 1.1rem;
+            padding: 10px 20px;
+            border-radius: 5px;
+            background-color: var(--accent-color);
+            color: #fff;
+            transition: background-color .2s ease-in-out;
+        }
+        .back-to-home:hover {
+            background-color: var(--link-hover-color);
+        }
+
+        .site-footer {
+            text-align: center;
+            padding: 2.5rem 0;
+            margin-top: 3rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--meta-color);
+            font-size: 0.95rem;
+        }
+        .social-links a {
+            color: var(--meta-color);
+            margin: 0 10px;
+            font-size: 1.3rem;
+        }
+        .social-links a:hover {
+            color: var(--accent-color);
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100px;
+            font-size: 1.2rem;
+            color: var(--meta-color);
+        }
+        .spinner-border {
+            width: 2rem;
+            height: 2rem;
+            margin-right: 1rem;
+        }
+
+        /* Dark Mode Toggle Switch */
+        .theme-switch {
+            display: flex;
+            align-items: center;
+            margin-left: 15px; /* Adjust spacing in navbar */
+        }
+        .theme-switch input[type="checkbox"] {
+            height: 0;
+            width: 0;
+            visibility: hidden;
+        }
+        .theme-switch label {
+            cursor: pointer;
+            text-indent: -9999px;
+            width: 45px; /* Adjust width of toggle */
+            height: 25px; /* Adjust height of toggle */
+            background: grey;
+            display: block;
+            border-radius: 100px;
+            position: relative;
+            margin-bottom: 0; /* Remove default margin */
+            margin-right: 10px;
+        }
+        .theme-switch label:after {
+            content: '';
+            position: absolute;
+            top: 2.5px; /* Center circle */
+            left: 2.5px; /* Center circle */
+            width: 20px; /* Adjust circle size */
+            height: 20px; /* Adjust circle size */
+            background: #fff;
+            border-radius: 90px;
+            transition: 0.3s;
+        }
+        .theme-switch input:checked + label {
+            background: #0d6efd; /* Accent color when checked */
+        }
+        .theme-switch input:checked + label:after {
+            left: calc(100% - 2.5px);
+            transform: translateX(-100%);
+        }
+        .theme-switch label:active:after {
+            width: 28px;
+        }
+        .theme-switch .form-check-label {
+            color: var(--text-color); /* Label text color */
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .site-title { font-size: 2rem; }
+            .site-description { font-size: 0.95rem; }
+            .post-card { padding: 1.5rem; }
+            .post-title a { font-size: 1.5rem; }
+            #post-detail-view { padding: 1.5rem; }
+            .post-full-title { font-size: 2.2rem; }
+            .post-full-content { font-size: 1rem; }
+            .post-full-content h1 { font-size: 2rem; }
+            .post-full-content h2 { font-size: 1.8rem; }
+            .post-full-content h3 { font-size: 1.6rem; }
+            .theme-switch { margin-left: 0; margin-top: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container-fluid main-content">
+            <a class="navbar-brand d-flex align-items-center" href="#" id="navbar-blog-title">
+                <img id="navbar-site-logo" src="" alt="Logo" class="site-logo me-2 d-none d-lg-block">
+                <span id="blog-title-nav">博客</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="offcanvasNavbarLabel">导航</h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="#">首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#/about">关于</a> <!-- Example for an 'About' page -->
+                        </li>
+                        <li class="nav-item d-none" id="user-post-nav-item">
+                            <a class="nav-link" href="#/submit-post">提交文章</a>
+                        </li>
+                        <li class="nav-item d-lg-none">
+                            <div class="theme-switch d-flex align-items-center mt-3 mb-3 ps-3">
+                                <span class="form-check-label me-2">深色模式</span>
+                                <input class="form-check-input" type="checkbox" id="darkModeToggleMobile">
+                                <label for="darkModeToggleMobile"></label>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="d-none d-lg-flex theme-switch align-items-center mb-0 ms-auto">
+                        <span class="form-check-label me-2">深色模式</span>
+                        <input class="form-check-input" type="checkbox" id="darkModeToggleDesktop">
+                        <label for="darkModeToggleDesktop"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="mt-5 pt-3"> <!-- Added margin-top to account for fixed navbar -->
+        <div class="container-fluid main-content">
+            <header id="site-header" class="site-header">
+                <img id="site-logo" src="" alt="Blog Logo" class="site-logo d-none">
+                <h1 id="blog-title" class="site-title"></h1>
+                <p id="blog-description" class="site-description"></p>
+            </header>
+            <main>
+                <div id="posts-list-view">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        正在加载文章...
+                    </div>
+                </div>
+                <!-- Post Detail View -->
+                <div id="post-detail-view"></div>
+
+                <!-- About Page Example -->
+                <div id="about-page" class="card post-card" style="display: none;">
+                    <div class="card-body">
+                        <h2 class="card-title text-center mb-4">关于我们</h2>
+                        <div class="card-text post-full-content">
+                            <p>欢迎来到我们的博客！这是一个由 GitHub Pages 驱动的实验性“半静态”博客平台。</p>
+                            <p>我们致力于探索如何在静态网站的易用性和免费托管优势之上，提供一套完整的后台管理功能，并最终实现用户评论和发帖等互动功能。</p>
+                            <h3>我们的愿景</h3>
+                            <ul>
+                                <li>**灵活的发布体验**：通过管理后台轻松发布、编辑和管理文章，无需复杂的本地构建流程。</li>
+                                <li>**社区驱动的互动**：集成评论系统，让读者能够参与讨论；未来将开放用户发帖，构建一个充满活力的社区。</li>
+                                <li>**高性能与低成本**：利用 GitHub Pages 的 CDN 优势，提供极速访问体验，同时保持低廉甚至免费的托管成本。</li>
+                            </ul>
+                            <p>感谢您的访问，如果您有任何建议或合作意向，请随时联系我们。</p>
+                        </div>
+                        <a href="#" class="btn btn-primary mt-4 back-to-home">&larr; 返回首页</a>
+                    </div>
+                </div>
+
+                <!-- User Submit Post Page -->
+                <div id="submit-post-view" class="card post-card" style="display: none;">
+                    <div class="card-body">
+                        <h2 class="card-title text-center mb-4"><i class="fas fa-edit me-2"></i>提交您的文章</h2>
+                        <div id="submit-post-form">
+                            <div class="mb-3">
+                                <label for="submit-post-title" class="form-label fw-bold">文章标题 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="submit-post-title" placeholder="请输入文章标题">
+                            </div>
+                            <div class="mb-3">
+                                <label for="submit-post-author" class="form-label fw-bold">您的昵称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="submit-post-author" placeholder="请输入您的昵称">
+                                <div class="form-text">这将作为文章作者显示。</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="submit-post-content" class="form-label fw-bold">文章内容 (支持 Markdown) <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="submit-post-content" rows="15" placeholder="请在这里编写您的文章内容，支持Markdown格式。&#10;&#10;例如：&#10;## 我的第一篇文章&#10;&#10;这是一段简单的文本。&#10;&#10;### 代码示例&#10;```javascript&#10;console.log('Hello, World!');&#10;```"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="submit-post-tags" class="form-label fw-bold">标签 (用英文逗号 `,` 分隔，例如：技术, 生活, 思考)</label>
+                                <input type="text" class="form-control" id="submit-post-tags" placeholder="标签1, 标签2">
+                            </div>
+                            <div class="mb-3">
+                                <label for="submit-post-images" class="form-label fw-bold">上传封面或文章图片</label>
+                                <input type="file" class="form-control" id="submit-post-images" accept="image/*" multiple>
+                                <div class="form-text">您可以上传多张图片，暂不支持直接插入到内容中，图片将作为附件显示或由管理员处理。</div>
+                            </div>
+                            <button id="submit-user-post-btn" class="btn btn-primary mt-3"><i class="fas fa-paper-plane me-2"></i>提交文章</button>
+                            <button id="cancel-user-post-btn" class="btn btn-secondary mt-3 ms-2"><i class="fas fa-times me-2"></i>取消</button>
+                            <div id="submit-post-message" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <footer class="site-footer">
+                <div id="social-links" class="social-links mb-3">
+                    <!-- Social links will be injected here -->
+                </div>
+                <p id="site-footer-text">Powered by GitHub</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7Cfch1ZAD4Xw" crossorigin="anonymous"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for code highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <script>
+        // Utility functions
+        const b64_to_utf8 = (str) => {
+            try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch (e) { return atob(str); }
+        };
+
+        const fetchWithTimeout = async (url, options = {}, timeout = 10000) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error(`请求超时 (${timeout / 1000}秒): ${url}`);
+                }
+                throw error;
+            }
+        };
+
+        // Application state and DOM elements
+        const body = document.body;
+        const faviconLink = document.getElementById('favicon-link');
+        const blogTitleEl = document.getElementById('blog-title');
+        const blogDescriptionEl = document.getElementById('blog-description');
+        const siteLogoEl = document.getElementById('site-logo');
+        const postsListView = document.getElementById('posts-list-view');
+        const postDetailView = document.getElementById('post-detail-view');
+        const aboutPage = document.getElementById('about-page');
+        const submitPostView = document.getElementById('submit-post-view');
+        const siteHeader = document.getElementById('site-header');
+        const navbarBlogTitle = document.getElementById('navbar-blog-title');
+        const navbarSiteLogo = document.getElementById('navbar-site-logo');
+        const userPostNavItem = document.getElementById('user-post-nav-item');
+        const siteFooterText = document.getElementById('site-footer-text');
+        const socialLinksContainer = document.getElementById('social-links');
+        const hlThemeLink = document.getElementById('highlight-theme-link');
+
+        let allPosts = [];
+        let siteConfig = {};
+
+        // GitHub API interaction for config and posts
+        const getFileFromApi = async (owner, repo, path) => {
+            const proxyUrl = `https://gh-proxy.com/https%3A%2F%2Fraw.githubusercontent.com%2F${owner}%2F${repo}%2Fmain%2F${path}`;
+            const response = await fetchWithTimeout(proxyUrl, { cache: "no-store" });
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error(`文件未找到: ${path} (请确保文件存在于仓库的 'main' 分支或配置正确)`);
+                }
+                throw new Error(`无法从API获取文件: ${path} (HTTP ${response.status})`);
+            }
+            return await response.text();
+        };
+
+        // Comment system API interaction
+        const CommentAPI = {
+            async fetchComments(postId) {
+                if (!siteConfig.features.commentSystem.enabled || !siteConfig.features.commentSystem.apiEndpoint) return { comments: [] };
+                try {
+                    const response = await fetchWithTimeout(`${siteConfig.features.commentSystem.apiEndpoint}?postId=${postId}`);
+                    if (!response.ok) throw new Error(`Fetch comments failed: ${response.statusText}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error("Error fetching comments:", error);
+                    return { comments: [] }; // Return empty array on error
+                }
+            },
+            async submitComment(postId, author, content) {
+                if (!siteConfig.features.commentSystem.enabled || !siteConfig.features.commentSystem.apiEndpoint) return { success: false, message: "评论系统未启用或配置不完整" };
+                try {
+                    const response = await fetchWithTimeout(siteConfig.features.commentSystem.apiEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ postId, author, content })
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: '未知错误' }));
+                        throw new Error(`Submit comment failed: ${errorData.message || response.statusText}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error("Error submitting comment:", error);
+                    return { success: false, message: error.message };
+                }
+            }
+        };
+
+        // User Post Submission API interaction
+        const UserPostAPI = {
+            async submitPost(title, author, content, tags, images = []) {
+                if (!siteConfig.features.commentSystem.enabled || !siteConfig.features.commentSystem.postSubmitApiEndpoint) return { success: false, message: "用户发帖功能未启用或配置不完整" };
+                try {
+                    const response = await fetchWithTimeout(siteConfig.features.commentSystem.postSubmitApiEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, author, content, tags, images })
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: '未知错误' }));
+                        throw new Error(`Submit post failed: ${errorData.message || response.statusText}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error("Error submitting user post:", error);
+                    return { success: false, message: error.message };
+                }
+            }
+        };
+
+        // Marked.js custom renderer for improved HTML output
+        const renderer = new marked.Renderer();
+        renderer.link = (href, title, text) => {
+            const external = /^(https?:)?\/\//.test(href);
+            return `<a href="${href}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}${title ? ` title="${title}"` : ''}>${text}</a>`;
+        };
+        renderer.image = (href, title, text) => {
+            return `<img src="${href}" alt="${text || 'Image'}" class="img-fluid rounded" ${title ? ` title="${title}"` : ''}>`;
+        };
+        // Use custom renderer
+        marked.setOptions({
+            renderer: renderer,
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            gfm: true, // GitHub Flavored Markdown
+            breaks: true, // Allow line breaks with <br>
+            sanitize: true // Sanitize HTML output (prevent XSS)
+        });
+
+
+        const getSummary = (content) => {
+            const moreMarker = '<!--more-->';
+            const markerIndex = content.indexOf(moreMarker);
+            if (markerIndex !== -1) {
+                return marked.parse(content.substring(0, markerIndex));
+            } else {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = marked.parse(content);
+                let textContent = tempDiv.textContent || tempDiv.innerText || '';
+                if (textContent.length > 200) { // Longer summary
+                    textContent = textContent.substring(0, 200) + '...';
+                }
+                return `<p>${textContent}</p>`;
+            }
+        };
+
+        const renderPostList = () => {
+            postsListView.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    正在加载文章...
+                </div>
+            `; // Show loading spinner while rendering
+            postDetailView.style.display = 'none';
+            aboutPage.style.display = 'none';
+            submitPostView.style.display = 'none';
+            postsListView.style.display = 'block';
+            siteHeader.style.display = 'block';
+            navbarBlogTitle.style.display = 'block'; // Ensure nav title is visible
+
+            if (siteConfig.site.logoUrl && siteLogoEl.src) { siteLogoEl.classList.remove('d-none'); }
+
+            let postHtml = '';
+            if (allPosts.length > 0) {
+                allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                allPosts.forEach(post => {
+                    const summary = getSummary(post.content);
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = marked.parse(post.content); // Use marked.parse to process markdown for image extraction
+                    const images = Array.from(tempDiv.querySelectorAll('img')).map(img => img.src).slice(0, 3);
+                    let imagesHtml = '';
+                    if (images.length > 0) {
+                        imagesHtml += '<div class="post-images-preview">';
+                        images.forEach(imgUrl => { imagesHtml += `<img src="${imgUrl}" alt="Post image preview" class="img-fluid">`; });
+                        imagesHtml += '</div>';
+                    }
+                    
+                    postHtml += `
+                        <article class="post-card">
+                            <header class="post-header">
+                                <h2 class="post-title"><a href="#/post/${post.id}">${post.title}</a></h2>
+                                <p class="post-meta">
+                                    <i class="far fa-calendar-alt me-1"></i> 发布于 ${new Date(post.createdAt).toLocaleDateString()}
+                                    ${post.tags && post.tags.length > 0 ? `| <i class="fas fa-tags ms-2 me-1"></i> 标签: ${post.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('')}` : ''}
+                                </p>
+                            </header>
+                            <div class="post-summary">${summary}</div>
+                            ${imagesHtml}
+                            <a href="#/post/${post.id}" class="read-more-btn">阅读全文 <i class="fas fa-arrow-right ms-2"></i></a>
+                        </article>
+                    `;
+                });
+                postsListView.innerHTML = postHtml;
+            } else {
+                postsListView.innerHTML = '<div class="alert alert-info text-center" role="alert"><i class="fas fa-info-circle me-2"></i>暂无文章。开始您的第一篇创作吧！</div>';
+            }
+        };
+
+        const renderSinglePost = async (postId) => {
+            const post = allPosts.find(p => p.id === postId);
+            postsListView.style.display = 'none';
+            aboutPage.style.display = 'none';
+            submitPostView.style.display = 'none';
+            postDetailView.style.display = 'block';
+            siteHeader.style.display = 'none';
+             navbarBlogTitle.style.display = 'inline-block'; // Keep nav title visible for context in single post view
+
+            if (post) {
+                document.title = `${post.title} - ${siteConfig.site.title}`;
+                const renderedContent = marked.parse(post.content);
+                const tagsHtml = post.tags && post.tags.length > 0 ? `<div class="post-full-tags mt-3">${post.tags.map(tag => `<span class="badge bg-primary me-2">${tag}</span>`).join('')}</div>` : '';
+
+                postDetailView.innerHTML = `
+                    <article class="post-full">
+                        <header class="post-full-header">
+                            <h1 class="post-full-title">${post.title}</h1>
+                            <p class="post-full-meta">
+                                <i class="far fa-calendar-alt me-1"></i> 发布于 ${new Date(post.createdAt).toLocaleDateString()}
+                            </p>
+                            ${tagsHtml}
+                        </header>
+                        <section class="post-full-content">
+                            ${renderedContent}
+                        </section>
+                        <section class="comments-section" id="comments-section">
+                            <h4><i class="fas fa-comments me-2"></i>评论</h4>
+                            <div id="comments-list" class="my-4">
+                                <div class="loading-spinner">
+                                    <div class="spinner-border text-secondary" role="status">
+                                        <span class="visually-hidden">Loading comments...</span>
+                                    </div>
+                                    加载评论中...
+                                </div>
+                            </div>
+                            <div class="comment-form mt-4">
+                                <h5><i class="fas fa-pencil-alt me-2"></i>发表评论</h5>
+                                <div class="mb-3">
+                                    <label for="comment-author" class="form-label">您的昵称 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="comment-author" placeholder="请输入您的昵称">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="comment-content" class="form-label">评论内容 <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="comment-content" rows="4" placeholder="说点什么吧..."></textarea>
+                                </div>
+                                <button id="submit-comment-btn" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i>提交评论</button>
+                                <div id="comment-message" class="mt-3"></div>
+                            </div>
+                        </section>
+                        <a href="#" class="back-to-home"><i class="fas fa-arrow-left me-2"></i>返回首页</a>
+                    </article>
+                `;
+                hljs.highlightAll(); // Highlight code blocks
+
+                // Load comments
+                loadComments(postId);
+                document.getElementById('submit-comment-btn').onclick = () => submitUserComment(postId);
+
+            } else {
+                document.title = `未找到文章 - ${siteConfig.site.title}`;
+                postDetailView.innerHTML = `
+                    <article class="post-full card post-card">
+                        <div class="card-body text-center">
+                            <h1 class="post-full-title text-danger mb-4"><i class="fas fa-exclamation-triangle me-2"></i>404 - 未找到文章</h1>
+                            <p class="lead">抱歉，您要查找的文章不存在或已被删除。</p>
+                            <a href="#" class="back-to-home mt-4"><i class="fas fa-arrow-left me-2"></i>返回首页</a>
+                        </div>
+                    </article>
+                `;
+            }
+        };
+
+        const loadComments = async (postId) => {
+            const commentsListEl = document.getElementById('comments-list');
+            commentsListEl.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner-border text-secondary" role="status">
+                        <span class="visually-hidden">Loading comments...</span>
+                    </div>
+                    加载评论中...
+                </div>
+            `;
+            try {
+                const { comments } = await CommentAPI.fetchComments(postId);
+                if (comments && comments.length > 0) {
+                    comments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Oldest first
+                    commentsListEl.innerHTML = comments.map(comment => `
+                        <div class="comment-item">
+                            <div class="comment-meta">
+                                <i class="fas fa-user me-1"></i> <strong>${comment.author || '匿名用户'}</strong>
+                                <span class="ms-2 me-2 text-muted">|</span>
+                                <i class="far fa-clock me-1"></i> ${new Date(comment.createdAt).toLocaleString()}
+                            </div>
+                            <p class="comment-content">${marked.parse(comment.content, { sanitize: true })}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    commentsListEl.innerHTML = '<div class="alert alert-light text-center" role="alert">暂无评论，快来抢沙发吧！</div>';
+                }
+            } catch (error) {
+                commentsListEl.innerHTML = `<div class="alert alert-danger text-center" role="alert"><i class="fas fa-exclamation-circle me-2"></i>评论加载失败: ${error.message}</div>`;
+            }
+        };
+
+        const submitUserComment = async (postId) => {
+            const author = document.getElementById('comment-author').value.trim();
+            const content = document.getElementById('comment-content').value.trim();
+            const commentMessageEl = document.getElementById('comment-message');
+            const submitBtn = document.getElementById('submit-comment-btn');
+
+            if (!author || !content) {
+                commentMessageEl.className = 'mt-3 alert alert-warning';
+                commentMessageEl.textContent = '昵称和评论内容不能为空。';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            commentMessageEl.className = 'mt-3 alert alert-info';
+            commentMessageEl.innerHTML = `<div class="spinner-border spinner-border-sm me-2" role="status"></div> 提交中...`;
+
+            try {
+                const result = await CommentAPI.submitComment(postId, author, content);
+                if (result.success) {
+                    commentMessageEl.className = 'mt-3 alert alert-success';
+                    commentMessageEl.textContent = '评论提交成功，刷新后可见。'; // Serverless functions usually require a small delay for DB sync
+                    document.getElementById('comment-author').value = '';
+                    document.getElementById('comment-content').value = '';
+                    await loadComments(postId); // Reload comments to show the new one
+                } else {
+                    throw new Error(result.message || '评论提交失败。');
+                }
+            } catch (error) {
+                commentMessageEl.className = 'mt-3 alert alert-danger';
+                commentMessageEl.textContent = `评论提交失败: ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        };
+
+        const renderUserSubmitPostView = () => {
+             postsListView.style.display = 'none';
+            postDetailView.style.display = 'none';
+            aboutPage.style.display = 'none';
+            submitPostView.style.display = 'block';
+            siteHeader.style.display = 'none'; // Hide main header
+            navbarBlogTitle.style.display = 'block'; // Keep nav title visible
+
+            document.getElementById('submit-post-message').textContent = ''; // Clear previous messages
+            document.getElementById('submit-post-title').value = '';
+            document.getElementById('submit-post-author').value = localStorage.getItem('userPostAuthor') || ''; // Remember last author
+            document.getElementById('submit-post-content').value = '';
+            document.getElementById('submit-post-tags').value = '';
+            document.getElementById('submit-post-images').value = ''; // Clear file input
+        };
+
+        const submitUserPost = async () => {
+            const title = document.getElementById('submit-post-title').value.trim();
+            const author = document.getElementById('submit-post-author').value.trim();
+            const content = document.getElementById('submit-post-content').value.trim();
+            const tags = document.getElementById('submit-post-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+            // In a real scenario, image upload would go to a CDN/storage first, then pass URLs.
+            // For now, we'll simulate by just getting filenames or converting to base64 for demo (not recommended for large files).
+            // Here, we'll just pass a placeholder. Real implementation needs proper storage and URL handling.
+            const images = []; // Placeholder for images
+
+            const submitPostMessageEl = document.getElementById('submit-post-message');
+            const submitBtn = document.getElementById('submit-user-post-btn');
+
+            if (!title || !author || !content) {
+                submitPostMessageEl.className = 'mt-3 alert alert-warning';
+                submitPostMessageEl.textContent = '标题、您的昵称和文章内容不能为空。';
+                return;
+            }
+
+            // Save author name for next time
+            localStorage.setItem('userPostAuthor', author);
+
+            submitBtn.disabled = true;
+            submitPostMessageEl.className = 'mt-3 alert alert-info';
+            submitPostMessageEl.innerHTML = `<div class="spinner-border spinner-border-sm me-2" role="status"></div> 提交中...`;
+
+            try {
+                const result = await UserPostAPI.submitPost(title, author, content, tags, images);
+                if (result.success) {
+                    submitPostMessageEl.className = 'mt-3 alert alert-success';
+                    submitPostMessageEl.textContent = '文章提交成功！等待管理员审核后即可显示。';
+                    // Clear form after successful submission
+                    document.getElementById('submit-post-title').value = '';
+                    document.getElementById('submit-post-content').value = '';
+                    document.getElementById('submit-post-tags').value = '';
+                    document.getElementById('submit-post-images').value = '';
+                } else {
+                    throw new Error(result.message || '文章提交失败。');
+                }
+            } catch (error) {
+                submitPostMessageEl.className = 'mt-3 alert alert-danger';
+                submitPostMessageEl.textContent = `文章提交失败: ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        };
+
+        const renderAboutPage = () => {
+            postsListView.style.display = 'none';
+            postDetailView.style.display = 'none';
+            submitPostView.style.display = 'none';
+            aboutPage.style.display = 'block';
+            siteHeader.style.display = 'none'; // Hide main header
+            navbarBlogTitle.style.display = 'block'; // Keep nav title visible
+            document.title = `关于 - ${siteConfig.site.title}`;
+        };
+
+        const handleRoute = (initialLoad = false) => {
+            const hash = window.location.hash;
+            document.querySelectorAll('.navbar-nav .nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelectorAll('.offcanvas-body .nav-link').forEach(link => link.classList.remove('active'));
+
+            if (hash.startsWith('#/post/')) {
+                const postId = hash.substring(7);
+                renderSinglePost(postId);
+            } else if (hash === '#/about') {
+                renderAboutPage();
+                document.querySelector('.nav-link[href="#/about"]').classList.add('active');
+            } else if(hash === '#/submit-post' && siteConfig.features.userPostingEnabled) {
+                renderUserSubmitPostView();
+                document.querySelector('.nav-link[href="#/submit-post"]').classList.add('active');
+            }
+            else {
+                renderPostList();
+                document.title = siteConfig.site.title || '博客';
+                document.querySelector('.nav-link[href="#"]').classList.add('active');
+            }
+            if (!initialLoad) {
+                window.scrollTo(0, 0); // Scroll to top for new views
+            }
+            // Close offcanvas if open on mobile
+            const offcanvasElement = document.getElementById('offcanvasNavbar');
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+            if (bsOffcanvas) {
+                 bsOffcanvas.hide();
+            }
+        };
+
+        // Dark Mode Logic
+        const applyTheme = (isDarkMode) => {
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+                // Dynamically update Highlight.js theme
+                hlThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${siteConfig.features.highlightJsTheme || 'atom-one-dark'}.min.css`;
+            } else {
+                body.classList.remove('dark-mode');
+                hlThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css`; // Default light theme
+            }
+            localStorage.setItem('darkModeStatus', isDarkMode ? 'enabled' : 'disabled');
+            document.getElementById('darkModeToggleDesktop').checked = isDarkMode;
+            document.getElementById('darkModeToggleMobile').checked = isDarkMode;
+        };
+
+        const toggleDarkMode = (e) => {
+            applyTheme(e.target.checked);
+        };
+
+        document.getElementById('darkModeToggleDesktop').addEventListener('change', toggleDarkMode);
+        document.getElementById('darkModeToggleMobile').addEventListener('change', toggleDarkMode);
+
+
+        const main = async () => {
+            try {
+                // Determine owner/repo based on GitHub Pages convention
+                const hostnameParts = window.location.hostname.split('.');
+                let owner = hostnameParts[0];
+                let repo = `${owner}.github.io`;
+                // Handle custom domains or project pages
+                if (hostnameParts.length > 2 && hostnameParts[1] === 'github' && hostnameParts[2] === 'io') {
+                    // It's a user/org page, already have owner and repo
+                } else {
+                    // Likely a project page or custom domain, need to infer repo from path
+                    // e.g., example.com/my-repo -> owner is window.location.hostname domain, repo is 'my-repo'
+                    // For direct github.io/repo -> owner.github.io/repo
+                    const pathParts = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'index.html');
+                    if (pathParts.length > 0) {
+                        repo = pathParts[0]; // First part of path is the repo name
+                        owner = 'your-github-username'; // This needs to be explicitly set for project pages on custom domains
+                                                        // Or, you can infer from a CNAME file if you control it.
+                                                        // For simplicity, we'll assume it's owner.github.io/repo format.
+                                                        // If custom domain points directly to repo, owner is often the repo's owner.
+                    } else {
+                        // Fallback for root path on custom domain
+                        owner = "your-github-username"; // Placeholder, need to manually set or infer
+                    }
+                     // A more robust way to get owner/repo for project pages would be to fetch repo details or hardcode
+                     // For 'username.github.io/reponame', owner is 'username', repo is 'reponame'
+                     // For 'custom.com' pointing to 'username/reponame', owner is 'username', repo is 'reponame'
+                     // This simple logic expects 'username.github.io' or 'username.github.io/blog' structure
+                     // For this example, we'll stick to 'owner.github.io' where owner corresponds to the hostname[0]
+                     // If you are deploying on a project page like `username.github.io/blog`,
+                     // `owner` is 'username' and `repo` will be 'username.github.io' and `basePath` will be 'blog'.
+                     // Current `path.split('.')[0]` logic for owner works for `username.github.io`.
+                     // For project page deployment: owner = 'your_username', repo = 'your_repo_name' for fetching files.
+                }
+
+                const basePath = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'index.html').join('/');
+                const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
+
+                const configContent = await getFileFromApi(owner, repo, getPath('config.json'));
+                siteConfig = JSON.parse(configContent);
+
+                // Apply dynamic styles from config
+                const root = document.documentElement;
+                root.style.setProperty('--bg-color', siteConfig.styling.backgroundColor);
+                root.style.setProperty('--text-color', siteConfig.styling.textColor);
+                root.style.setProperty('--heading-color', siteConfig.styling.headingColor || siteConfig.styling.textColor);
+                root.style.setProperty('--accent-color', siteConfig.styling.accentColor);
+                root.style.setProperty('--link-hover-color', siteConfig.styling.linkHoverColor || siteConfig.styling.accentColor);
+                root.style.setProperty('--border-color', siteConfig.styling.borderColor);
+                root.style.setProperty('--card-bg', siteConfig.styling.cardBgColor);
+                root.style.setProperty('--card-shadow', siteConfig.styling.cardShadow);
+                root.style.setProperty('--meta-color', siteConfig.styling.metaColor);
+                root.style.setProperty('--code-bg', siteConfig.styling.codeBgColor || '#282c34');
+                root.style.setProperty('--code-text', siteConfig.styling.codeTextColor || '#abb2bf');
+                root.style.setProperty('--accent-color-rgb', hexToRgb(siteConfig.styling.accentColor).join(',')); // For rgba calculations
+
+                // Set Favicon and Logo
+                if (siteConfig.site.faviconUrl) { faviconLink.href = siteConfig.site.faviconUrl; }
+                if (siteConfig.site.logoUrl) {
+                    siteLogoEl.src = siteConfig.site.logoUrl;
+                    navbarSiteLogo.src = siteConfig.site.logoUrl;
+                    siteLogoEl.classList.remove('d-none'); // Show site logo in header
+                    navbarSiteLogo.classList.remove('d-none'); // Show site logo in navbar
+                } else {
+                    siteLogoEl.classList.add('d-none'); // Hide if no logo
+                    navbarSiteLogo.classList.add('d-none');
+                }
+                
+                // Set Highlight.js theme
+                if (siteConfig.features.highlightJsTheme) {
+                    hlThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${siteConfig.features.highlightJsTheme}.min.css`;
+                }
+
+                // Initial Dark Mode check
+                if (siteConfig.styling.darkModeToggle) {
+                    const savedTheme = localStorage.getItem('darkModeStatus');
+                    const isDarkModeInitial = (savedTheme === 'enabled' || (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches));
+                    applyTheme(isDarkModeInitial);
+                } else {
+                     document.querySelectorAll('.theme-switch').forEach(el => el.style.display = 'none'); // Hide toggle if not enabled
+                }
+
+                // Apply site title and description
+                document.title = siteConfig.site.title;
+                blogTitleEl.textContent = siteConfig.site.title;
+                blogDescriptionEl.textContent = siteConfig.site.description;
+                document.getElementById('blog-title-nav').textContent = siteConfig.site.title;
+
+                // Load background image
+                if (siteConfig.styling.backgroundImageUrl) {
+                    body.style.backgroundImage = `url(${siteConfig.styling.backgroundImageUrl})`;
+                } else {
+                    body.style.backgroundImage = 'none';
+                }
+
+                // Set footer text
+                siteFooterText.textContent = siteConfig.footerText || "Powered by GitHub";
+
+                // Render social links
+                if (siteConfig.socialLinks && siteConfig.socialLinks.length > 0) {
+                    socialLinksContainer.innerHTML = siteConfig.socialLinks.map(link => `
+                        <a href="${link.url}" target="_blank" rel="noopener noreferrer" title="${link.name}">
+                            <i class="${link.icon} fa-lg"></i>
+                        </a>
+                    `).join('');
+                    socialLinksContainer.style.display = 'block'; // Ensure it's block if content exists
+                } else {
+                    socialLinksContainer.style.display = 'none';
+                }
+
+                // Show user post nav item if enabled
+                if (siteConfig.features.userPostingEnabled) {
+                    userPostNavItem.classList.remove('d-none');
+                } else {
+                    userPostNavItem.classList.add('d-none');
+                }
+
+                const postsContent = await getFileFromApi(owner, repo, getPath('posts.json'));
+                allPosts = JSON.parse(postsContent);
+
+                window.addEventListener('hashchange', handleRoute);
+                handleRoute(true); // Initial route handling
+            } catch (error) {
+                document.title = '博客加载失败';
+                blogTitleEl.textContent = '博客加载失败';
+                blogDescriptionEl.textContent = '无法加载站点配置或文章。';
+                siteLogoEl.classList.add('d-none');
+                postsListView.innerHTML = `
+                    <div class="alert alert-danger text-center" role="alert">
+                        <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>加载错误</h4>
+                        <p>抱歉，博客内容无法正常加载。请检查以下可能原因：</p>
+                        <ul>
+                            <li>GitHub API或文件路径配置错误。</li>
+                            <li><code>config.json</code> 或 <code>posts.json</code> 文件不存在或格式不正确。</li>
+                            <li>网络连接问题或跨域请求受阻。</li>
+                            <li>浏览器缓存问题，尝试清除缓存后重试。</li>
+                            <li>(对于后台部署后) 您可能忘记在 <code>config.json</code> 中更新 Serverless API 端点。</li>
+                        </ul>
+                        <hr>
+                        <p class="mb-0"><b>错误详情:</b> ${error.message}</p>
+                        <p class="mb-0 mt-2">如果您是管理员，请检查您的 GitHub 仓库和部署状态。</p>
+                    </div>
+                `;
+                 console.error("Critical blog loading error:", error);
+                 siteHeader.style.display = 'block'; // Ensure header is shown even on error
+                 postsListView.style.display = 'block';
+                 postDetailView.style.display = 'none';
+                 aboutPage.style.display = 'none';
+                 submitPostView.style.display = 'none';
+            }
+        };
+
+        // Helper function for hex to rgb
+        function hexToRgb(hex) {
+            let r=0, g=0, b=0;
+            // 3 digits
+            if (hex.length == 4) {
+                r = parseInt(hex[1]+hex[1], 16);
+                g = parseInt(hex[2]+hex[2], 16);
+                b = parseInt(hex[3]+hex[3], 16);
+            }
+            // 6 digits
+            else if (hex.length == 7) {
+                r = parseInt(hex.substring(1,3), 16);
+                g = parseInt(hex.substring(3,5), 16);
+                b = parseInt(hex.substring(5,7), 16);
+            }
+            return [r, g, b];
+        }
+
+
+        document.addEventListener('DOMContentLoaded', main);
+        // Back to home button listener for dynamically added elements
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('back-to-home')) {
+                e.preventDefault();
+                window.location.hash = ''; // Go back to home hash
+            }
+            // For submit post cancel button
+             if (e.target.id === 'cancel-user-post-btn') {
+                e.preventDefault();
+                window.history.back(); // Go back to previous page
+            }
+            if (e.target.id === 'submit-user-post-btn') {
+                e.preventDefault();
+                submitUserPost();
+            }
+        });
+    </script>
+</body>
+</html>

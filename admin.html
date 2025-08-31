@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博客管理后台</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- SimpleMDE Markdown Editor CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #f4f6f8;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --sidebar-hover-bg: #34495e;
+            --sidebar-active-bg: #1abc9c;
+            --content-bg: #fff;
+            --text-color: #34495e;
+            --accent-color: #3498db;
+            --border-color: #e0e0e0;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        a { text-decoration: none; }
+        input, textarea, button { font-family: inherit; }
+
+        /* Login Page Styles */
+        #login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+        }
+        .login-box {
+            width: 90%;
+            max-width: 400px;
+            padding: 40px;
+            background: var(--content-bg);
+            box-shadow: var(--shadow);
+            border-radius: 8px;
+            text-align: center;
+        }
+        .login-box h1 { margin-bottom: 25px; color: var(--accent-color); font-weight: 700; }
+        .login-box p { margin-bottom: 25px; color: #7f8c8d; }
+        .login-box .form-control {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 12px 15px;
+            transition: border-color 0.2s;
+        }
+        .login-box .form-control:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+        .login-box .btn-primary {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            padding: 12px 20px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .login-box .btn-primary:hover {
+            background: #2980b9;
+            border-color: #2980b9;
+        }
+
+        /* Admin Layout Styles */
+        .admin-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        #admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 250px; /* Slightly wider sidebar */
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform .3s ease-in-out;
+            z-index: 1000;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        }
+        .admin-wrapper.sidebar-visible #admin-sidebar {
+            transform: translateX(0);
+        }
+        .admin-wrapper.sidebar-visible #mobile-overlay {
+            display: block;
+        }
+
+        #admin-sidebar .logo {
+            padding: 20px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            background-color: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        #admin-sidebar .nav-group {
+            flex-grow: 1;
+            list-style: none;
+            margin: 0;
+            padding: 20px 0;
+        }
+        #admin-sidebar .nav-group li {
+            margin-bottom: 5px;
+        }
+        #admin-sidebar .nav-group a {
+            display: flex; /* Use flex for icon and text alignment */
+            align-items: center;
+            padding: 15px 25px;
+            color: var(--sidebar-text);
+            transition: background .2s, color .2s;
+        }
+        #admin-sidebar .nav-group a i {
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+        #admin-sidebar .nav-group a:hover {
+            background: var(--sidebar-hover-bg);
+            color: #fff;
+        }
+        #admin-sidebar .nav-group a.active {
+            background: var(--sidebar-active-bg);
+            color: #fff;
+            position: relative;
+        }
+        #admin-sidebar .nav-group a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background-color: var(--accent-color);
+            border-radius: 0 5px 5px 0;
+        }
+        #admin-sidebar .nav-group .logout-btn {
+            margin-top: auto; /* Push to bottom */
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        #admin-sidebar .nav-group .logout-btn a {
+            color: #e74c3c;
+        }
+        #admin-sidebar .nav-group .logout-btn a:hover {
+            background: var(--sidebar-hover-bg);
+        }
+
+
+        #admin-content {
+            width: 100%;
+            padding: 20px;
+            position: relative; /* For proper positioning of overlay for small screens */
+            transition: margin-left .3s ease-in-out;
+        }
+        
+        #mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--content-bg);
+            padding: 15px 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 990;
+        }
+        .mobile-menu-btn {
+            font-size: 1.8rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        .mobile-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--heading-color);
+        }
+        #mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,.5);
+            z-index: 999;
+            display: none;
+        }
+
+        @media (min-width: 992px) { /* Lg breakpoint for desktop layout */
+            #admin-sidebar {
+                position: static;
+                transform: translateX(0);
+                width: 250px;
+                flex-shrink: 0; /* Prevents sidebar from shrinking */
+            }
+            #admin-content {
+                margin-left: 0; /* Reset margin for desktop */
+                width: calc(100% - 250px);
+                padding: 30px;
+            }
+            #mobile-header {
+                display: none;
+            }
+        }
+        @media (max-width: 991.98px) {
+            #admin-content { /* Push content to the right when sidebar is visible */
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+        }
+
+
+        /* Content specific styles */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .page-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--heading-color);
+            font-weight: 600;
+        }
+
+        .alert-dismissible .btn-close {
+            padding: 0.75rem 1.25rem;
+        }
+
+        .admin-table-wrapper { overflow-x: auto; }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--content-bg);
+            box-shadow: var(--shadow);
+            border-radius: 8px;
+            overflow: hidden; /* For rounded corners */
+        }
+        .admin-table th, .admin-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+             vertical-align: middle;
+        }
+        .admin-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+        .admin-table .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .admin-table .actions .btn {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+
+        /* Forms */
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .form-control {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px 15px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+        textarea.form-control { resize: vertical; min-height: 150px; }
+
+        /* SimpleMDE styles override for better integration */
+        .editor-toolbar {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            border-color: var(--border-color);
+            background-color: var(--bg-color);
+            padding: 8px 10px;
+        }
+        .editor-toolbar button {
+            color: var(--text-color);
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .editor-toolbar button:hover {
+            opacity: 1;
+            background-color: var(--border-color);
+        }
+        .CodeMirror, .CodeMirror-fullscreen {
+            border: 1px solid var(--border-color) !important;
+            border-bottom-left-radius: 4px !important;
+            border-bottom-right-radius: 4px !important;
+            height: auto; /* Auto height for SimpleMDE content textarea */
+            min-height: 300px; /* Minimum height for editor */
+            padding: 10px;
+        }
+        .editor-preview {
+            background-color: var(--content-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+        }
+        .editor-preview-active .editor-preview.editor-preview-full {
+             border-top: none; /* Remove duplicate border */
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary { background: var(--accent-color); border-color: var(--accent-color); }
+        .btn-primary:hover { background: #2980b9; border-color: #2980b9; }
+        .btn-success { background: var(--success-color); border-color: var(--success-color); }
+        .btn-success:hover { background: #27ae60; border-color: #27ae60; }
+        .btn-danger { background: var(--danger-color); border-color: var(--danger-color); }
+        .btn-danger:hover { background: #c0392b; border-color: #c0392b; }
+        .btn-secondary { background: #6c757d; border-color: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; border-color: #5a6268; }
+
+        /* Image Upload Preview */
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .image-preview-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .image-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-preview-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .image-url-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 10px;
+            background-color: var(--bg-color);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .image-url-list li {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+        .image-url-list li:last-child {
+            border-bottom: none;
+        }
+        .image-url-list li .copy-btn {
+            margin-left: 10px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+        }
+
+        /* Comments/User Posts Management */
+        .table-action-btn {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 0.25rem;
+        }
+        .comments-list-group .list-group-item {
+            background-color: var(--content-bg);
+            border-color: var(--border-color);
+            margin-bottom: 0.5rem;
+        }
+        .comments-list-group .list-group-item:last-child {
+            margin-bottom: 0;
+        }
+        .comment-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="login-wrapper">
+        <div id="login-box" class="login-box">
+            <h1><i class="fas fa-user-lock me-2"></i> 管理员登录</h1>
+            <p>请输入您的 **GitHub Personal Access Token**。<br>该Token需要具备 <code>repo</code> 权限。</p>
+            <div class="mb-3">
+                <input type="password" class="form-control" id="token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            </div>
+            <button id="start-btn" class="btn btn-primary d-block w-100"><i class="fas fa-sign-in-alt me-2"></i> 开始管理</button>
+            <div id="initial-message" class="alert mt-3 mb-0" style="display:none;" role="alert"></div>
+            <p class="text-muted mt-3">首次登录将自动初始化配置文件。</p>
+        </div>
+    </div>
+
+    <div id="admin-wrapper" class="admin-wrapper" style="display: none;">
+        <div id="mobile-overlay"></div>
+        <aside id="admin-sidebar">
+            <div class="logo">My Blog Admin</div>
+            <ul class="nav-group">
+                <li><a href="#posts" id="nav-posts" class="active"><i class="fas fa-newspaper"></i> 文章管理</a></li>
+                <li><a href="#comments" id="nav-comments"><i class="fas fa-comments"></i> 评论管理</a></li>
+                <li id="nav-user-posts-item" style="display:none;"><a href="#user-posts" id="nav-user-posts"><i class="fas fa-users-edit"></i> 用户投稿</a></li>
+                <li><a href="#settings" id="nav-settings"><i class="fas fa-cog"></i> 网站设置</a></li>
+                <li class="nav-item">
+                     <a href="index.html" target="_blank" rel="noopener noreferrer"><i class="fas fa-globe"></i> 查看站点</a>
+                </li>
+                <li class="nav-group logout-btn">
+                     <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> 注销</a>
+                </li>
+            </ul>
+        </aside>
+
+        <main id="admin-content">
+            <header id="mobile-header">
+                <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                <div class="mobile-logo">管理后台</div>
+                <div style="width: 1.8rem;"></div> <!-- Placeholder to balance content -->
+            </header>
+
+            <!-- Posts Management View -->
+            <div id="posts-view" style="display:none;">
+                <div class="page-header">
+                    <h2><i class="fas fa-clipboard-list me-2"></i>文章管理</h2>
+                    <button id="new-post-btn" class="btn btn-primary"><i class="fas fa-plus me-2"></i>撰写新文章</button>
+                </div>
+                <!-- Message alert for posts -->
+                <div id="posts-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>标题</th>
+                                <th>标签</th>
+                                <th>发布日期</th>
+                                <th>更新日期</th>
+                                <th class="actions">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="post-list">
+                            <tr><td colspan="5" class="text-center py-4 text-muted">加载文章中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Post Editor Container -->
+            <div id="editor-container" style="display:none;">
+                <h2 id="editor-title" class="mb-4"><i class="fas fa-edit me-2"></i>撰写新文章</h2>
+                <div id="editor-alert" class="alert alert-info" style="display:none;"></div>
+                <input type="hidden" id="post-id">
+                <div class="mb-3">
+                    <label for="post-title" class="form-label">标题 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="post-title" placeholder="文章标题">
+                </div>
+                <div class="mb-3">
+                    <label for="post-tags" class="form-label">标签 (用英文逗号 `,` 分隔)</label>
+                    <input type="text" class="form-control" id="post-tags" placeholder="标签1, 标签2">
+                    <div class="form-text">例如：技术, 前端, 学习。请使用英文逗号分隔。</div>
+                </div>
+                <div class="mb-3">
+                    <label for="post-content" class="form-label">内容 (支持 Markdown)</label>
+                    <textarea id="post-content"></textarea> <!-- SimpleMDE will attach here -->
+                </div>
+                <div class="mb-3">
+                    <label for="image-upload" class="form-label">上传图片到文章 (将返回图片URL)</label>
+                    <input type="file" class="form-control" id="image-upload" accept="image/*" multiple>
+                    <div class="form-text">您可以上传多张图片，上传后将显示图片URL，请手动复制粘贴到文章内容中。</div>
+                    <ul id="uploaded-image-urls" class="image-url-list"></ul>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button id="save-post-btn" class="btn btn-success me-2"><i class="fas fa-save me-2"></i>发布文章</button>
+                        <button id="cancel-edit-btn" class="btn btn-secondary"><i class="fas fa-times me-2"></i>取消</button>
+                    </div>
+                    <button id="delete-post-btn" class="btn btn-danger" style="display:none;"><i class="fas fa-trash-alt me-2"></i>删除文章</button>
+                </div>
+            </div>
+
+            <!-- Comments Management View -->
+            <div id="comments-view" style="display:none;">
+                <div class="page-header">
+                    <h2><i class="fas fa-comments me-2"></i>评论管理</h2>
+                </div>
+                <div id="comments-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+                <!-- Comments list -->
+                <div id="comments-list-admin" class="list-group comments-list-group">
+                    <div class="text-center py-4 text-muted">加载评论中...</div>
+                </div>
+            </div>
+
+            <!-- User Posts Management View -->
+            <div id="user-posts-view" style="display:none;">
+                <div class="page-header">
+                    <h2><i class="fas fa-users-edit me-2"></i>用户投稿</h2>
+                </div>
+                <div id="user-posts-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+                <div id="user-posts-list-admin" class="list-group comments-list-group">
+                    <div class="text-center py-4 text-muted">加载用户投稿中...</div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" style="display: none;">
+                <div class="page-header">
+                    <h2><i class="fas fa-cogs me-2"></i>网站设置</h2>
+                </div>
+                 <div id="settings-message-alert" class="alert alert-info" style="display:none;" role="alert"></div>
+
+                <div class="card p-4 mb-4">
+                    <h5 class="card-title mb-3">站点信息</h5>
+                    <div class="mb-3">
+                        <label for="setting-title" class="form-label">网站标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="setting-title" placeholder="您的博客标题">
+                    </div>
+                    <div class="mb-3">
+                        <label for="setting-description" class="form-label">网站描述</label>
+                        <input type="text" class="form-control" id="setting-description" placeholder="一句话描述您的博客">
+                    </div>
+                     <div class="mb-3">
+                        <label for="setting-logo-url" class="form-label">网站Logo URL (方形)</label>
+                        <input type="text" class="form-control" id="setting-logo-url" placeholder="http://example.com/logo.png">
+                    </div>
+                     <div class="mb-3">
+                        <label for="setting-favicon-url" class="form-label">网站Favicon URL (.ico 或 .png)</label>
+                        <input type="text" class="form-control" id="setting-favicon-url" placeholder="http://example.com/favicon.ico">
+                    </div>
+                </div>
+
+                <div class="card p-4 mb-4">
+                    <h5 class="card-title mb-3">样式设置</h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="setting-bg-color" class="form-label">背景颜色</label>
+                            <input type="color" class="form-control form-control-color" id="setting-bg-color" title="选择背景颜色">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="setting-text-color" class="form-label">主要文字颜色</label>
+                            <input type="color" class="form-control form-control-color" id="setting-text-color" title="选择主要文字颜色">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="setting-heading-color" class="form-label">标题颜色</label>
+                            <input type="color" class="form-control form-control-color" id="setting-heading-color" title="选择标题颜色">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="setting-accent-color" class="form-label">强调色 (如链接色)</label>
+                            <input type="color" class="form-control form-control-color" id="setting-accent-color" title="选择强调色">
+                        </div>
+                    </div>
+                     <div class="mb-3">
+                        <label for="setting-bg-image" class="form-label d-block">上传网站背景图</label>
+                        <input type="file" class="form-control d-inline-block w-auto me-2" id="setting-bg-image" accept="image/*">
+                        <button id="upload-bg-image-btn" class="btn btn-info btn-sm me-2"><i class="fas fa-upload me-1"></i>上传</button>
+                        <button id="clear-bg-image-btn" class="btn btn-warning btn-sm"><i class="fas fa-times me-1"></i>清除</button>
+                        <input type="text" class="form-control mt-2" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">代码高亮主题</label>
+                        <select id="setting-highlight-theme" class="form-select">
+                            <option value="atom-one-dark">Atom One Dark</option>
+                            <option value="default">Default (Light)</option>
+                            <option value="github">GitHub</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="vs">Visual Studio</option>
+                            <option value="xcode">Xcode</option>
+                             <option value="darcula">Darcula</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="setting-dark-mode-toggle">
+                        <label class="form-check-label" for="setting-dark-mode-toggle">启用深色模式切换 (前台)</label>
+                    </div>
+                </div>
+
+                <div class="card p-4 mb-4">
+                    <h5 class="card-title mb-3">社交链接与页脚</h5>
+                     <div id="social-links-list" class="mb-3">
+                         <!-- Social links editor will go here -->
+                          <div class="alert alert-secondary text-center py-2" role="alert">暂无社交链接，点击添加。</div>
+                     </div>
+                    <button id="add-social-link-btn" class="btn btn-outline-primary btn-sm mb-3">
+                        <i class="fas fa-plus me-1"></i>添加社交链接
+                    </button>
+                    <div class="mb-3">
+                        <label for="setting-footer-text" class="form-label">页脚文本</label>
+                        <input type="text" class="form-control" id="setting-footer-text" placeholder="例如：© 2024 My Blog. All rights reserved.">
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="setting-user-posting-enabled">
+                        <label class="form-check-label" for="setting-user-posting-enabled">允许用户在前台提交文章</label>
+                    </div>
+                </div>
+                
+                <button id="save-settings-btn" class="btn btn-success"><i class="fas fa-check-circle me-2"></i>保存所有设置</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7Cfch1ZAD4Xw" crossorigin="anonymous"></script>
+    <!-- SimpleMDE Markdown Editor JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js"></script>
+
+    <script>
+        // Utility functions
+        const utf8_to_b64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        const b64_to_utf8 = (str) => {
+            try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch (e) { return atob(str); }
+        };
+        const hexToRgb = (hex) => { /* Same as index.html */ }; // Define if needed for admin side color parsing
+
+        // GitHub API Interaction
+        const GitHubAPI = {
+            BASE_URL: 'https://api.github.com',
+            async request(token, endpoint, options = {}) {
+                const url = `${this.BASE_URL}${endpoint}`;
+                const headers = {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    ...options.headers
+                };
+                const response = await fetch(url, { ...options, headers });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}` }));
+                    throw new Error(errorData.message || `GitHub API request failed: ${response.status} ${response.statusText}`);
+                }
+                if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
+                return response.json();
+            },
+            getUser: (token) => GitHubAPI.request(token, '/user'),
+            async getFile(token, owner, repo, path) {
+                try {
+                    const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
+                    if (!result || typeof result.content !== 'string') return null;
+                    return { content: b64_to_utf8(result.content), sha: result.sha };
+                } catch (error) {
+                    if (error.message.toLowerCase().includes('not found') || (error.message.toLowerCase().includes('http error') && error.message.includes('404'))) return null;
+                    throw error;
+                }
+            },
+            createFile: (token, owner, repo, path, content, message, isBinary = false) => GitHubAPI.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content) }) }),
+            updateFile: (token, owner, repo, path, content, sha, message, isBinary = false) => GitHubAPI.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content), sha }) }),
+            deleteFile: (token, owner, repo, path, sha, message) => GitHubAPI.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'DELETE', body: JSON.stringify({ message, sha }) })
+        };
+
+        // Serverless Admin API Interaction (for comments and user posts)
+        const AdminAPI = {
+             API_ENDPOINT: null, // Will be set from config.json
+             async request(endpoint, options = {}) {
+                if (!this.API_ENDPOINT) throw new Error("Admin API endpoint is not configured.");
+                 // You might want to add authentication header for admin API, e.g., an Admin-specific token
+                 // For now, it's open, but in production, secure this.
+                 const response = await fetch(`${this.API_ENDPOINT}${endpoint}`, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+                 if (!response.ok) {
+                     const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}` }));
+                     throw new Error(errorData.message || `Admin API request failed: ${response.status} ${response.statusText}`);
+                 }
+                return await response.json();
+            },
+            getComments: () => AdminAPI.request('/comments'),
+            deleteComment: (commentId) => AdminAPI.request(`/comments/${commentId}`, { method: 'DELETE' }),
+            getUserPosts: () => AdminAPI.request('/posts'), // For user posts awaiting approval
+            approveUserPost: (userPostId) => AdminAPI.request(`/posts/${userPostId}/approve`, { method: 'POST' }), // This action needs a secure mechanism
+            rejectUserPost: (userPostId) => AdminAPI.request(`/posts/${userPostId}/reject`, { method: 'DELETE' })
+        };
+
+
+        // DOM elements
+        const loginWrapper = document.getElementById('login-wrapper');
+        const adminWrapper = document.getElementById('admin-wrapper');
+        const initialMessageEl = document.getElementById('initial-message');
+
+        const mainViews = {
+            posts: document.getElementById('posts-view'),
+            comments: document.getElementById('comments-view'),
+            userPosts: document.getElementById('user-posts-view'),
+            settings: document.getElementById('settings-view')
+        };
+        const navButtons = {
+            posts: document.getElementById('nav-posts'),
+            comments: document.getElementById('nav-comments'),
+            userPosts: document.getElementById('nav-user-posts'),
+            settings: document.getElementById('nav-settings')
+        };
+        const editorContainer = document.getElementById('editor-container');
+        const postListBody = document.getElementById('post-list');
+        const commentsListAdmin = document.getElementById('comments-list-admin');
+        const userPostsListAdmin = document.getElementById('user-posts-list-admin');
+
+        let token = localStorage.getItem('github_pat') || null; // Persist token
+        let owner = '';
+        let repo = '';
+        let basePath = '';
+        let simplemde = null; // SimpleMDE instance
+
+        let posts = [], postsSha = '';
+        let config = {}, configSha = '';
+        let uploadedImageUrls = []; // Track uploaded image URLs for display
+
+        const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
+
+        const showMessage = (element, message, type = 'info', dismissible = true) => {
+            element.className = `alert mt-3 alert-${type} ${dismissible ? 'alert-dismissible fade show' : ''}`;
+            element.innerHTML = message + (dismissible ? `<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>` : '');
+            element.style.display = 'block';
+        };
+        const hideMessage = (element) => {
+             element.style.display = 'none';
+        }
+
+        const showAdminView = (view) => {
+            Object.values(mainViews).forEach(v => v.style.display = 'none');
+            editorContainer.style.display = 'none';
+            Object.values(navButtons).forEach(b => b.classList.remove('active'));
+            // Close mobile sidebar if open
+            const adminWrapperEl = document.getElementById('admin-wrapper');
+            if (adminWrapperEl.classList.contains('sidebar-visible')) {
+                adminWrapperEl.classList.remove('sidebar-visible');
+            }
+
+            mainViews[view].style.display = 'block';
+            navButtons[view].classList.add('active'); // Highlight active nav item
+            
+            // Special handling for comments/user posts
+            if (view === 'comments') renderCommentsAdmin();
+            if (view === 'userPosts') renderUserPostsAdmin();
+        };
+
+        const setButtonsDisabled = (disabled) => document.querySelectorAll('button').forEach(b => b.disabled = disabled);
+
+        const startAdminSession = async () => {
+            const userToken = document.getElementById('token-input').value.trim();
+            if (!userToken && !token) { showMessage(initialMessageEl, 'GitHub Token 不能为空。', 'warning'); return; }
+            if (userToken) token = userToken;
+
+            setButtonsDisabled(true);
+            showMessage(initialMessageEl, '<div class="spinner-border spinner-border-sm me-2" role="status"></div> 正在验证并加载...', 'info', false);
+
+            try {
+                const user = await GitHubAPI.getUser(token);
+                owner = user.login;
+                repo = `${owner}.github.io`; // Assuming user page repo
+                // For project pages (username.github.io/reponame), adjust repo:
+                const pathParts = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'admin.html');
+                if (pathParts.length > 0) {
+                    repo = pathParts[0]; // For `username.github.io/project-repo/admin.html`
+                }
+                basePath = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'admin.html').join('/');
+
+                // Fetch or initialize config.json
+                let configData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
+                if (!configData) {
+                    showMessage(initialMessageEl, '未检测到配置，正在为您初始化系统...', 'info', false);
+                    const initialConfig = {
+                        site: { title: `${user.login}的博客`, description: "由GitHub驱动的现代化博客", logoUrl: "", faviconUrl: "" },
+                        styling: { backgroundColor: "#f8f9fa", textColor: "#212529", headingColor: "#343a40", accentColor: "#0d6efd", linkHoverColor: "#0a58ca", borderColor: "#dee2e6", cardBgColor: "#ffffff", cardShadow: "0 4px 12px rgba(0, 0, 0, 0.08)", metaColor: "#6c757d", codeBgColor: "#282c34", codeTextColor: "#abb2bf", backgroundImageUrl: "", darkModeToggle: true },
+                        features: { commentSystem: { enabled: true, type: "custom-serverless", apiEndpoint: "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/comments", adminApiEndpoint: "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/admin", postSubmitApiEndpoint: "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/posts/submit" }, userPostingEnabled: false, highlightJsTheme: "atom-one-dark" },
+                        socialLinks: [],
+                        footerText: `© ${new Date().getFullYear()} ${user.login}'s Blog. All rights reserved.`
+                    };
+                    const [configRes, postsRes, imagesDirRes] = await Promise.all([
+                        GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize blog config'),
+                        GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), '[]', 'feat: initialize blog posts'),
+                        GitHubAPI.createFile(token, owner, repo, getPath('images/.gitkeep'), '', 'feat: initialize images directory')
+                    ]);
+                    config = initialConfig;
+                    configSha = configRes.content.sha;
+                    posts = [];
+                    postsSha = postsRes.content.sha;
+                    showMessage(initialMessageEl, '系统激活成功！', 'success');
+                } else {
+                    const postsData = await GitHubAPI.getFile(token, owner, repo, getPath('posts.json'));
+                    config = JSON.parse(configData.content);
+                    configSha = configData.sha;
+                    posts = postsData ? JSON.parse(postsData.content) : [];
+                    postsSha = postsData ? postsData.sha : null;
+                }
+
+                localStorage.setItem('github_pat', token); // Store token safely
+                AdminAPI.API_ENDPOINT = config.features.commentSystem.adminApiEndpoint; // Set Admin API endpoint
+                
+                loginWrapper.style.display = 'none';
+                adminWrapper.style.display = 'flex';
+                renderPostList();
+                populateSettings();
+                determineInitialView(); // Show the correct view based on initial hash
+                
+                // Show/hide user posts nav item based on config
+                if (config.features.userPostingEnabled) {
+                     document.getElementById('nav-user-posts-item').style.display = 'block';
+                } else {
+                    document.getElementById('nav-user-posts-item').style.display = 'none';
+                }
+
+            } catch (error) {
+                showMessage(initialMessageEl, `登录或加载失败: ${error.message}`, 'danger');
+                console.error("Admin start error:", error);
+                token = null;
+                localStorage.removeItem('github_pat'); // Clear invalid token
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        const determineInitialView = () => {
+             const hash = window.location.hash.replace('#', '');
+             if (Object.keys(mainViews).includes(hash)) {
+                 showAdminView(hash);
+             } else {
+                 showAdminView('posts'); // Default view
+             }
+        };
+
+        const renderPostList = () => {
+            hideMessage(document.getElementById('posts-message-alert'));
+            postListBody.innerHTML = '';
+            if (posts.length === 0) {
+                postListBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">暂无文章。</td></tr>';
+                return;
+            }
+            [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(post => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><a href="#editor" class="text-primary" data-id="${post.id}">${post.title}</a></td>
+                    <td>${post.tags && post.tags.length > 0 ? post.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('') : '无标签'}</td>
+                    <td>${new Date(post.createdAt).toLocaleDateString()}</td>
+                    <td>${post.updatedAt ? new Date(post.updatedAt).toLocaleDateString() : 'N/A'}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-primary edit-post-btn" data-id="${post.id}"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="btn btn-sm btn-danger delete-post-btn" data-id="${post.id}"><i class="fas fa-trash-alt"></i> 删除</button>
+                    </td>
+                `;
+                postListBody.appendChild(tr);
+            });
+        };
+
+        const openEditor = (postId = null) => {
+            hideMessage(document.getElementById('editor-alert'));
+            showAdminView('posts'); // Still highlight posts nav
+            mainViews.posts.style.display = 'none'; // Hide list view
+            editorContainer.style.display = 'block';
+
+            const post = posts.find(p => p.id === postId);
+            document.getElementById('editor-title').innerHTML = post ? '<i class="fas fa-edit me-2"></i>编辑文章' : '<i class="fas fa-plus-circle me-2"></i>撰写新文章';
+            document.getElementById('save-post-btn').innerHTML = post ? '<i class="fas fa-save me-2"></i>更新文章' : '<i class="fas fa-plus-circle me-2"></i>发布文章';
+            document.getElementById('post-id').value = post?.id || '';
+            document.getElementById('post-title').value = post?.title || '';
+            document.getElementById('post-tags').value = post?.tags?.join(', ') || '';
+
+            if (simplemde) {
+                simplemde.value(post?.content || '');
+            } else {
+                simplemde = new SimpleMDE({
+                    element: document.getElementById('post-content'),
+                    spellChecker: false,
+                    autosave: { enabled: true, uniqueId: "blog_post_editor", delay: 1000 },
+                    status: ["lines", "words", "cursor"], // Display word/line count
+                    toolbar: [ // Customize toolbar
+                        "bold", "italic", "heading", "|",
+                        "quote", "unordered-list", "ordered-list", "|",
+                        "link", "image", "table", "|",
+                        "preview", "side-by-side", "fullscreen", "|",
+                        "guide" // Help guide
+                    ]
+                });
+                simplemde.value(post?.content || ''); // Set content after init
+            }
+            
+            document.getElementById('image-upload').value = ''; // Clear file input
+            uploadedImageUrls = [];
+            renderUploadedImageUrls();
+
+            document.getElementById('delete-post-btn').style.display = post ? 'inline-block' : 'none';
+        };
+
+        const savePost = async () => {
+            const id = document.getElementById('post-id').value;
+            const title = document.getElementById('post-title').value.trim();
+            const content = simplemde.value().trim(); // Get content from SimpleMDE
+            const tags = document.getElementById('post-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+
+            if (!title || !content) { showMessage(document.getElementById('editor-alert'), '标题和内容不能为空！', 'warning'); return; }
+            if (content.length < 50) { showMessage(document.getElementById('editor-alert'), '文章内容太短，请至少输入50个字符。', 'warning'); return; }
+            
+            setButtonsDisabled(true);
+            hideMessage(document.getElementById('editor-alert')); // Hide previous alerts
+
+            const postIndex = posts.findIndex(p => p.id === id);
+            let commitMessage = '';
+
+            if (postIndex > -1) {
+                Object.assign(posts[postIndex], { title, content, tags, updatedAt: new Date().toISOString() });
+                commitMessage = `docs: update post "${title}" (ID: ${id.substring(5, 11)})`;
+            } else {
+                const newPostId = `post_${Date.now()}`;
+                posts.push({ id: newPostId, title, content, tags, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+                commitMessage = `feat: create new post "${title}" (ID: ${newPostId.substring(5, 11)})`;
+            }
+            
+            try {
+                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, commitMessage);
+                postsSha = res.content.sha;
+                showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>文章保存成功！`, 'success', true);
+                renderPostList();
+                showAdminView('posts');
+            } catch (error) {
+                showMessage(document.getElementById('editor-alert'), `<i class="fas fa-times-circle me-2"></i>文章保存失败: ${error.message}`, 'danger');
+                console.error("Save post error:", error);
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        const deletePost = async (postId) => {
+            if (!postId) return;
+            if (!confirm('确定要删除这篇文章吗？此操作不可逆！')) return;
+            
+            setButtonsDisabled(true);
+            hideMessage(document.getElementById('posts-message-alert')); // Hide previous alerts
+            hideMessage(document.getElementById('editor-alert'));
+
+            const postToDelete = posts.find(p => p.id === postId);
+            if (!postToDelete) { showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-exclamation-triangle me-2"></i>未找到要删除的文章。`, 'warning'); return; }
+
+            posts = posts.filter(p => p.id !== postId);
+            try {
+                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: delete post "${postToDelete.title}" (ID: ${postId.substring(5, 11)})`);
+                postsSha = res.content.sha;
+                showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>文章 "${postToDelete.title}" 已成功删除！`, 'success', true);
+                renderPostList();
+                showAdminView('posts'); // Go back to post list
+            } catch (error) {
+                showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>文章删除失败: ${error.message}`, 'danger');
+                console.error("Delete post error:", error);
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+        
+        const populateSettings = () => {
+            document.getElementById('setting-title').value = config.site.title || '';
+            document.getElementById('setting-description').value = config.site.description || '';
+            document.getElementById('setting-logo-url').value = config.site.logoUrl || '';
+            document.getElementById('setting-favicon-url').value = config.site.faviconUrl || '';
+
+            document.getElementById('setting-bg-color').value = config.styling.backgroundColor || '#f8f9fa';
+            document.getElementById('setting-text-color').value = config.styling.textColor || '#212529';
+            document.getElementById('setting-heading-color').value = config.styling.headingColor || '#343a40';
+            document.getElementById('setting-accent-color').value = config.styling.accentColor || '#0d6efd';
+            document.getElementById('setting-bg-image-url').value = config.styling.backgroundImageUrl || '';
+            document.getElementById('setting-highlight-theme').value = config.features.highlightJsTheme || 'atom-one-dark';
+            document.getElementById('setting-dark-mode-toggle').checked = config.styling.darkModeToggle || false;
+
+            document.getElementById('setting-footer-text').value = config.footerText || '';
+            document.getElementById('setting-user-posting-enabled').checked = config.features.userPostingEnabled || false;
+
+            renderSocialLinksEditor();
+        };
+        
+        const saveSettings = async () => {
+            setButtonsDisabled(true);
+            hideMessage(document.getElementById('settings-message-alert'));
+
+            const newConfig = JSON.parse(JSON.stringify(config)); // Deep copy
+            newConfig.site = {
+                title: document.getElementById('setting-title').value.trim(),
+                description: document.getElementById('setting-description').value.trim(),
+                logoUrl: document.getElementById('setting-logo-url').value.trim(),
+                faviconUrl: document.getElementById('setting-favicon-url').value.trim()
+            };
+            newConfig.styling = {
+                backgroundColor: document.getElementById('setting-bg-color').value,
+                textColor: document.getElementById('setting-text-color').value,
+                headingColor: document.getElementById('setting-heading-color').value,
+                accentColor: document.getElementById('setting-accent-color').value,
+                linkHoverColor: newConfig.styling.linkHoverColor, // Keep if not directly editable
+                borderColor: newConfig.styling.borderColor,
+                cardBgColor: newConfig.styling.cardBgColor,
+                cardShadow: newConfig.styling.cardShadow,
+                metaColor: newConfig.styling.metaColor,
+                codeBgColor: newConfig.styling.codeBgColor,
+                codeTextColor: newConfig.styling.codeTextColor,
+                backgroundImageUrl: document.getElementById('setting-bg-image-url').value.trim(),
+                darkModeToggle: document.getElementById('setting-dark-mode-toggle').checked
+            };
+            newConfig.features.highlightJsTheme = document.getElementById('setting-highlight-theme').value;
+            newConfig.features.userPostingEnabled = document.getElementById('setting-user-posting-enabled').checked;
+            newConfig.socialLinks = [];
+            document.querySelectorAll('#social-links-list .social-link-item').forEach(item => {
+                 const name = item.querySelector('.social-link-name').value.trim();
+                 const url = item.querySelector('.social-link-url').value.trim();
+                 const icon = item.querySelector('.social-link-icon').value.trim();
+                 if (name && url && icon) {
+                     newConfig.socialLinks.push({ name, url, icon });
+                 }
+            });
+            newConfig.footerText = document.getElementById('setting-footer-text').value.trim();
+
+            try {
+                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(newConfig, null, 2), configSha, 'docs: update site settings');
+                configSha = res.content.sha;
+                config = newConfig; // Update local config with new values
+                // Update AdminAPI endpoint if changed
+                AdminAPI.API_ENDPOINT = config.features.commentSystem.adminApiEndpoint;
+                // Update user posts nav item visibility
+                if (config.features.userPostingEnabled) {
+                     document.getElementById('nav-user-posts-item').style.display = 'block';
+                } else {
+                    document.getElementById('nav-user-posts-item').style.display = 'none';
+                }
+                showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-check-circle me-2"></i>网站设置已保存成功！刷新前台页面可见更新。`, 'success', true);
+            } catch (error) {
+                showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-times-circle me-2"></i>设置保存失败: ${error.message}`, 'danger');
+                console.error("Save settings error:", error);
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        const renderSocialLinksEditor = () => {
+            const socialLinksList = document.getElementById('social-links-list');
+            socialLinksList.innerHTML = '';
+             if (!config.socialLinks || config.socialLinks.length === 0) {
+                 socialLinksList.innerHTML = `<div class="alert alert-secondary text-center py-2" role="alert">暂无社交链接，点击“添加社交链接”按钮创建。</div>`;
+                 return;
+             }
+            config.socialLinks.forEach((link, index) => {
+                const item = document.createElement('div');
+                item.className = 'input-group mb-2 social-link-item';
+                item.innerHTML = `
+                    <span class="input-group-text"><i class="${link.icon || 'fas fa-link'}"></i></span>
+                    <input type="text" class="form-control social-link-name" value="${link.name}" placeholder="名称 (e.g., GitHub)">
+                    <input type="text" class="form-control social-link-url" value="${link.url}" placeholder="URL">
+                    <input type="text" class="form-control social-link-icon" value="${link.icon}" placeholder="Font Awesome图标类名 (e.g., fab fa-github)">
+                    <button class="btn btn-danger remove-social-link-btn" type="button" data-index="${index}"><i class="fas fa-times"></i></button>
+                `;
+                socialLinksList.appendChild(item);
+            });
+
+             document.querySelectorAll('.remove-social-link-btn').forEach(btn => {
+                 btn.onclick = (e) => {
+                     e.preventDefault();
+                     const indexToRemove = parseInt(e.currentTarget.dataset.index);
+                     config.socialLinks.splice(indexToRemove, 1);
+                     renderSocialLinksEditor(); // Re-render to update indexes and elements
+                 };
+             });
+        };
+
+        const addSocialLink = () => {
+            if (!config.socialLinks) config.socialLinks = [];
+            config.socialLinks.push({ name: '', url: '', icon: 'fas fa-link' });
+            renderSocialLinksEditor();
+        };
+
+        // Image upload function
+        const uploadFile = async (file, isBgImage = false) => {
+            if (!file) return;
+            setButtonsDisabled(true);
+            const alertElement = isBgImage ? document.getElementById('settings-message-alert') : document.getElementById('editor-alert');
+            
+            showMessage(alertElement, `<div class="spinner-border spinner-border-sm me-2" role="status"></div> 正在上传图片: ${file.name}...`, 'info', false);
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result.split(',')[1]; // Base64 content
+                const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+                const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`; // Sanitize filename
+                const path = getPath(`images/${fileName}`);
+                try {
+                    const result = await GitHubAPI.createFile(token, owner, repo, path, content, `feat: upload image ${fileName}`, true);
+                    const url = result.content.download_url; // Direct CDN URL if GitHub serves it statically
+
+                    if (isBgImage) {
+                        document.getElementById('setting-bg-image-url').value = url;
+                        showMessage(alertElement, `<i class="fas fa-check-circle me-2"></i>背景图片上传成功，URL已填入。`, 'success', true);
+                    } else {
+                        uploadedImageUrls.push({ name: file.name, url: url, markdown: `![${file.name}图片](<${url}>)` });
+                        renderUploadedImageUrls();
+                        showMessage(alertElement, `<i class="fas fa-camera me-2"></i>图片 "${file.name}" 上传成功，URL已在下方列表。`, 'success', true);
+                    }
+                } catch (error) {
+                    showMessage(alertElement, `<i class="fas fa-times-circle me-2"></i>图片上传失败: ${error.message}`, 'danger', true);
+                    console.error("Image upload error:", error);
+                } finally {
+                    setButtonsDisabled(false);
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const renderUploadedImageUrls = () => {
+            const urlsListEl = document.getElementById('uploaded-image-urls');
+            urlsListEl.innerHTML = '';
+             if (uploadedImageUrls.length === 0) {
+                 urlsListEl.style.display = 'none';
+                 return;
+             }
+            urlsListEl.style.display = 'block';
+            uploadedImageUrls.forEach(img => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="flex-grow-1">${img.markdown}</div>
+                    <button class="btn btn-sm btn-outline-primary copy-btn" data-clipboard-text="${img.markdown}" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i></button>
+                `;
+                urlsListEl.appendChild(li);
+            });
+        };
+
+        const copyToClipboard = (button) => {
+            const textToCopy = button.dataset.clipboardText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.textContent = '已复制!';
+                setTimeout(() => { button.innerHTML = '<i class="fas fa-copy"></i>'; }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('复制失败，请手动复制。');
+            });
+        };
+
+
+        // Comments Admin Logic
+        const renderCommentsAdmin = async () => {
+            commentsListAdmin.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border text-primary me-2" role="status"></div>加载评论中...</div>';
+            hideMessage(document.getElementById('comments-message-alert'));
+            if (!config.features.commentSystem.enabled || !AdminAPI.API_ENDPOINT) {
+                commentsListAdmin.innerHTML = `<div class="alert alert-warning text-center" role="alert"><i class="fas fa-exclamation-triangle me-2"></i>评论管理功能未启用或API未配置。请检查网站设置。</div>`;
+                return;
+            }
+
+            try {
+                const { comments } = await AdminAPI.getComments(); // Assumes API returns { comments: [...] }
+                commentsListAdmin.innerHTML = ''; // Clear loading
+                if (comments && comments.length > 0) {
+                    comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Newest first
+                    comments.forEach(comment => {
+                        const post = posts.find(p => p.id === comment.postId);
+                        const commentEl = document.createElement('div');
+                        commentEl.className = 'list-group-item';
+                        commentEl.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${comment.author || '匿名用户'} 对文章 "<a href="#editor" data-id="${comment.postId}" class="text-primary">${post ? post.title : '未知文章'}</a>" 的评论</h6>
+                                <small class="text-muted"><i class="far fa-clock me-1"></i>${new Date(comment.createdAt).toLocaleString()}</small>
+                            </div>
+                            <p class="mb-1 text-break">${comment.content}</p>
+                            <div class="comment-actions">
+                                <button class="btn btn-sm btn-danger delete-comment-btn" data-id="${comment.id}"><i class="fas fa-trash-alt me-1"></i>删除</button>
+                            </div>
+                        `;
+                        commentsListAdmin.appendChild(commentEl);
+                    });
+                } else {
+                    commentsListAdmin.innerHTML = '<div class="alert alert-info text-center" role="alert"><i class="fas fa-info-circle me-2"></i>暂无任何评论。</div>';
+                }
+            } catch (error) {
+                showMessage(document.getElementById('comments-message-alert'), `<i class="fas fa-times-circle me-2"></i>加载评论失败: ${error.message}`, 'danger');
+                console.error("Render comments admin error:", error);
+            }
+        };
+
+        const deleteComment = async (commentId) => {
+            if (!commentId || !confirm('确定要删除这条评论吗？')) return;
+            setButtonsDisabled(true);
+            try {
+                const result = await AdminAPI.deleteComment(commentId);
+                if (result.success) {
+                    showMessage(document.getElementById('comments-message-alert'), `<i class="fas fa-check-circle me-2"></i>评论删除成功！`, 'success', true);
+                    renderCommentsAdmin();
+                } else {
+                    throw new Error(result.message || '删除评论失败。');
+                }
+            } catch (error) {
+                showMessage(document.getElementById('comments-message-alert'), `<i class="fas fa-times-circle me-2"></i>删除评论失败: ${error.message}`, 'danger');
+                console.error("Delete comment error:", error);
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+
+        // User Posts Admin Logic (requires Serverless API to mock a database for pending posts)
+        const renderUserPostsAdmin = async () => {
+             userPostsListAdmin.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border text-primary me-2" role="status"></div>加载用户投稿中...</div>';
+             hideMessage(document.getElementById('user-posts-message-alert'));
+
+            if (!config.features.userPostingEnabled || !AdminAPI.API_ENDPOINT) {
+                userPostsListAdmin.innerHTML = `<div class="alert alert-warning text-center" role="alert"><i class="fas fa-exclamation-triangle me-2"></i>用户投稿管理功能未启用或API未配置。请检查网站设置。</div>`;
+                return;
+            }
+
+            try {
+                const { userPosts } = await AdminAPI.getUserPosts(); // Assumes API returns { userPosts: [...] }
+                userPostsListAdmin.innerHTML = '';
+                if (userPosts && userPosts.length > 0) {
+                    userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    userPosts.forEach(userPost => {
+                        const userPostEl = document.createElement('div');
+                        userPostEl.className = 'list-group-item';
+                        userPostEl.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${userPost.title} <small class="text-muted">(由 ${userPost.author || '匿名用户'} 提交)</small></h6>
+                                <small class="text-muted"><i class="far fa-clock me-1"></i>${new Date(userPost.createdAt).toLocaleString()}</small>
+                            </div>
+                            <p class="mb-1 text-break">${userPost.content.substring(0, 200)}...</p>
+                            ${userPost.tags && userPost.tags.length > 0 ? `<div class="my-2">${userPost.tags.map(tag => `<span class="badge bg-info me-1">${tag}</span>`).join('')}</div>` : ''}
+                            <div class="user-post-actions mt-2">
+                                <button class="btn btn-sm btn-success approve-user-post-btn me-2" data-id="${userPost.id}"><i class="fas fa-check me-1"></i>批准并发布</button>
+                                <button class="btn btn-sm btn-primary edit-user-post-btn me-2" data-id="${userPost.id}"><i class="fas fa-edit me-1"></i>编辑</button>
+                                <button class="btn btn-sm btn-danger reject-user-post-btn" data-id="${userPost.id}"><i class="fas fa-times me-1"></i>拒绝</button>
+                            </div>
+                        `;
+                        userPostsListAdmin.appendChild(userPostEl);
+                    });
+                } else {
+                    userPostsListAdmin.innerHTML = '<div class="alert alert-info text-center" role="alert"><i class="fas fa-info-circle me-2"></i>暂无待审核的用户投稿。</div>';
+                }
+            } catch (error) {
+                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>加载用户投稿失败: ${error.message}`, 'danger');
+                console.error("Render user posts admin error:", error);
+            }
+        };
+
+        const approveUserPost = async (userPostId) => {
+            if (!userPostId || !confirm('确定要批准并发布这篇用户投稿吗？')) return;
+            setButtonsDisabled(true);
+            try {
+                const result = await AdminAPI.approveUserPost(userPostId);
+                if (result.success && result.postContent) {
+                    // This is the critical step: convert user post to a regular post and save to GitHub
+                    posts.push(result.postContent); // result.postContent should be a formatted post object
+                    const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `feat: approve and publish user post "${result.postContent.title}"`);
+                    postsSha = res.content.sha;
+
+                    showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>用户投稿已成功发布！`, 'success', true);
+                    renderUserPostsAdmin(); // Refresh pending user posts
+                    renderPostList(); // Refresh main post list
+                } else {
+                    throw new Error(result.message || '批准用户投稿失败。');
+                }
+            } catch (error) {
+                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>批准用户投稿失败: ${error.message}`, 'danger');
+                console.error("Approve user post error:", error);
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        const rejectUserPost = async (userPostId) => {
+            if (!userPostId || !confirm('确定要拒绝这篇用户投稿吗？')) return;
+            setButtonsDisabled(true);
+            try {
+                const result = await AdminAPI.rejectUserPost(userPostId);
+                if (result.success) {
+                    showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>用户投稿已成功拒绝。`, 'success', true);
+                    renderUserPostsAdmin(); // Refresh pending user posts
+                } else {
+                    throw new Error(result.message || '拒绝用户投稿失败。');
+                }
+            } catch (error) {
+                showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-times-circle me-2"></i>拒绝用户投稿失败: ${error.message}`, 'danger');
+                console.error("Reject user post error:", error);
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        // Event Listeners
+        document.getElementById('start-btn').onclick = startAdminSession;
+        document.getElementById('logout-btn').onclick = () => {
+            localStorage.removeItem('github_pat');
+            token = null;
+            window.location.reload(); // Reload to login page
+        };
+        document.getElementById('mobile-menu-btn').onclick = () => document.getElementById('admin-wrapper').classList.toggle('sidebar-visible');
+        document.getElementById('mobile-overlay').onclick = () => document.getElementById('admin-wrapper').classList.remove('sidebar-visible');
+
+        // Navigation
+        navButtons.posts.onclick = () => { window.location.hash = 'posts'; showAdminView('posts'); };
+        navButtons.comments.onclick = () => { window.location.hash = 'comments'; showAdminView('comments'); };
+        if (navButtons.userPosts) navButtons.userPosts.onclick = () => { window.location.hash = 'user-posts'; showAdminView('userPosts'); };
+        navButtons.settings.onclick = () => { window.location.hash = 'settings'; showAdminView('settings'); };
+
+        // Post Management
+        document.getElementById('new-post-btn').onclick = () => openEditor();
+        document.getElementById('cancel-edit-btn').onclick = () => { showAdminView('posts'); hideMessage(document.getElementById('editor-alert')); };
+        document.getElementById('save-post-btn').onclick = savePost;
+        document.getElementById('delete-post-btn').onclick = () => deletePost(document.getElementById('post-id').value);
+
+        postListBody.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-post-btn') || e.target.closest('.edit-post-btn')) {
+                e.preventDefault();
+                openEditor(e.target.closest('.edit-post-btn').dataset.id);
+            }
+            if (e.target.classList.contains('delete-post-btn') || e.target.closest('.delete-post-btn')) {
+                e.preventDefault();
+                deletePost(e.target.closest('.delete-post-btn').dataset.id);
+            }
+            if (e.target.localName === 'a' && e.target.dataset.id && e.target.href.includes('#editor')) { // For title links
+                e.preventDefault();
+                openEditor(e.target.dataset.id);
+            }
+        });
+
+        // Settings Management
+        document.getElementById('save-settings-btn').onclick = saveSettings;
+        document.getElementById('add-social-link-btn').onclick = addSocialLink;
+        document.getElementById('setting-bg-image').onchange = (e) => uploadFile(e.target.files[0], true);
+        document.getElementById('upload-bg-image-btn').onclick = (e) => {
+            e.preventDefault(); // Prevent form submission
+            const fileInput = document.getElementById('setting-bg-image');
+            if (fileInput.files.length > 0) {
+                uploadFile(fileInput.files[0], true);
+            } else {
+                 showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-exclamation-triangle me-2"></i>请选择要上传的背景图片。`, 'warning', true);
+            }
+        };
+        document.getElementById('clear-bg-image-btn').onclick = () => {
+            document.getElementById('setting-bg-image-url').value = '';
+            showMessage(document.getElementById('settings-message-alert'), `<i class="fas fa-info-circle me-2"></i>背景图URL已清除，记得保存设置。`, 'warning', true);
+        };
+
+        // Image Upload (for post content)
+        document.getElementById('image-upload').onchange = (e) => {
+            Array.from(e.target.files).forEach(file => uploadFile(file, false));
+            e.target.value = ''; // Clear file input after selection
+        };
+
+        // Comments/User Posts Actions
+        commentsListAdmin.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-comment-btn') || e.target.closest('.delete-comment-btn')) {
+                e.preventDefault();
+                deleteComment(e.target.closest('.delete-comment-btn').dataset.id);
+            }
+        });
+
+        userPostsListAdmin.addEventListener('click', (e) => {
+            if (e.target.classList.contains('approve-user-post-btn') || e.target.closest('.approve-user-post-btn')) {
+                e.preventDefault();
+                approveUserPost(e.target.closest('.approve-user-post-btn').dataset.id);
+            }
+            // For editing user post content BEFORE publishing
+            if (e.target.classList.contains('edit-user-post-btn') || e.target.closest('.edit-user-post-btn')) {
+                e.preventDefault();
+                alert('编辑用户投稿功能待实现。管理员可手动复制内容进行编辑、发布。'); // Placeholder
+            }
+            if (e.target.classList.contains('reject-user-post-btn') || e.target.closest('.reject-user-post-btn')) {
+                e.preventDefault();
+                rejectUserPost(e.target.closest('.reject-user-post-btn').dataset.id);
+            }
+        });
+
+        // Initialize on page load
+        if (token) {
+            startAdminSession();
+        } else {
+            loginWrapper.style.display = 'flex';
+            adminWrapper.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
