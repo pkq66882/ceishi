@@ -418,7 +418,8 @@
                 <nav id="main-nav">
                     <a href="#/" class="nav-link active" data-route="home">首页</a>
                     <a href="#/about" class="nav-link" data-route="about">关于我</a>
-                    <a href="admin.html" target="_blank" class="nav-link admin-link">管理后台</a>
+                    <!-- 使用 basePath 构建 admin.html 链接 -->
+                    <a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" class="nav-link admin-link">管理后台</a>
                 </nav>
             </div>
         </header>
@@ -471,19 +472,17 @@
                 if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
                 return response.json();
             },
-            // 在前端，获取文件不需要token（除非是私有仓库，但GitHub Pages通常是公开的）
-            // 但是为了与admin.html的结构一致，暂时保留token参数，但实际可以传null
             async getFile(owner, repo, path, token = null) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content !== 'string' || result.encoding !== 'base64') { // Ensure encoding is base64 for decoding
+                    if (!result || typeof result.content !== 'string' || result.encoding !== 'base64') {
                         console.warn(`File content for ${path} is empty, invalid, or file not found.`);
                         return null; 
                     }
-                    const decodedContent = atob(result.content); // Only decode from base64
+                    const decodedContent = atob(result.content);
                     return { content: decodedContent, sha: result.sha };
                 } catch (error) {
-                    if (String(error.message).toLowerCase().includes('not found') || String(error.message).includes('file not found')) {
+                    if (String(error.message).toLowerCase().includes('not found') || String(error.message).includes('file not found') || String(error).includes('No content.')) {
                         console.info(`File not found: ${path}. This is expected if not initialized.`);
                         return null;
                     }
@@ -523,47 +522,77 @@
         const mainFooterEl = document.getElementById('main-footer');
         const gitalkContainerEl = document.getElementById('gitalk-container');
 
-        // 用于解析owner, repo, basePath的通用函数 (与admin.html保持一致)
+        // **通用路径解析函数** (与admin.html保持一致，确保行为统一)
         const parseGitHubPath = (githubUsername) => {
             const hostname = window.location.hostname;
             let pathSegments = window.location.pathname.split('/').filter(p => p);
 
-            if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html' || pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html') {
+            if (pathSegments.length > 0 && 
+                (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
+                 pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
                 pathSegments.pop();
             }
 
             let currentRepo = '';
             let currentBasePath = '';
 
-            if (hostname.endsWith('.github.io')) {
-                const userDomain = hostname.split('.')[0];
-                if (userDomain.toLowerCase() === githubUsername.toLowerCase()) {
-                    currentRepo = hostname;
-                    currentBasePath = pathSegments.join('/');
-                } else if (pathSegments.length > 0) {
+            const userDomainPattern = new RegExp(`^${githubUsername.toLowerCase()}\\.github\\.io$`);
+
+            if (userDomainPattern.test(hostname)) {
+                // 情况1: 用户/组织页面部署 (e.g., username.github.io/)
+                // 或项目页面部署 (e.g., username.github.io/projectName/)，这里的 projectName 是 pathSegments[0]
+                if (pathSegments.length > 0) {
+                    currentRepo = pathSegments[0]; // projectRepoName, e.g., 'ceishi'
+                    currentBasePath = pathSegments.slice(1).join('/'); // 如果是 'ceishi/sub/admin.html' => basePath = 'sub'
+                } else {
+                    currentRepo = hostname; // user.github.io for root deployment
+                    currentBasePath = '';
+                }
+            } else if (hostname.endsWith('.github.io')) {
+                // 可能是其他用户的项目页面托管在本项目域下，或域名不匹配
+                // 暂时按照项目页面处理
+                if (pathSegments.length > 0) {
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
                 } else {
-                    currentRepo = hostname;
-                    currentBasePath = '';
-                }
-            } else {
-                if (pathSegments.length > 0) {
-                     currentRepo = pathSegments[0];
-                     currentBasePath = pathSegments.slice(1).join('/');
-                } else {
-                    // This is a more complex custom domain without path segments, fallback to user.github.io for repo detection
                     currentRepo = `${githubUsername}.github.io`; 
                     currentBasePath = '';
                 }
             }
-
-            if (!currentRepo || currentRepo.toLowerCase() === 'github.io') {
-                currentRepo = `${githubUsername}.github.io`;
+            else { // 自定义域名
+                if (pathSegments.length > 0) {
+                    currentRepo = pathSegments[0]; // 假设 custom.com/my-blog/ => my-blog
+                    currentBasePath = pathSegments.slice(1).join('/');
+                } else {
+                    // 没有 pathname 段，假设 CNAME 直接指向用户/组织仓库根目录
+                    currentRepo = `${githubUsername}.github.io`; 
+                    currentBasePath = '';
+                }
             }
+            
+            // 最终修正：如果 currentRepo 仍然为空，或者无法准确判断，提供一个合理的 fallback
+            if (!currentRepo) {
+                currentRepo = `${githubUsername}.github.io`; 
+            }
+            // 重要：确保 Gitalk 的 repo 设置与实际部署的 repo 名称一致。
+            // 您的截图显示仓库是 pkq66882/ceishi，所以无论域名如何，实际操作的 GitHub 仓库就是 'ceishi'
+            // 如果 `owner` 是 `pkq66882` 且 `hostname` 是 `pkq66882.github.io`
+            // 并且 `pathSegments` (去掉 `admin.html`/`index.html`) 的第一个元素是 `ceishi`
+            // 那么 `repo` 应该是 `ceishi`，`basePath` 应该只包含 `ceishi` 之后的部分。
+            if (hostname.startsWith(githubUsername.toLowerCase()) && hostname.endsWith('.github.io') && pathSegments.length > 0) {
+                currentRepo = pathSegments[0]; // e.g., "ceishi"
+                currentBasePath = pathSegments.slice(1).join('/'); // e.g., "" if URL is /ceishi/index.html
+            } else if (currentRepo.endsWith('.github.io') && pathSegments.length > 0) {
+                // 比如是 custom.com/ceishi/admin.html 这种情况，hostname不是user.github.io但有path
+                // 这表明 repo 是 pathSegments[0], basePath是之后的部分
+                currentRepo = pathSegments[0];
+                currentBasePath = pathSegments.slice(1).join('/');
+            }
+
 
             return { owner: githubUsername, repo: currentRepo, basePath: currentBasePath };
         };
+
 
         const getFilePath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
@@ -573,7 +602,7 @@
             const postListContainer = blogContentDiv.querySelector('.post-list');
 
             if (blogPosts.length === 0) {
-                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1; font-weight: normal;">暂无文章。去<a href="admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
+                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1; font-weight: normal;">暂无文章。去<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
                 return;
             }
 
@@ -621,17 +650,14 @@
                 </article>
             `;
             blogContentDiv.style.display = 'block';
-            hljs.highlightAll(); // Highlight code blocks
+            hljs.highlightAll();
 
-            // Gitalk comments
             if (siteConfig && siteConfig.gitalk && siteConfig.gitalk.enabled) {
-                gitalkContainerEl.innerHTML = ''; // Clear previous comments
+                gitalkContainerEl.innerHTML = '';
                 gitalkContainerEl.style.display = 'block';
 
-                // Ensure path segments are always relative to basePath for Gitalk issue ID
-                let gitalkPath = basePath ? `${basePath}/post/${postId}` : `/post/${postId}`;
-                // Gitalk issue ID must be unique and not too long
-                const gitalkId = md.utils.slugify(post.title).slice(0, 50) + '-' + postId.slice(0, 10); // Use slugify to create a clean title part
+                let gitalkIdSource = `${post.title}-${postId}`;
+                if (gitalkIdSource.length > 50) gitalkIdSource = gitalkIdSource.slice(0, 50); // Trim if too long
 
                 try {
                     const gitalk = new Gitalk({
@@ -640,12 +666,13 @@
                         repo: siteConfig.gitalk.repo,
                         owner: siteConfig.gitalk.owner,
                         admin: siteConfig.gitalk.admin,
-                        id: gitalkId, // Unique ID for each post
-                        distractionFreeMode: false,
+                        id: gitalkIdSource,
+                        distractionFreeMode: siteConfig.gitalk.distractionFreeMode,
                         title: post.title,
-                        labels: ['Gitalk', '评论', post.category || '未分类'], // Tags for the issue
-                        body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`, // Issue body
-                        createIssueManually: false, // Automatically create issue if not found
+                        labels: [...siteConfig.gitalk.labels, post.category || '未分类'], 
+                        body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
+                        createIssueManually: false,
+                        perPage: siteConfig.gitalk.perPage,
                     });
                     gitalk.render('gitalk-container');
                 } catch (e) {
@@ -661,7 +688,7 @@
              blogContentDiv.innerHTML = `
                 <div class="about-page">
                     <h1>关于我</h1>
-                    <div class="about-content">${siteConfig && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : `<p>暂无内容。请前往<a href="admin.html" target="_blank">管理后台</a>的“网站设置”编辑“关于我”页面。</p>`}</div>
+                    <div class="about-content">${siteConfig && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : `<p>暂无内容。请前往<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a>的“网站设置”编辑“关于我”页面。</p>`}</div>
                 </div>
             `;
             blogContentDiv.style.display = 'block';
@@ -683,7 +710,7 @@
             if (path.startsWith('/post/')) {
                 const postId = path.replace('/post/', '');
                 renderPostPage(postId);
-                document.querySelector('#main-nav a[data-route="home"]').classList.add('active'); // 帖子页面也高亮首页
+                document.querySelector('#main-nav a[data-route="home"]').classList.add('active');
             } else if (path === '/about') {
                 renderAboutPage();
                 document.querySelector('#main-nav a[data-route="about"]').classList.add('active');
@@ -695,20 +722,21 @@
 
         // ==================== 初始化博客 ====================
         const initializeBlog = async () => {
-            loadingDiv.style.display = 'block'; // Show loading indicator
+            loadingDiv.style.display = 'block';
 
             try {
-                // Step 1: 获取当前GitHub用户名
-                const currentOwner = window.location.hostname.endsWith('.github.io') ? window.location.hostname.split('.')[0] : prompt("请输入您的GitHub用户名 (例如: pkq66882)");
-                if (!currentOwner) {
-                    throw new Error("无法获取GitHub用户名。请确保URL正确或手动输入。");
+                // Step 1: 获取当前GitHub用户名 (可以从URL或LocalStorage获取，这里假设直接从hostname推断)
+                let tempOwner = window.location.hostname.split('.')[0];
+                if (!tempOwner || tempOwner.toLowerCase() === 'localhost') { // for local testing safety
+                     tempOwner = prompt("请手动输入您的GitHub用户名 (例如: pkq66882):", "pkq66882");
+                     if (!tempOwner) throw new Error("GitHub用户名是必须的。");
                 }
-                owner = currentOwner; // 设置全局owner
+                owner = tempOwner;
 
                 // Step 2: 动态解析 repo 和 basePath
                 const parsedPath = parseGitHubPath(owner);
-                repo = parsedPath.repo; // e.g., 'ceishi' or 'pkq66882.github.io'
-                basePath = parsedPath.basePath; // e.g., '' or 'sub/dir'
+                repo = parsedPath.repo;
+                basePath = parsedPath.basePath;
 
                 console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
 
@@ -726,39 +754,56 @@
                 // Apply dynamic styles
                 document.body.style.backgroundColor = siteConfig.styling.backgroundColor || '#f8f9fa';
                 document.body.style.color = siteConfig.styling.textColor || '#212529';
-                document.querySelector('a').style.color = siteConfig.styling.accentColor || '#0d6efd';
-                document.querySelector('a:hover').style.color = siteConfig.styling.accentHover || '#2980b9'; // Need to define accentHover in config or dynamically pick lighter/darker
-                
-                if (siteConfig.styling.backgroundImageUrl) {
-                    document.body.style.backgroundImage = `url(${siteConfig.styling.backgroundImageUrl})`;
-                    document.body.style.backgroundSize = 'cover';
-                    document.body.style.backgroundAttachment = 'fixed';
-                    document.body.style.backgroundPosition = 'center';
-                }
+                // Update nav links and other elements that use accent color.
+                // This is a minimal example; a more robust solution would be to use CSS variables via JS.
+                const styleElement = document.createElement('style');
+                styleElement.textContent = `
+                    body {
+                        background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
+                        color: ${siteConfig.styling.textColor || '#212529'};
+                        ${siteConfig.styling.backgroundImageUrl ? `
+                            background-image: url(${siteConfig.styling.backgroundImageUrl});
+                            background-size: cover;
+                            background-attachment: fixed;
+                            background-position: center;
+                        ` : ''}
+                    }
+                    a { color: ${siteConfig.styling.accentColor || '#0d6efd'}; }
+                    a:hover { color: ${siteConfig.styling.accentHover || '#2980b9'}; }
+                    .post-card .read-more { background-color: ${siteConfig.styling.accentColor || '#3498db'}; }
+                    .post-card .read-more:hover { background-color: ${siteConfig.styling.accentHover || '#2980b9'}; }
+                    .post-content blockquote { border-left-color: ${siteConfig.styling.accentColor || '#3498db'}; background-color: ${siteConfig.styling.accentColor + '08' || '#f5fafd'}; }
+                    .post-full .meta i { color: ${siteConfig.styling.accentColor || '#95a5a6'}; }
+                    .gt-hdr-btn, .gt-btn-public, .gt-btn-preview { background-color: ${siteConfig.styling.accentColor || '#3498db'}; border-color: ${siteConfig.styling.accentColor || '#3498db'}; }
+                    .gt-hdr-btn:hover, .gt-btn-public:hover, .gt-btn-preview:hover { background-color: ${siteConfig.styling.accentHover || '#2980b9'}; border-color: ${siteConfig.styling.accentHover || '#2980b9'}; }
+                    .gt-link, .gt-comment-username { color: ${siteConfig.styling.accentColor || '#0d6efd'}; }
+                `;
+                document.head.appendChild(styleElement);
+
 
                 // Populate header and footer
                 siteTitleEl.textContent = siteConfig.site.title || `${owner}的博客`;
-                siteTitleEl.style.color = siteConfig.styling.textColor || '#2c3e50';
                 siteDescriptionEl.textContent = siteConfig.site.description || "一个由GitHub Pages驱动的现代化博客。";
-                siteDescriptionEl.style.color = siteConfig.styling.secondaryTextColor || '#7f8c8d'; // Add secondaryTextColor to config later or derive
+                
+                // Construct admin link correctly
+                const adminLinkEl = document.querySelector('.admin-link');
+                if (adminLinkEl) {
+                    adminLinkEl.href = `${basePath ? `/${basePath}` : ''}/admin.html`;
+                }
 
                 mainFooterEl.innerHTML = `
                     <p>&copy; ${new Date().getFullYear()} ${siteConfig.site.title || `${owner}的博客`}. All rights reserved. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a></p>
                 `;
-                mainFooterEl.style.backgroundColor = siteConfig.styling.footerBgColor || '#f0f2f5'; // Add footerBgColor to config later
-                mainFooterEl.style.color = siteConfig.styling.footerTextColor || '#7f8c8d'; // Add footerTextColor to config later
-                mainFooterEl.querySelector('a').style.color = siteConfig.styling.accentColor || '#3498db';
 
-
-                handleRoute(); // Initial route handling
+                handleRoute();
 
             } catch (error) {
                 console.error("博客初始化失败:", error);
                 document.title = "错误 - 博客";
-                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
+                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
                 blogContentDiv.style.display = 'block';
             } finally {
-                loadingDiv.style.display = 'none'; // Hide loading indicator
+                loadingDiv.style.display = 'none';
             }
         };
 
