@@ -29,6 +29,7 @@
             --success-color: #2ecc71;
             --primary-light: #d6eaf8; /* A lighter shade of accent for backgrounds */
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --accent-color-rgb: 52, 152, 219;
         }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -230,7 +231,7 @@
             #mobile-header {
                 display: none;
             }
-             .admin-wrapper.sidebar-visible #admin-sidebar { /* Prevent unwanted transition */
+             .admin-wrapper.sidebar-visible #admin-sidebar {
                 transform: translateX(0) !important;
             }
         }
@@ -303,8 +304,8 @@
             padding: 10px 15px;
             font-size: 1rem;
             transition: border-color 0.2s, box-shadow 0.2s;
-            color: var(--text-color); /* Ensure input text color is readable */
-            background-color: var(--content-bg); /* Ensure input background fits theme */
+            color: var(--text-color);
+            background-color: var(--content-bg);
         }
         .form-control:focus, .form-select:focus {
             border-color: var(--accent-color);
@@ -333,12 +334,12 @@
              color: var(--text-color);
         }
         /* Specific contrast for TinyMCE buttons */
-        .tox .tox-tbtn { /* Standard buttons */
+        .tox .tox-tbtn {
             background-color: transparent;
             border: none;
         }
         .tox .tox-tbtn:hover {
-            background-color: rgba(var(--accent-color-rgb, 52, 152, 219), 0.1);
+            background-color: rgba(var(--accent-color-rgb), 0.1); /* Use RGB variable */
         }
         .tox .tox-checkbox__input:checked + .tox-checkbox__icons {
             background-color: var(--accent-color);
@@ -351,7 +352,7 @@
             border-radius: 4px;
             font-size: 0.95rem;
             transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-            font-weight: 500; /* Medium weight for buttons */
+            font-weight: 500;
         }
         .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: #fff; }
         .btn-primary:hover { background: #2980b9; border-color: #2980b9; color: #fff; box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2); }
@@ -374,75 +375,11 @@
             background-color: var(--accent-color);
             border-color: var(--accent-color);
         }
-
-        /* Image Upload Preview (for settings) */
-        .image-preview-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .image-preview-item {
-            position: relative;
-            width: 100px;
-            height: 100px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            overflow: hidden;
-            background-color: var(--bg-color);
-        }
-        .image-preview-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .image-preview-item .remove-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(0,0,0,0.6);
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            font-size: 0.8rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
-        .image-url-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 10px;
-            background-color: var(--bg-color);
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-        }
-        .image-url-list li {
-            padding: 8px 12px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            word-break: break-all;
-        }
-        .image-url-list li:last-child {
-            border-bottom: none;
-        }
-        .image-url-list li .copy-btn {
-            margin-left: 10px;
-            padding: 4px 8px;
-            font-size: 0.75rem;
-            flex-shrink: 0;
-        }
         
         .alert-dismissible .btn-close {
             padding: 0.75rem 1.25rem;
-             filter: none; /* Reset filter for close button */
-            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+            filter: none;
+            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%236c757d'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
         }
          
         /* Comments/User Posts Management */
@@ -478,14 +415,14 @@
         }
         .social-link-item .input-group-text {
             border-right: none;
-            width: 45px; /* Fixed width for icon */
+            width: 45px;
             justify-content: center;
         }
         .social-link-item .form-control:not(:first-child) {
-            border-left: none; /* Remove duplicate border */
+            border-left: none;
         }
         .social-link-item .form-control:focus {
-            z-index: 1; /* Keep focus border on top */
+            z-index: 1;
         }
         .social-link-item .remove-social-link-btn {
             background-color: var(--danger-color);
@@ -499,6 +436,14 @@
         .social-link-item .remove-social-link-btn:hover {
             background-color: #c0392b;
             border-color: #c0392b;
+        }
+
+        /* TinyMCE Specific Adjustments */
+        .tox .tox-editor-header {
+            z-index: 1000 !important; /* Ensure TinyMCE toolbar is above Bootstrap modals if any */
+        }
+        .tox .tox-tinymce {
+             min-height: 500px; /* Ensure a good editing height */
         }
     </style>
 </head>
@@ -539,7 +484,7 @@
             <header id="mobile-header">
                 <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fas fa-bars"></i></button>
                 <div class="mobile-logo">管理后台</div>
-                <div style="width: 1.8rem;"></div> <!-- Placeholder to balance content -->
+                <div style="width: 1.8rem;"></div>
             </header>
 
             <!-- Posts Management View -->
@@ -557,7 +502,7 @@
                                 <th>标签</th>
                                 <th>发布日期</th>
                                 <th>更新日期</th>
-                                <th class="actions">操作</th>
+                                <th class="actions text-end">操作</th>
                             </tr>
                         </thead>
                         <tbody id="post-list">
@@ -582,8 +527,8 @@
                     <div class="form-text">例如：技术, 前端, 学习。请使用英文逗号分隔。</div>
                 </div>
                 <div class="mb-3">
-                    <label for="post-content" class="form-label">内容 (支持富文本编辑)</label>
-                    <textarea id="post-content"></textarea> <!-- TinyMCE will attach here -->
+                    <label for="post-content-tinymce" class="form-label">内容 (支持富文本编辑)</label>
+                    <textarea id="post-content-tinymce"></textarea> <!-- TinyMCE will attach here -->
                     <div class="form-text">可以使用所见即所得编辑器、直接上传图片、编写HTML。</div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
@@ -603,7 +548,7 @@
                 <div id="comments-message-alert" class="alert mt-3" style="display:none;" role="alert"></div>
                 <!-- Comments list -->
                 <div id="comments-list-admin" class="list-group comments-list-group">
-                    <div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div>加载评论中...</div>
+                    <div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div><p class="mb-0">加载评论中...</p></div>
                 </div>
             </div>
 
@@ -614,7 +559,7 @@
                 </div>
                 <div id="user-posts-message-alert" class="alert mt-3" style="display:none;" role="alert"></div>
                 <div id="user-posts-list-admin" class="list-group comments-list-group">
-                    <div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div>加载用户投稿中...</div>
+                    <div class="loading-spinner-wrapper"><div class="spinner-border text-primary me-2" role="status"></div><p class="mb-0">加载用户投稿中...</p></div>
                 </div>
             </div>
 
@@ -666,7 +611,7 @@
                         </div>
                     </div>
                      <div class="mb-3">
-                        <label for="setting-bg-image" class="form-label d-block">网站背景图 URL</label>
+                        <label for="setting-bg-image-url" class="form-label d-block">网站背景图 URL</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" readonly>
                             <button id="clear-bg-image-btn" class="btn btn-warning" type="button"><i class="fas fa-eraser me-1"></i>清除</button>
@@ -701,8 +646,7 @@
                 <div class="card p-4 mb-4">
                     <h5 class="card-title mb-3">社交链接与页脚</h5>
                      <div id="social-links-list" class="mb-3">
-                         <!-- Social links editor will go here -->
-                         <div class="alert alert-secondary text-center py-2" role="alert">暂无社交链接，点击添加。</div>
+                         <div class="alert alert-secondary text-center py-2" role="alert"><i class="fas fa-info-circle me-2"></i>暂无社交链接，点击添加。</div>
                      </div>
                     <button id="add-social-link-btn" class="btn btn-outline-primary btn-sm mb-3">
                         <i class="fas fa-plus me-1"></i>添加社交链接
@@ -732,6 +676,60 @@
             try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch (e) { return atob(str); }
         };
 
+        /**
+         * 确定GitHub仓库信息 (owner, repoName, contentsPathPrefix)
+         * 考虑到 username.github.io (用户页) 和 username.github.io/repo-name (项目页)
+         * 以及自定义域名的情况。
+         * contentsPathPrefix 是指在API请求中，文件相对于仓库根目录的路径前缀。
+         * 例如，如果文件在 `my-repo/blog/config.json`，而Pages部署在 `username.github.io/my-repo`
+         * 那么 `repoName` 是 `my-repo`，`contentsPathPrefix` 是 `blog`。
+         */
+        const determineGitHubRepoInfo = () => {
+            const hostname = window.location.hostname;
+            const pathname = window.location.pathname; // e.g., /repo-name/admin.html or /admin.html
+            
+            let owner = '';
+            let repoName = '';
+            let contentsPathPrefix = '';
+
+            // Case 1: username.github.io (User or Organization Page)
+            if (hostname.endsWith('.github.io')) {
+                const parts = hostname.split('.');
+                owner = parts[0]; // e.g., 'username' from 'username.github.io'
+
+                // Filter out empty segments and 'admin.html' from pathname
+                const pathSegments = pathname.split('/').filter(s => s && s.toLowerCase() !== 'admin.html' && s !== '');
+
+                if (pathSegments.length > 0) { // e.g., username.github.io/my-blog/admin.html
+                    repoName = pathSegments[0]; // The actual GitHub repo for this project page is `my-blog`
+                    contentsPathPrefix = pathSegments.slice(0).join('/'); // Path *within* the project repo from its root
+                                                                       // e.g., for `username.github.io/my-blog/`, this will be `my-blog`
+                                                                       // for files like `my-blog/config.json`
+                } else { // e.g., username.github.io/admin.html (or just username.github.io/)
+                    repoName = `${owner}.github.io`; // The repo name is owner.github.io
+                    contentsPathPrefix = '';
+                }
+            } else { 
+                // Case 2: Custom Domain (e.g., myblog.com)
+                // **USER MUST CUSTOMIZE THESE VALUES FOR CUSTOM DOMAIN DEPLOYMENTS**
+                owner = 'rjdsq'; // <<<--- !!! IMPORTANT: REPLACE WITH YOUR GITHUB USERNAME !!!
+                repoName = 'rjdsq.github.io';  // <<<--- !!! IMPORTANT: REPLACE WITH YOUR REPOSITORY NAME !!!
+
+                const pathSegments = pathname.split('/').filter(s => s && s.toLowerCase() !== 'admin.html' && s !== '');
+                if (pathSegments.length > 0) {
+                     contentsPathPrefix = pathSegments.join('/'); // Path within repo, e.g., 'blog' for myblog.com/blog/admin.html
+                } else {
+                     contentsPathPrefix = '';
+                }
+            }
+            
+            if (!owner || !repoName) {
+                throw new Error("无法自动识别GitHub仓库拥有者和名称。请检查您的GitHub Pages URL结构或在 `determineGitHubRepoInfo` 函数中手动配置。");
+            }
+             return { owner, repoName, contentsPathPrefix: contentsPathPrefix };
+        };
+
+
         // GitHub API Interaction
         const GitHubAPI = {
             BASE_URL: 'https://api.github.com',
@@ -755,7 +753,7 @@
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
                     if (!result || typeof result.content !== 'string') {
-                         if (result && result.message && result.message.toLowerCase().includes('not found')) return null; // File does not exist
+                        if (result && result.message && result.message.toLowerCase().includes('not found')) return null;
                         throw new Error(`文件内容获取失败或格式不正确: ${path}`);
                     }
                     return { content: b64_to_utf8(result.content), sha: result.sha };
@@ -771,17 +769,16 @@
 
         // Serverless Admin API Interaction (for comments and user posts)
         const AdminAPI = {
-             API_ENDPOINT: null, // Will be set from config.json
+             API_ENDPOINT: null,
              async request(endpoint, options = {}) {
                 if (!this.API_ENDPOINT) throw new Error("Admin API endpoint is not configured in config.json.");
                 try {
-                    // ⚠️ In production, add a secure authentication token here for admin access
                     const response = await fetch(`${this.API_ENDPOINT}${endpoint}`, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
                     if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}` }));
+                        const errorData = await response.json().catch(() => ({ message: '未知错误' }));
                         throw new Error(errorData.message || `Admin API request failed: ${response.status} ${response.statusText}`);
                     }
-                    if (response.status === 204) return { success: true, message: "操作成功。" }; // For no-content responses
+                    if (response.status === 204) return { success: true, message: "操作成功。" };
                     return await response.json();
                 } catch (error) {
                     console.error('Admin API Request Error:', error);
@@ -791,7 +788,6 @@
             getComments: () => AdminAPI.request('/comments'),
             deleteComment: (commentId) => AdminAPI.request(`/comments/${commentId}`, { method: 'DELETE' }),
             getUserPosts: () => AdminAPI.request('/posts'),
-            // This 'approve' only mark status on serverless DB and returns content for admin to push to GitHub
             approveUserPost: (userPostId) => AdminAPI.request(`/posts/${userPostId}/approve`, { method: 'POST' }), 
             rejectUserPost: (userPostId) => AdminAPI.request(`/posts/${userPostId}/reject`, { method: 'DELETE' })
         };
@@ -821,22 +817,24 @@
         const userPostsListAdmin = document.getElementById('user-posts-list-admin');
 
         let token = localStorage.getItem('github_pat') || null;
-        let owner = '';
-        let repo = '';
-        let basePath = '';
-        let tinymceEditor = null; // TinyMCE instance
+        let GITHUB_OWNER = '';
+        let GITHUB_REPO = '';
+        let GITHUB_CONTENTS_PATH_PREFIX = '';
+        let tinymceEditor = null;
 
         let posts = [], postsSha = '';
         let config = {}, configSha = '';
         
-        const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
+        // Function to get file path relative to repo root, considering contentsPathPrefix
+        const getFilePath = (fileName) => 
+            GITHUB_CONTENTS_PATH_PREFIX ? `${GITHUB_CONTENTS_PATH_PREFIX}/${fileName}` : fileName;
 
         // Custom alert function for admin panel
         const showMessage = (element, message, type = 'info', dismissible = true) => {
             element.className = `alert mt-3 alert-${type} ${dismissible ? 'alert-dismissible fade show' : ''}`;
             element.innerHTML = message + (dismissible ? `<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>` : '');
             element.style.display = 'block';
-            setTimeout(() => { // Auto-hide success/info messages after a few seconds
+            setTimeout(() => {
                 if (type === 'success' || type === 'info') element.style.display = 'none';
             }, 5000);
         };
@@ -846,21 +844,22 @@
 
         const showAdminView = (view) => {
             Object.values(mainViews).forEach(v => v.style.display = 'none');
-            editorContainer.style.display = 'none'; // Hide editor when switching views
-            if (tinymceEditor) tinymceEditor.destroy(); // Destroy editor to prevent multiple instances/memory leaks
-            tinymceEditor = null; // Reset editor instance
+            // Destroy TinyMCE instance when switching away from editor
+            if (tinymceEditor) {
+                tinymceEditor.destroy();
+                tinymceEditor = null;
+            }
+            editorContainer.style.display = 'none';
 
             Object.values(navButtons).forEach(b => b.classList.remove('active'));
-            // Close mobile sidebar if open
             const adminWrapperEl = document.getElementById('admin-wrapper');
             if (adminWrapperEl.classList.contains('sidebar-visible')) {
                 adminWrapperEl.classList.remove('sidebar-visible');
             }
 
             mainViews[view].style.display = 'block';
-            if (navButtons[view]) navButtons[view].classList.add('active'); // Highlight active nav item
+            if (navButtons[view]) navButtons[view].classList.add('active');
             
-            // Special handling for comments/user posts
             if (view === 'comments') renderCommentsAdmin();
             if (view === 'userPosts') renderUserPostsAdmin();
         };
@@ -868,33 +867,26 @@
         const setButtonsDisabled = (disabled) => document.querySelectorAll('button').forEach(b => b.disabled = disabled);
 
         const startAdminSession = async () => {
-            const userToken = document.getElementById('token-input').value.trim();
-            if (!userToken && !token) { showMessage(initialMessageEl, '<i class="fas fa-exclamation-triangle me-2"></i>GitHub Token 不能为空。', 'warning'); return; }
-            if (userToken) token = userToken;
+            const userTokenInput = document.getElementById('token-input');
+            const urlParams = new URLSearchParams(window.location.search);
+            // Prioritize URL param, then input field, then localStorage
+            let currentToken = urlParams.get('token') || userTokenInput.value.trim() || token;
+
+            if (!currentToken) { showMessage(initialMessageEl, '<i class="fas fa-exclamation-triangle me-2"></i>GitHub Token 不能为空。', 'warning'); return; }
+            token = currentToken; // Use the determined token
 
             setButtonsDisabled(true);
             showMessage(initialMessageEl, '<div class="spinner-border spinner-border-sm me-2" role="status"></div> 正在验证并加载...', 'info', false);
 
             try {
                 const user = await GitHubAPI.getUser(token);
-                owner = user.login;
-                repo = `${owner}.github.io`; 
-                
-                // Determine `repo` and `basePath` more robustly for project pages
-                const hrefPathParts = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'admin.html');
-                if (hrefPathParts.length > 0) {
-                     // For `username.github.io/project-name/admin.html` OR `custom.com/project-name/admin.html`
-                     // The actual GitHub repo for project pages is `project-name`.
-                    repo = hrefPathParts[0]; // project-name
-                    basePath = hrefPathParts.join('/'); // project-name if in a subdir, or empty if root.
-                } else {
-                    // For `username.github.io/admin.html` or `custom.com/admin.html` pointing to root of `username.github.io` repo
-                    repo = `${owner}.github.io`; 
-                    basePath = '';
-                }
+                // Determine `owner`, `repoName`, `contentsPathPrefix`
+                const { owner, repoName, contentsPathPrefix } = determineGitHubRepoInfo();
+                GITHUB_OWNER = owner;
+                GITHUB_REPO = repoName;
+                GITHUB_CONTENTS_PATH_PREFIX = contentsPathPrefix;
 
-                // Fetch or initialize config.json
-                let configData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
+                let configData = await GitHubAPI.getFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('config.json'));
                 if (!configData) {
                     showMessage(initialMessageEl, '<div class="spinner-border spinner-border-sm me-2" role="status"></div> 未检测到配置，正在为您初始化系统文件 (config.json, posts.json, images/.gitkeep)...', 'info', false);
                     const initialConfig = {
@@ -905,26 +897,26 @@
                         footerText: `© ${new Date().getFullYear()} ${user.login}'s Blog. All rights reserved.`
                     };
                     const [configRes, postsRes, imagesDirRes] = await Promise.all([
-                        GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize blog config'),
-                        GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), '[]', 'feat: initialize blog posts'),
-                        GitHubAPI.createFile(token, owner, repo, getPath('images/.gitkeep'), '', 'feat: initialize images directory')
+                        GitHubAPI.createFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize blog config'),
+                        GitHubAPI.createFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('posts.json'), '[]', 'feat: initialize blog posts'),
+                        GitHubAPI.createFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('images/.gitkeep'), '', 'feat: initialize images directory')
                     ]);
                     config = initialConfig;
                     configSha = configRes.content.sha;
                     posts = [];
                     postsSha = postsRes.content.sha;
-                    showMessage(initialMessageEl, '<i class="fas fa-check-circle me-2"></i>系统激活成功！请刷新页面。', 'success');
-                    // location.reload(); // Refresh to ensure everything is loaded correctly with new config
+                    showMessage(initialMessageEl, '<i class="fas fa-check-circle me-2"></i>系统激活成功！', 'success');
+                    // Give a moment for user to read success, then reload to ensure full pathing is set if they directly used token param
+                     setTimeout(() => location.reload(), 1500); 
                 } else {
-                    const postsData = await GitHubAPI.getFile(token, owner, repo, getPath('posts.json'));
+                    const postsData = await GitHubAPI.getFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('posts.json'));
                     config = JSON.parse(configData.content);
                     configSha = configData.sha;
                     posts = postsData ? JSON.parse(postsData.content) : [];
                     postsSha = postsData ? postsData.sha : null;
                 }
 
-                localStorage.setItem('github_pat', token); // Store token safely
-                // Set Admin API endpoint from config
+                localStorage.setItem('github_pat', token);
                 AdminAPI.API_ENDPOINT = config.features.commentSystem.adminApiEndpoint;
                 
                 loginWrapper.style.display = 'none';
@@ -933,9 +925,8 @@
                 populateSettings();
                 determineInitialView();
                 
-                // Show/hide user posts nav item based on config
                 if (config.features.userPostingEnabled) {
-                    userPostsNavItem.style.display = 'list-item'; // Use 'list-item' for li elements
+                    userPostsNavItem.style.display = 'list-item';
                 } else {
                     userPostsNavItem.style.display = 'none';
                 }
@@ -944,7 +935,7 @@
                 showMessage(initialMessageEl, `<i class="fas fa-times-circle me-2"></i>登录或加载失败: ${error.message}。请检查Token权限或网络。`, 'danger');
                 console.error("Admin start error:", error);
                 token = null;
-                localStorage.removeItem('github_pat'); // Clear invalid token
+                localStorage.removeItem('github_pat');
             } finally {
                 setButtonsDisabled(false);
             }
@@ -955,8 +946,14 @@
              if (Object.keys(mainViews).includes(hash)) {
                  showAdminView(hash);
              } else {
-                 showAdminView('posts'); // Default view
+                 showAdminView('posts');
              }
+        };
+
+        const getFrontendPostUrl = (postId) => {
+             const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+             const prefix = GITHUB_CONTENTS_PATH_PREFIX ? `/${GITHUB_CONTENTS_PATH_PREFIX}` : '';
+             return `${baseUrl}${prefix}#/post/${postId}`;
         };
 
         const renderPostList = () => {
@@ -969,11 +966,11 @@
             [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(post => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><a href="#editor" class="text-primary text-decoration-none" data-id="${post.id}">${post.title}</a></td>
+                    <td><a href="${getFrontendPostUrl(post.id)}" target="_blank" rel="noopener noreferrer" class="text-primary text-decoration-none">${post.title} <i class="fas fa-external-link-alt fa-xs ms-1"></i></a></td>
                     <td>${post.tags && post.tags.length > 0 ? post.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('') : '<span class="text-muted">无标签</span>'}</td>
                     <td>${new Date(post.createdAt).toLocaleDateString()}</td>
                     <td>${post.updatedAt ? new Date(post.updatedAt).toLocaleDateString() : 'N/A'}</td>
-                    <td class="actions">
+                    <td class="actions text-end">
                         <button class="btn btn-sm btn-primary edit-post-btn" data-id="${post.id}"><i class="fas fa-edit"></i> 编辑</button>
                         <button class="btn btn-sm btn-danger delete-post-btn" data-id="${post.id}"><i class="fas fa-trash-alt"></i> 删除</button>
                     </td>
@@ -983,21 +980,24 @@
         };
 
         const initTinyMCE = (content) => {
+            // Destroy existing editor instance if any
             if (tinymceEditor) {
-                tinymceEditor.setContent(content);
-                return;
+                tinymceEditor.destroy();
+                tinymceEditor = null;
             }
+
             tinymce.init({
-                selector: '#post-content',
+                selector: '#post-content-tinymce', // Uses the new ID
                 plugins: 'advlist autolink autoresize lists link image charmap print preview hr anchor pagebreak searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media table paste emoticons nonbreaking save directionality template codesample quickbars autosave',
                 toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | image media link codesample fullscreen preview',
                 height: 500,
                 menubar: 'file edit view insert format tools table help',
-                images_upload_url: '/post_image_upload', // Placeholder for TinyMCE's internal upload handling
+                file_picker_types: 'image', // Only image file picker
+                images_upload_url: '/post_image_upload', // Placeholder, handled by images_upload_handler
                 images_upload_handler: async (blobInfo, success, failure) => {
-                    const file = blobInfo.blob(); // Get the File object
+                    const file = blobInfo.blob();
                     try {
-                        const uploadResult = await uploadFile(file, false, true); // Admin upload, for TinyMCE
+                        const uploadResult = await uploadFile(file, false); // No, not bg image
                         if (uploadResult && uploadResult.url) {
                             success(uploadResult.url);
                         } else {
@@ -1008,50 +1008,44 @@
                     }
                 },
                 file_picker_callback: (cb, value, meta) => {
-                    // For selecting images from already uploaded or local device
-                    const input = document.createElement('input');
-                    input.setAttribute('type', 'file');
-                    input.setAttribute('accept', 'image/*');
-                    input.click();
-                    input.onchange = async () => {
-                        const file = input.files[0];
-                        try {
-                            const uploadResult = await uploadFile(file, false, true);
-                            if (uploadResult && uploadResult.url) {
-                                cb(uploadResult.url);
-                            } else {
-                                alert('图片上传失败: 未知错误');
+                    if (meta.filetype == 'image') {
+                        const input = document.createElement('input');
+                        input.setAttribute('type', 'file');
+                        input.setAttribute('accept', 'image/*');
+                        input.click();
+                        input.onchange = async () => {
+                            const file = input.files[0];
+                            try {
+                                const uploadResult = await uploadFile(file, false);
+                                if (uploadResult && uploadResult.url) {
+                                    cb(uploadResult.url);
+                                } else {
+                                    alert('图片上传失败: 未知错误');
+                                }
+                            } catch (error) {
+                                alert(`图片上传失败: ${error.message}`);
                             }
-                        } catch (error) {
-                            alert(`图片上传失败: ${error.message}`);
-                        }
-                    };
+                        };
+                    }
                 },
                 quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote codesample',
                 toolbar_mode: 'sliding',
-                paste_data_images: true, // Allow pasting images directly
+                paste_data_images: true,
                 codesample_languages: [
-                    {text: 'HTML/XML', value: 'markup'},
-                    {text: 'JavaScript', value: 'javascript'},
-                    {text: 'CSS', value: 'css'},
-                    {text: 'PHP', value: 'php'},
-                    {text: 'Ruby', value: 'ruby'},
-                    {text: 'Python', value: 'python'},
-                    {text: 'Java', value: 'java'},
-                    {text: 'C', value: 'c'},
-                    {text: 'C#', value: 'csharp'},
-                    {text: 'Clojure', value: 'clojure'},
-                    {text: 'Bash/Shell', value: 'bash'},
-                    {text: 'Go', value: 'go'},
-                    {text: 'SQL', value: 'sql'},
-                    {text: 'Typescript', value: 'typescript'}
+                    {text: 'HTML/XML', value: 'markup'}, {text: 'JavaScript', value: 'javascript'},
+                    {text: 'CSS', value: 'css'}, {text: 'PHP', value: 'php'},
+                    {text: 'Ruby', value: 'ruby'}, {text: 'Python', value: 'python'},
+                    {text: 'Java', value: 'java'}, {text: 'C', value: 'c'},
+                    {text: 'C#', value: 'csharp'}, {text: 'Go', value: 'go'},
+                    {text: 'SQL', value: 'sql'}, {text: 'Typescript', value: 'typescript'},
+                    {text: 'Bash/Shell', value: 'bash'}
                 ],
                 skin: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'oxide-dark' : 'oxide',
                 content_css: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
                 setup: function (editor) {
                     editor.on('init', () => {
                         tinymceEditor = editor;
-                        editor.setContent(content || ''); // Set initial content after init
+                        editor.setContent(content || '');
                     });
                 }
             });
@@ -1059,8 +1053,8 @@
 
         const openEditor = (postId = null) => {
             hideMessage(document.getElementById('editor-alert'));
-            showAdminView('posts'); // Still highlight posts nav
-            mainViews.posts.style.display = 'none'; // Hide list view
+            showAdminView('posts');
+            mainViews.posts.style.display = 'none';
             editorContainer.style.display = 'block';
 
             const post = posts.find(p => p.id === postId);
@@ -1077,7 +1071,7 @@
         const savePost = async () => {
             const id = document.getElementById('post-id').value;
             const title = document.getElementById('post-title').value.trim();
-            const content = tinymceEditor ? tinymceEditor.getContent().trim() : ''; // Get content from TinyMCE
+            const content = tinymceEditor ? tinymceEditor.getContent().trim() : '';
             const tags = document.getElementById('post-tags').value.split(',').map(t => t.trim()).filter(Boolean);
 
             if (!title || !content) { showMessage(document.getElementById('editor-alert'), '<i class="fas fa-exclamation-triangle me-2"></i>标题和内容不能为空！', 'warning'); return; }
@@ -1088,6 +1082,7 @@
 
             const postIndex = posts.findIndex(p => p.id === id);
             let commitMessage = '';
+            let currentPostId = id;
 
             if (postIndex > -1) {
                 Object.assign(posts[postIndex], { title, content, tags, updatedAt: new Date().toISOString() });
@@ -1096,12 +1091,18 @@
                 const newPostId = `post_${Date.now()}`;
                 posts.push({ id: newPostId, title, content, tags, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
                 commitMessage = `feat: create new post "${title}" (ID: ${newPostId.substring(5, 11)})`;
+                currentPostId = newPostId;
             }
             
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, commitMessage);
+                const res = await GitHubAPI.updateFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('posts.json'), JSON.stringify(posts, null, 2), postsSha, commitMessage);
                 postsSha = res.content.sha;
-                showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>文章保存成功！请刷新前台页面查看更新。`, 'success', true);
+                
+                // Show success message with option to view post
+                const viewPostUrl = getFrontendPostUrl(currentPostId);
+                const successMsg = `<i class="fas fa-check-circle me-2"></i>文章保存成功！<a href="${viewPostUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-link text-decoration-none p-0 ms-2"><i class="fas fa-external-link-alt me-1"></i>查看已发布文章</a>。请刷新前台页面查看更新。`;
+                showMessage(document.getElementById('posts-message-alert'), successMsg, 'success', true);
+                
                 renderPostList();
                 showAdminView('posts');
             } catch (error) {
@@ -1125,7 +1126,7 @@
 
             posts = posts.filter(p => p.id !== postId);
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: delete post "${postToDelete.title}" (ID: ${postId.substring(5, 11)})`);
+                const res = await GitHubAPI.updateFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: delete post "${postToDelete.title}" (ID: ${postId.substring(5, 11)})`);
                 postsSha = res.content.sha;
                 showMessage(document.getElementById('posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>文章 "${postToDelete.title}" 已成功删除！`, 'success', true);
                 renderPostList();
@@ -1162,7 +1163,7 @@
             setButtonsDisabled(true);
             hideMessage(document.getElementById('settings-message-alert'));
 
-            const newConfig = JSON.parse(JSON.stringify(config)); // Deep copy
+            const newConfig = JSON.parse(JSON.stringify(config));
             newConfig.site = {
                 title: document.getElementById('setting-title').value.trim(),
                 description: document.getElementById('setting-description').value.trim(),
@@ -1174,7 +1175,7 @@
                 textColor: document.getElementById('setting-text-color').value,
                 headingColor: document.getElementById('setting-heading-color').value,
                 accentColor: document.getElementById('setting-accent-color').value,
-                linkHoverColor: newConfig.styling.linkHoverColor, // Retain previously set values if not directly editable
+                linkHoverColor: newConfig.styling.linkHoverColor,
                 borderColor: newConfig.styling.borderColor,
                 cardBgColor: newConfig.styling.cardBgColor,
                 cardShadow: newConfig.styling.cardShadow,
@@ -1198,12 +1199,10 @@
             newConfig.footerText = document.getElementById('setting-footer-text').value.trim();
 
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(newConfig, null, 2), configSha, 'docs: update site settings');
+                const res = await GitHubAPI.updateFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('config.json'), JSON.stringify(newConfig, null, 2), configSha, 'docs: update site settings');
                 configSha = res.content.sha;
-                config = newConfig; // Update local config with new values
-                // Update AdminAPI endpoint if changed, though it's usually static
+                config = newConfig;
                 AdminAPI.API_ENDPOINT = config.features.commentSystem.adminApiEndpoint;
-                // Update user posts nav item visibility
                 if (config.features.userPostingEnabled) {
                      userPostsNavItem.style.display = 'list-item';
                 } else {
@@ -1243,7 +1242,7 @@
                      e.preventDefault();
                      const indexToRemove = parseInt(e.currentTarget.dataset.index);
                      config.socialLinks.splice(indexToRemove, 1);
-                     renderSocialLinksEditor(); // Re-render to update indexes and elements
+                     renderSocialLinksEditor();
                  };
              });
         };
@@ -1255,11 +1254,9 @@
         };
 
         // Image upload function (General purpose, for TinyMCE and background image)
-        // isBgImage: boolean for background image upload
-        // forEditor: boolean, if true, resolves with { url: string } for TinyMCE images_upload_handler
-        const uploadFile = async (file, isBgImage = false, forEditor = false) => {
+        const uploadFile = async (file, isBgImage = false) => {
             if (!file) {
-                 if (!forEditor) showMessage(document.getElementById('editor-alert'), `<i class="fas fa-exclamation-triangle me-2"></i>请选择要上传的文件。`, 'warning', true);
+                 showMessage(isBgImage ? document.getElementById('settings-message-alert') : document.getElementById('editor-alert'), `<i class="fas fa-exclamation-triangle me-2"></i>请选择要上传的文件。`, 'warning', true);
                 throw new Error("没有选择文件。");
             }
             setButtonsDisabled(true);
@@ -1270,19 +1267,16 @@
             const reader = new FileReader();
             return new Promise((resolve, reject) => {
                 reader.onload = async (e) => {
-                    const content = e.target.result.split(',')[1]; // Base64 content
+                    const content = e.target.result.split(',')[1];
                     const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-                    const originalFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, ''); // Sanitize filename
+                    const originalFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
                     const fileName = `${timestamp}_${originalFileName}`;
-                    const path = getPath(`images/${fileName}`);
+                    const path = getFilePath(`images/${fileName}`);
                     try {
-                        const result = await GitHubAPI.createFile(token, owner, repo, path, content, `feat: upload image ${fileName}`, true);
-                        const url = result.content.download_url; // Direct CDN URL if GitHub serves it statically
+                        const result = await GitHubAPI.createFile(token, GITHUB_OWNER, GITHUB_REPO, path, content, `feat: upload image ${fileName}`, true);
+                        const url = result.content.download_url;
 
                         showMessage(alertElement, `<i class="fas fa-check-circle me-2"></i>图片 "${file.name}" 上传成功！`, 'success', true);
-                        if (isBgImage) {
-                            document.getElementById('setting-bg-image-url').value = url;
-                        }
                         resolve({ url: url });
                     } catch (error) {
                         showMessage(alertElement, `<i class="fas fa-times-circle me-2"></i>图片上传失败: ${error.message}`, 'danger', true);
@@ -1320,7 +1314,7 @@
                         commentEl.className = 'list-group-item';
                         commentEl.innerHTML = `
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">${comment.author || '匿名用户'} 对文章 "<a href="#editor" data-id="${comment.postId}" class="text-primary text-decoration-none">${post ? post.title : `未知文章 (ID: ${comment.postId.substring(5, 11)})`}</a>" 的评论</h6>
+                                <h6 class="mb-1">${comment.author || '匿名用户'} 对文章 "<a href="${post ? getFrontendPostUrl(post.id) : '#'}" ${post ? 'target="_blank" rel="noopener noreferrer"' : ''} class="text-primary text-decoration-none">${post ? post.title : `未知文章 (ID: ${comment.postId.substring(5, 11)})`} ${post ? '<i class="fas fa-external-link-alt fa-xs ms-1"></i>' : ''}</a>" 的评论</h6>
                                 <small class="text-muted"><i class="far fa-clock me-1"></i>${new Date(comment.createdAt).toLocaleString()}</small>
                             </div>
                             <p class="mb-1 text-break">${comment.content}</p>
@@ -1408,7 +1402,7 @@
                 const result = await AdminAPI.approveUserPost(userPostId);
                 if (result.success && result.postContent) {
                     posts.push(result.postContent); 
-                    const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `feat: approve and publish user post "${result.postContent.title}" by ${result.postContent.author}`);
+                    const res = await GitHubAPI.updateFile(token, GITHUB_OWNER, GITHUB_REPO, getFilePath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `feat: approve and publish user post "${result.postContent.title}" by ${result.postContent.author}`);
                     postsSha = res.content.sha;
 
                     showMessage(document.getElementById('user-posts-message-alert'), `<i class="fas fa-check-circle me-2"></i>用户投稿已成功发布！同时已从待审核列表移除。请刷新前台页面查看更新。`, 'success', true);
@@ -1459,8 +1453,8 @@
             const hash = window.location.hash.replace('#', '');
             if (Object.keys(mainViews).includes(hash)) {
                 showAdminView(hash);
-            } else if (hash === 'editor') { // Allow direct linking to editor for existing posts
-                const postId = document.getElementById('post-id').value; // if already editing a post
+            } else if (hash === 'editor') {
+                const postId = document.getElementById('post-id').value;
                 openEditor(postId);
             }
         });
@@ -1488,9 +1482,11 @@
                 deletePost(targetButton.dataset.id);
                 return;
             }
-            if (e.target.localName === 'a' && e.target.dataset.id && e.target.href.includes('#editor')) { // For title links
+            if (e.target.localName === 'a' && e.target.dataset.id && e.target.closest('td').querySelector('.edit-post-btn')) { // Clicking title link in post list
                 e.preventDefault();
-                openEditor(e.target.dataset.id);
+                // Instead of opening editor, let's open the frontend post view in a new tab
+                const postId = e.target.dataset.id;
+                window.open(getFrontendPostUrl(postId), '_blank');
             }
         });
 
@@ -1506,7 +1502,7 @@
                     const result = await uploadFile(fileInput.files[0], true);
                     if (result && result.url) {
                         document.getElementById('setting-bg-image-url').value = result.url;
-                        fileInput.value = ''; // Clear file input
+                        fileInput.value = '';
                     }
                 } catch (error) {
                     console.error("Background image upload failed:", error);
@@ -1528,9 +1524,10 @@
                 e.preventDefault();
                 deleteComment(targetButton.dataset.id);
             }
-            if (e.target.localName === 'a' && e.target.dataset.id && e.target.href.includes('#editor')) { // Clicking comment-linked post title
+            if (e.target.localName === 'a' && e.target.dataset.id) { // Clicking comment-linked post title
                 e.preventDefault();
-                openEditor(e.target.dataset.id);
+                const postId = e.target.dataset.id;
+                window.open(getFrontendPostUrl(postId), '_blank');
             }
         });
 
@@ -1551,21 +1548,16 @@
             if (targetButton) {
                 e.preventDefault();
                 const userPostId = targetButton.dataset.id;
-                // In a real system, this would open a modal with TinyMCE pre-filled
-                // For simplicity, we can fetch the user post and display its content in an alert/new window
-                alert(`查看用户投稿 (ID: ${userPostId}): \n功能待实现在模态框或新页面中，请管理员此时手动复制粘贴内容到新文章。`);
-                 // Or, for a more advanced view:
-                 // const userPost = userPosts.find(p => p.id === userPostId); // need userPosts in scope
-                 // if(userPost) {
-                 //    // Open a modal with TinyMCE, pre-fill title/content/.
-                 //    // For this demo, let's keep it simple.
-                 // }
+                alert(`查看用户投稿 (ID: ${userPostId}): \n功能待实现在模态框或新页面中，管理员可手动复制内容进行编辑、发布。`);
             }
         });
 
-
-        // Initialize on page load
-        if (token) {
+        // Initial check for existing token in localStorage or URL
+        if (!token && new URLSearchParams(window.location.search).get('token')) {
+            token = new URLSearchParams(window.location.search).get('token');
+            document.getElementById('token-input').value = token; // Pre-fill token input
+            startAdminSession();
+        } else if (token) {
             startAdminSession();
         } else {
             loginWrapper.style.display = 'flex';
