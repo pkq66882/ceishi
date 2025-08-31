@@ -1,10 +1,20 @@
 [
   {
-    "id": "post_1756479665709",
-    "title": "Github更新日记：我们新的博客引擎诞生了！",
-    "content": "<p>大家好！非常高兴向大家宣布，期望AI博客引擎已经成功升级，带来了全新的管理体验和更美观的界面。现在，我们能够更灵活地管理文章、自定义网站样式，并且最重要的是，集成了评论功能，让互动变得更加简单！</p>\n<p>在这次更新中，我们着重提升了以下几个方面：</p>\n<h2>✨ 后台管理体验大升级</h2>\n<p>我们的管理后台现在有了更直观的用户界面。通过简洁的导航，您可以轻松地：</p>\n<ul>\n<li>撰写和编辑文章：引入了强大的富文本编辑器，所见即所得，让排版变得轻而易举。</li>\n<li>管理网站设置：一站式配置网站标题、描述、颜色主题甚至背景图片。</li>\n<li>图片上传：可以直接在编辑器内上传图片，并自动插入到文章中，支持通过 <a href=\"https://gh-proxy.com\" target=\"_blank\">gh-proxy.com</a> 加速图片加载。</li>\n</ul>\n<p>现在，这一切都变得前所未有的简单！</p>\n<p><img src=\"https://gh-proxy.com/https://raw.githubusercontent.com/rjdsq/rjdsq.github.io/main/blog/images/20250829T155143105Z_1000028067.png\" alt=\"后台管理界面示意\" loading=\"lazy\" style=\"width: 100%; height: auto;\"></p>\n<h2>💬 集成 Giscus 评论系统</h2>\n<p>为了让博客更具活力，我们引入了基于 GitHub Discussions 的 <a href=\"https://giscus.app/\" target=\"_blank\">Giscus 评论系统</a>。现在，您的读者可以使用 GitHub 账号直接登录并发表评论。这意味着：</p>\n<ul>\n<li>**真实用户**：所有评论都来自真实的 GitHub 用户，有效减少垃圾评论。</li>\n<li>**数据托管**：评论数据直接存储在您的 GitHub 仓库的 Discussion 中，完全由您掌握。</li>\n<li>**无额外服务器**：无需为评论功能单独搭建服务器，轻量级且维护成本极低。</li>\n</ul>\n<p>我们相信，这个功能将大大提升博客的互动性和社区感！</p>\n<p><!--more--></p>\n<h2>🎨 更优美的前端展示</h2>\n<p>为了给读者带来更好的阅读体验，前端也进行了大量优化：</p>\n<ul>\n<li>**响应式设计**：无论是在桌面电脑还是移动设备上，博客都能完美显示。</li>\n<li>**主题定制**：管理员可以在后台自定义背景色、文字色、强调色等，甚至可以选择深色模式。</li>\n<li>**代码高亮**：文章中的代码片段现在会获得漂亮的代码高亮效果，提升可读性。</li>\n<li>**图片优化**：文章图片现在以更美观的方式展示，并可以实现点击放大功能（未来版本）。</li>\n</ul>\n<h2>🛠️ 后续开发与展望</h2>\n<p>这仅仅是开始！未来我们计划根据社区反馈和需求，逐步增加更多功能，例如：</p>\n<ul>\n<li>多用户协作发帖（需引入独立后端服务）</li>\n<li>全文搜索功能</li>\n<li>更丰富的模板选择和布局自定义</li>\n<li>RSS 订阅</li>\n</ul>\n<p>感谢大家一直以来的支持！我们期待您的反馈，共同将这个期望AI博客引擎打造得更好！</p>\n<pre><code class=\"language-javascript\">// 示例代码高亮\nfunction greet(name) {\n    console.log(`Hello, ${name}! Welcome to ExpectAI Blog.`);\n}\n\ngreet('World');\n</code></pre>\n<p>9999我爱你<br /><img src=\"https://gh-proxy.com/https://raw.githubusercontent.com/rjdsq/rjdsq.github.io/main/blog/images/20250829T155143105Z_1000028067.png\" alt=\"1000028067.png\" /></p>",
-    "tags": ["更新", "发布", "Github Pages", "博客", "ExpectAI"],
-    "createdAt": "2025-08-29T15:01:05.709Z",
-    "updatedAt": "2025-08-29T15:51:46.204Z"
+    "id": "welcome_post_1700000000000",
+    "title": "欢迎来到期望ai的博客！",
+    "content": "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
+    "category": "公告",
+    "tags": ["欢迎", "教程", "入门"],
+    "createdAt": "2023-11-15T10:00:00.000Z",
+    "updatedAt": "2023-11-15T10:00:00.000Z"
+  },
+  {
+    "id": "my_first_tech_post_1700000000001",
+    "title": "深入理解JavaScript中的闭包",
+    "content": "# 深入理解JavaScript中的闭包\n\n闭包（Closure）是JavaScript中一个非常重要且强大的概念。它允许函数访问和操作函数外部的变量，即使外部函数已经执行完毕。\n\n## 什么是闭包？\n\n简单来说，当一个函数能够记住并访问其“词法作用域”中的变量时，即使该函数在其词法作用域之外执行，它也形成了一个闭包。\n\n<!--more-->\n\n## 闭包的工作原理\n\n考虑以下代码示例：\n\n```javascript\nfunction makeAdder(x) {\n  return function(y) {\n    return x + y;\n  };\n}\n\nconst add5 = makeAdder(5);\nconsole.log(add5(2)); // 输出 7\nconsole.log(add5(10)); // 输出 15\n```\n\n在这个例子中，`makeAdder` 函数返回了一个匿名函数。即使 `makeAdder` 已经执行完毕并从调用栈中移除，`add5` 仍然能够访问其外部作用域中的 `x` 变量。这就是闭包。\n\n---",
+    "category": "编程",
+    "tags": ["JavaScript", "闭包", "前端", "技术"],
+    "createdAt": "2023-11-16T12:30:00.000Z",
+    "updatedAt": "2023-11-16T12:30:00.000Z"
   }
 ]
