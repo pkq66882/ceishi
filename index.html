@@ -629,7 +629,7 @@
         // GitHubAPI_Frontend: Used for fetching public JSON files from raw.githubusercontent.com
         const GitHubAPI_Frontend = {
             async getRawFile(owner, repo, path) {
-                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
+                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}?r=${Date.now()}`; // Add cache-buster
                 console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
                 const response = await fetch(rawUrl);
                 if (!response.ok) {
@@ -717,7 +717,10 @@
                 let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
                 let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
 
-                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${getProxiedImageUrl(imageUrl)}" alt="${imageAlt}" loading="lazy"></div>` : '';
+                let imagePreviewHtml = '';
+                if (imageUrl) {
+                    imagePreviewHtml = `<div class="post-card-image"><img src="${getProxiedImageUrl(imageUrl)}" alt="${imageAlt}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'30\\' text-anchor=\\'middle\\' dominant-baseline=\\'central\\'%3E🖼️Error%3C/text%3E%3C/svg%3E';" /></div>`;
+                }
 
                 postCard.innerHTML = `
                     ${imagePreviewHtml}
@@ -768,9 +771,10 @@
                 gitalkContainerEl.innerHTML = '';
                 gitalkContainerEl.style.display = 'block';
 
-                const safePostId = slugify(post.id).slice(0, 20); 
-                const safeTitleSlug = slugify(post.title).slice(0, 30); 
-                const gitalkId = `${safeTitleSlug}-${safePostId}`; 
+                // Use the global slugify function
+                const safePostId = slugify(post.id); 
+                const safeTitleSlug = slugify(post.title); 
+                const gitalkId = `${safeTitleSlug}-${safePostId}`.substring(0, 50); // GitHub issue titles have a length limit
 
                 try {
                     const gitalk = new Gitalk({
@@ -779,10 +783,10 @@
                         repo: siteConfig.gitalk.repo,
                         owner: siteConfig.gitalk.owner,
                         admin: siteConfig.gitalk.admin,
-                        id: gitalkId,
+                        id: gitalkId, // Unique ID for the issue
                         distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
                         title: post.title,
-                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])], 
+                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])].slice(0, 10), // Limit labels to 10
                         body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
                         createIssueManually: false,
                         perPage: siteConfig.gitalk.perPage || 10,
@@ -872,6 +876,42 @@
                 if (!postsJson || !Array.isArray(postsJson)) { 
                     throw new Error("posts.json 文件未找到、为空或内容无效，请先前往管理后台初始化。");
                 }
+                
+                // Ensure default values for critical Gitalk config are present if not in configJson
+                if (!configJson.gitalk) {
+                    configJson.gitalk = {
+                        repo: repo, 
+                        owner: owner,
+                        admin: [owner],
+                        enabled: false,
+                        clientID: '',
+                        clientSecret: '',
+                        distractionFreeMode: false,
+                        labels: ['Gitalk', '评论'],
+                        perPage: 10,
+                    };
+                } else { // Merge with defaults to ensure all properties exist
+                    configJson.gitalk = {
+                        repo: repo, 
+                        owner: owner,
+                        admin: [owner], // Default admin if not specified or for fallback
+                        enabled: false,
+                        clientID: '',
+                        clientSecret: '',
+                        distractionFreeMode: false,
+                        labels: ['Gitalk', '评论'],
+                        perPage: 10,
+                        ...configJson.gitalk
+                    };
+                     if (!Array.isArray(configJson.gitalk.admin)) { // Ensure admin is array
+                        configJson.gitalk.admin = [configJson.gitalk.admin].filter(Boolean);
+                    }
+                     if (!configJson.gitalk.admin.includes(owner)) { // Add owner to admin if not present
+                         configJson.gitalk.admin.push(owner);
+                     }
+                     configJson.gitalk.admin = [...new Set(configJson.gitalk.admin)]; // Remove duplicates
+                }
+
 
                 siteConfig = configJson;
                 // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
@@ -914,7 +954,7 @@
                         text-decoration: underline;
                     }
                 `;
-                // Only add background-image if URL is valid
+                // Only add background-image if URL is valid and starts with http(s)
                 if (siteConfig.styling.backgroundImageUrl && /^https?:\/\//i.test(siteConfig.styling.backgroundImageUrl)) {
                     dynamicCss += `
                         body {
@@ -924,6 +964,8 @@
                             background-position: center;
                         }
                     `;
+                } else if (siteConfig.styling.backgroundImageUrl) { // If URL exists but is invalid
+                    console.warn(`Invalid or incomplete background image URL in config: "${siteConfig.styling.backgroundImageUrl}". Not applying background image.`);
                 }
 
                 styleElement.textContent = dynamicCss;
