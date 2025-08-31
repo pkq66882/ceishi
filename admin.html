@@ -789,7 +789,7 @@
                         : '';
                     // 检查是否是目录不存在导致的404
                     if (response.status === 404 && errorData.documentation_url.includes('create-or-update-file-contents')) {
-                        throw new Error(`${errorMessage}。可能是由于父目录不存在，GitHub API 无法创建多级目录。请确保目标路径的父目录在GitHub仓库中已存在。`);
+                        throw new Error(`${errorMessage} (路径：${endpoint})。可能是由于 GitHub API 无法在不存在的父目录下创建文件。`);
                     }
                     throw new Error(`${errorMessage} ${specificError}`);
                 }
@@ -855,9 +855,9 @@
         // 统一获取文件路径，处理basePath为空或不为空的情况
         const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
-        // **新函数：尝试创建目录及其.gitkeep文件**
+        // 新函数：尝试创建目录及其.gitkeep文件
         async function createGitHubDirectory(apiToken, apiOwner, apiRepo, directoryPath) {
-            const gitkeepPath = getPath(`${directoryPath}/.gitkeep`);
+            const gitkeepPath = `${directoryPath}/.gitkeep`; // 注意此处不再使用getPath，因为directoryPath本身就可能是basePath
             console.log(`Checking/Creating directory: ${gitkeepPath}`);
             try {
                 const fileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
@@ -870,7 +870,6 @@
                     return true;
                 }
             } catch (error) {
-                // 如果是父目录不存在导致的404，GitHubAPI.createFile会抛出增强的错误
                 console.error(`Failed to create directory ${directoryPath}:`, error);
                 throw error; // 重新抛出错误，阻止后续操作
             }
@@ -951,37 +950,84 @@
                 const user = await GitHubAPI.getUser(token);
                 owner = user.login;
                 
-                // 从当前URL中解析 basePath (例如：'ceishi')，如果URL是pkq66882.github.io/ceishi/admin.html
-                const pathSegments = window.location.pathname.split('/').filter(p => p);
-                if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html') {
-                    pathSegments.pop(); // 移除admin.html
-                }
-                repo = `${owner}.github.io`; // GitHub Pages的默认仓库名
-                basePath = pathSegments.join('/'); // 子目录路径 (例如：'ceishi')
+                // --- 动态解析 repo 和 basePath ---
+                const hostname = window.location.hostname; // e.g., pkq66882.github.io, custom.domain.com
+                let pathSegments = window.location.pathname.split('/').filter(p => p); // e.g., ["ceishi", "admin.html"] or ["admin.html"]
 
-                // **STEP 1: 自动化创建必要的父目录 (如果basePath不为空)**
-                if (basePath) {
-                    try {
-                        initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在检查并创建子目录: ${basePath}/...`;
-                        await createGitHubDirectory(token, owner, repo, basePath);
-                        await createGitHubDirectory(token, owner, repo, `${basePath}/images`); // 创建 images 目录
-                    } catch (e) {
-                        initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法创建子目录 ${basePath} 或 ${basePath}/images。错误: ${e.message}`;
-                        throw e;
+                if (hostname.endsWith('.github.io') && hostname.startsWith(owner.toLowerCase())) {
+                    // This is a user/organization page or a project page hosted on a *.github.io domain
+                    if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html') {
+                        pathSegments.pop(); // Remove "admin.html"
                     }
-                } else { // 如果没有basePath，也要确保images目录存在
-                    try {
-                        await createGitHubDirectory(token, owner, repo, 'images');
-                    } catch (e) {
-                         initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法创建图片目录 images。错误: ${e.message}`;
-                         throw e;
+
+                    if (pathSegments.length > 0 && pathSegments[0].toLowerCase() === hostname.split('.')[0].toLowerCase()) { // if "pkq66882.github.io" is the hostname, and path starts with "pkq66882"
+                         // This is a user page where the repo name is the hostname (e.g., username.github.io, no extra path segment for repo)
+                         repo = hostname; // e.g., "pkq66882.github.io"
+                         basePath = pathSegments.join('/'); // e.g., "" or "some/sub/dir"
+                    } else if (pathSegments.length > 0) {
+                        // This is a project page, repo name is the first path segment
+                        repo = pathSegments[0]; // e.g., "ceishi"
+                        basePath = pathSegments.slice(1).join('/'); // e.g., "" or "some/sub/dir"
+                    } else {
+                        // This is a user/organization page at the root
+                        repo = hostname;
+                        basePath = '';
+                    }
+
+                } else {
+                    // Custom domain or other complex cases, or just a file in a repo, fallback logic
+                    // Assume first path segment is repo, rest is base path (might need fine-tuning for custom domains)
+                    if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html') {
+                        pathSegments.pop(); 
+                    }
+                    if (pathSegments.length > 0) {
+                        repo = pathSegments[0];
+                        basePath = pathSegments.slice(1).join('/');
+                    } else {
+                        // If no path segments, assume repo is on the hostname (e.g., custom.domain.com points directly to a repo)
+                        // This is a complex case and might require user to set repo manually if not standard
+                        console.warn("Could not determine repository name from URL. Assuming repo is direct on hostname. Please verify in Gitalk settings.");
+                        repo = prompt("Could not automatically determine your GitHub repository name. Please enter it (e.g., 'my-blog-repo' or 'username.github.io'):", `${owner}.github.io`) || `${owner}.github.io`;
+                        basePath = '';
                     }
                 }
+                
+                // 打印调试信息，确认解析是否正确
+                console.log(`Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
+                showAlert(`检测到仓库信息：Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`, 'info', 'path-detection-alert');
 
+
+                // **STEP 1: 自动化创建必要的子目录**
+                initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在检查并创建所需文件目录...`;
+                try {
+                    // 需要创建的父目录是 basePath 本身 (如果存在), 然后是 images 目录
+                    if (basePath) { // 例如 basePath 是 'ceishi'
+                        // 如果 basePath 已经表示了仓库根目录，这里就不需要再创建 basePath/.gitkeep
+                        // 但如果 basePath 是 'ceishi/subfolder'，那么 'ceishi/.gitkeep' 就需要创建
+                        // 考虑最常见情况，如果 basePath 是 'ceishi' (project repo name), 则直接在其下创建 images
+                        // 如果 basePath 是 'sub/dir' (user repo subfolder), 则需要创建 'sub/.gitkeep' 和 'sub/dir/.gitkeep'
+
+                        // Simplified: Directly create basePath (if it's a subfolder in a user/org repo) and images inside it
+                        const baseDirParts = basePath.split('/');
+                        let currentPathAccumulated = '';
+                        for (let i = 0; i < baseDirParts.length; i++) {
+                            const part = baseDirParts[i];
+                            currentPathAccumulated = currentPathAccumulated ? `${currentPathAccumulated}/${part}` : part;
+                            await createGitHubDirectory(token, owner, repo, currentPathAccumulated);
+                        }
+                    }
+                    // 无论有没有 basePath，images 目录都应该在逻辑上的根目录（即 basePath 下）
+                    await createGitHubDirectory(token, owner, repo, getPath('images')); 
+
+                } catch (e) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法创建必要的目录。错误: ${e.message}<br>请检查您的 GitHub Token 权限是否包含 ` + `repo` + ` 权限。`;
+                    throw e;
+                }
 
                 // **STEP 2: 获取 config.json 和 posts.json (现在它们应该能在创建的目录中被访问)**
                 let configData = null;
                 let postsData = null;
+                initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在获取核心配置文件...`;
 
                 try {
                     configData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
@@ -998,7 +1044,7 @@
                 }
 
                 const hasExistingConfig = !!configData;
-                const hasExistingPosts = !!postsData;
+                const hasExistingPosts = !!postsData; // 即使是空数组也视为存在
 
                 // 默认配置和文章 (保持不变)
                 const initialConfig = {
@@ -1017,7 +1063,7 @@
                         enabled: false,
                         clientID: '',
                         clientSecret: '',
-                        repo: `${owner}.github.io`, 
+                        repo: repo, // 使用动态解析的repo
                         owner: owner,
                         admin: [owner],
                     }
@@ -1032,7 +1078,8 @@
                     updatedAt: new Date().toISOString()
                 }];
 
-                // 核心文件处理逻辑 - config.json (保持不变，已在上一轮优化)
+                // 核心文件处理逻辑 - config.json 
+                // ... (这部分逻辑保持不变，因为重点在目录创建和路径解析)
                 let currentConfig = initialConfig;
                 if (hasExistingConfig) {
                     try {
@@ -1041,29 +1088,29 @@
                         currentConfig.site = Object.assign({}, initialConfig.site, parsedConfig.site);
                         currentConfig.styling = Object.assign({}, initialConfig.styling, parsedConfig.styling);
                         currentConfig.gitalk = Object.assign({}, initialConfig.gitalk, parsedConfig.gitalk);
-                        if (!currentConfig.gitalk.repo || currentConfig.gitalk.repo === initialConfig.gitalk.repo) {
-                             currentConfig.gitalk.repo = repo; 
-                             currentConfig.gitalk.owner = owner;
-                             if (!currentConfig.gitalk.admin || currentConfig.gitalk.admin.length === 0) {
-                                 currentConfig.gitalk.admin = [owner];
-                             }
+                        // 确保gitalk.repo是当前博客的实际repo if it's new setup
+                        currentConfig.gitalk.repo = repo; 
+                        currentConfig.gitalk.owner = owner;
+                        if (!currentConfig.gitalk.admin || currentConfig.gitalk.admin.length === 0) {
+                            currentConfig.gitalk.admin = [owner];
                         }
-
                     } catch (e) {
                         console.warn("Invalid config.json content, using default config.", e);
                         showAlert('config.json' + (configData.content ? '内容无效' : '文件不存在或为空') + '，已使用默认配置覆盖。', 'warning');
                     }
                     try {
-                        const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(currentConfig, null, 2), configData.sha, 'conf: update config with default/existing values');
+                        const commitMessage = 'conf: update config with default/existing values';
+                        const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(currentConfig, null, 2), configData.sha, commitMessage);
                         configSha = res.content.sha;
                     } catch (e) {
                          console.error(`Error updating config.json: ${e.message}`);
                          initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 更新 ${getPath('config.json')} 失败: ${e.message}`;
-                         throw e; // 重新抛出，停止后续操作
+                         throw e;
                     }
                 } else {
                     try {
-                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize config');
+                        const commitMessage = 'feat: initialize config';
+                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), commitMessage);
                         configSha = res.content.sha;
                         currentConfig = initialConfig;
                     } catch (e) {
@@ -1074,7 +1121,8 @@
                 }
                 config = currentConfig;
 
-                // 核心文件处理逻辑 - posts.json (保持不变，已在上一轮优化)
+                // 核心文件处理逻辑 - posts.json
+                // ... (这部分逻辑保持不变)
                 let currentPostsArray = [];
                 if (hasExistingPosts) {
                     try {
@@ -1090,7 +1138,8 @@
                     }
                     currentPostsArray.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
                     try {
-                        const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(currentPostsArray, null, 2), postsData.sha, 'docs: update posts with initial/existing entries');
+                        const commitMessage = 'docs: update posts with initial/existing entries';
+                        const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(currentPostsArray, null, 2), postsData.sha, commitMessage);
                         postsSha = res.content.sha;
                     } catch (e) {
                         console.error(`Error updating posts.json: ${e.message}`);
@@ -1099,7 +1148,8 @@
                     }
                 } else {
                     try {
-                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), 'feat: initialize first post');
+                        const commitMessage = 'feat: initialize first post';
+                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), commitMessage);
                         postsSha = res.content.sha;
                         currentPostsArray = initialPosts;
                     } catch (e) {
@@ -1130,7 +1180,7 @@
 
             } catch (error) {
                 console.error("Critical initialization failure:", error);
-                if (!initialMessageEl.innerHTML.includes('无法创建子目录') && !initialMessageEl.innerHTML.includes('Token')) {
+                if (!initialMessageEl.innerHTML.includes('无法创建目录') && !initialMessageEl.innerHTML.includes('Token') && !initialMessageEl.innerHTML.includes('获取') && !initialMessageEl.innerHTML.includes('创建')) {
                     initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}<br>通用建议：请仔细检查您的Token权限、GitHub Pages配置和网络连接。`;
                 }
                 initialMessageEl.style.color = 'var(--danger-color)';
