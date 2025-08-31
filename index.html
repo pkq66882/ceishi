@@ -9,8 +9,10 @@
     <!-- Gitalk CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
     <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
-    <!-- Markdown-It CSS for basic markdown rendering -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css"> <!-- 使用更通用的 dark 主题 -->
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
         /* Modern CSS Reset (simplified) */
         *, *::before, *::after {
@@ -24,7 +26,7 @@
             scroll-behavior: smooth;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            font-family: -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             background-color: #f8f9fa; /* Default background */
@@ -116,15 +118,30 @@
         .post-card {
             background-color: #fff;
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* 更柔和的阴影 */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
             overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             display: flex;
             flex-direction: column;
+            text-align: left; /* 保持左对齐 */
         }
         .post-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+        }
+        .post-card-image {
+            width: 100%;
+            height: 200px; /* 固定图片高度 */
+            overflow: hidden;
+            background-color: #e9ecef; /* Placeholder background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .post-card-image img {
+            width: 100%; /* 图片宽度填充 */
+            height: 100%; /* 图片高度填充 */
+            object-fit: cover; /* 裁剪以填充，保持比例 */
         }
         .post-card-content {
             padding: 25px;
@@ -158,6 +175,12 @@
             color: #5d6d7e;
             margin-bottom: 20px;
             line-height: 1.7;
+            /* 限制摘要行数，增加... */
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* 显示3行 */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .post-card .read-more {
             display: inline-block;
@@ -180,6 +203,7 @@
             padding: 40px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            text-align: left; /* 确保内容左对齐 */
         }
         .post-full h1 {
             font-size: 2.8rem;
@@ -228,7 +252,7 @@
             max-width: 100%;
             height: auto;
             border-radius: 8px;
-            margin: 1.5rem 0;
+            margin: 1.5rem auto; /* 居中图片 */
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .post-content blockquote {
@@ -252,16 +276,18 @@
             padding: 2px 5px;
             border-radius: 3px;
             font-size: 0.9em;
+            word-break: break-all; /* 防止行内代码溢出 */
         }
         .post-content pre code {
             background-color: transparent;
             padding: 0;
             font-size: 1em;
+            word-break: normal; /* 恢复正常换行 */
         }
         .post-content ul, .post-content ol {
             margin-left: 25px;
             margin-bottom: 1em;
-            list-style-type: disc; /* Re-enable list bullets */
+            list-style-type: disc; 
         }
         .post-content ol {
             list-style-type: decimal;
@@ -273,6 +299,8 @@
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            overflow-x: auto; /* 针对表格的横向滚动 */
+            display: block; /* 使 table 可以滚动 */
         }
         .post-content th, .post-content td {
             border: 1px solid #ddd;
@@ -291,6 +319,7 @@
             padding: 40px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            text-align: left;
         }
         .about-page h1 {
             font-size: 2.5rem;
@@ -345,10 +374,10 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .gt-container {
-            font-family: var(--font-body);
+            font-family: inherit; /* 继承body字体 */
         }
         .gt-hd-text strong {
-            color: var(--heading-color);
+            color: inherit; /* 继承父元素颜色 */
         }
         .gt-hdr-btn {
             background-color: var(--accent-color);
@@ -372,6 +401,17 @@
         }
         .gt-link:hover, .gt-comment-username:hover {
             text-decoration: underline;
+        }
+        /* Markdown-it generated list styles */
+        .post-content ul, .post-content ol, .about-content ul, .about-content ol {
+            padding-left: 20px;
+            margin-left: 0;
+        }
+        .post-content ul li, .about-content ul li {
+            list-style-type: disc;
+        }
+        .post-content ol li, .about-content ol li {
+            list-style-type: decimal;
         }
 
         /* Responsiveness */
@@ -405,6 +445,9 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 5px;
+            }
+            .post-card-image {
+                height: 180px; /* 移动端调整图片高度 */
             }
         }
     </style>
@@ -451,16 +494,25 @@
 
     <script>
         // ==================== 全局变量和工具函数 ====================
-        // 修正 b64_to_utf8 以正确处理中文乱码
+        // 修正 b64_to_utf8 以正确处理中文乱码 (使用 TextDecoder)
+        // 这个方法更现代和健壮，避免了 escape/unescape 的一些潜在问题
         const utf8_to_b64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-        const b64_to_utf8 = (str) => {
-            try { 
-                return decodeURIComponent(atob(str).split('').map(function(c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join(''));
-            } catch (e) { 
+        const b64_to_utf8 = (b64String) => {
+            try {
+                // Decode from Base64 to a binary string
+                const binaryString = atob(b64String);
+                // Convert binary string to a Uint8Array
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                // Use TextDecoder to decode Uint8Array to UTF-8 string
+                return new TextDecoder('utf-8').decode(bytes);
+            } catch (e) {
                 console.error("Base64 decoding to UTF-8 failed:", e);
-                return atob(str); // Fallback, might still be garbled for non-ASCII
+                // Fallback to simpler atob, which will likely result in Mojibake for non-ASCII
+                return atob(b64String); 
             }
         };
 
@@ -485,11 +537,11 @@
                 if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
                 return response.json();
             },
-            async getFile(owner, repo, path, token = null) { // token可以为null，因为是公开仓库
+            async getFile(owner, repo, path, token = null) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
                     if (!result || typeof result.content !== 'string' || result.encoding !== 'base64' || result.content.trim().length === 0) {
-                        console.warn(`File content for ${path} is empty, invalid, or file not found. Response:`, result);
+                        console.warn(`File content for ${path} is empty, invalid, or file not found. Response details:`, result);
                         return null; 
                     }
                     return { content: b64_to_utf8(result.content), sha: result.sha };
@@ -522,9 +574,9 @@
 
         let siteConfig = null;
         let blogPosts = [];
-        let owner = ''; // 全局变量
-        let repo = '';    // 全局变量
-        let basePath = ''; // 全局变量
+        let owner = ''; 
+        let repo = '';    
+        let basePath = ''; 
 
         const appDiv = document.getElementById('app');
         const blogContentDiv = document.getElementById('blog-content');
@@ -533,7 +585,7 @@
         const siteDescriptionEl = document.getElementById('site-description');
         const mainFooterEl = document.getElementById('main-footer');
         const gitalkContainerEl = document.getElementById('gitalk-container');
-        const adminLinkEl = document.getElementById('admin-link'); // 获取管理后台链接元素
+        const adminLinkEl = document.getElementById('admin-link');
 
 
         const getFilePath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
@@ -543,7 +595,6 @@
             const hostname = window.location.hostname; 
             let pathSegments = window.location.pathname.split('/').filter(p => p); 
 
-            // 移除当前文件名本身
             if (pathSegments.length > 0 && 
                 (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
                  pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
@@ -556,32 +607,34 @@
             const hostnameLow = hostname.toLowerCase();
             const usernameLow = githubUsername.toLowerCase();
             const userGithubIoPattern = new RegExp(`^${usernameLow}\\.github\\.io$`);
+            
+            console.log(`[parseGitHubPath Debug] Hostname: ${hostname}, Username: ${githubUsername}, PathSegments: ${pathSegments}`);
 
             if (userGithubIoPattern.test(hostnameLow)) {
                 // 情况1: hostname 是 user.github.io (如 pkq66882.github.io)
                 if (pathSegments.length > 0) {
                     // 这是项目页面部署在子路径 (e.g., pkq66882.github.io/ceishi/)
                     currentRepo = pathSegments[0]; // repo 是 "ceishi"
-                    currentBasePath = pathSegments.slice(1).join('/'); // basePath 是 "ceishi" 之后的部分
-                    console.log(`[parseGitHubPath] Case 1.1: Project Page under User.github.io, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+                    currentBasePath = pathSegments.slice(1).join('/'); // basePath 是 "ceishi" 之后的部分 (通常为空字符串)
+                    console.log(`[parseGitHubPath Debug] Case 1.1: Project Page under User.github.io, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
                     // 这是用户/组织页面根目录部署 (e.g., pkq66882.github.io/)
                     currentRepo = hostnameLow; // repo 是 "pkq66882.github.io"
                     currentBasePath = '';
-                    console.log(`[parseGitHubPath] Case 1.2: User/Org Page Root, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+                    console.log(`[parseGitHubPath Debug] Case 1.2: User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
-            } else if (hostnameLow.endsWith('.github.io')) {
-                // 情况2: hostname 是非 user.github.io 的 .github.io 域名 (不太常见，可能是自定义域名CName到其他仓库)
-                // 默认按照项目页面处理
+            } else if (hostnameLow.endsWith('.github.io')) { 
+                // 情况2: hostname 是 .github.io 结尾，但不是当前用户的。这通常是理论上无法直接访问的URL，或在某些CNAME配置下。
+                // 暂时按照项目页面处理
                  if (pathSegments.length > 0) {
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
-                    console.log(`[parseGitHubPath] Case 2.1: Generic .github.io Project Page, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+                    console.log(`[parseGitHubPath Debug] Case 2.1: Generic .github.io Project Page, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
                      // 这种情况复杂, 强制设为 username.github.io
                     currentRepo = `${githubUsername}.github.io`; 
                     currentBasePath = '';
-                    console.log(`[parseGitHubPath] Case 2.2: Generic .github.io No Path, Default to User Repo, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+                    console.log(`[parseGitHubPath Debug] Case 2.2: Generic .github.io No Path, Default to User Repo, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             } else { 
                 // 情况3: 自定义域名 (e.g., custom.com, custom.domain.com)
@@ -589,22 +642,22 @@
                     // 假设 custom.com/my-blog/ => my-blog (项目仓库)
                     currentRepo = pathSegments[0];
                     currentBasePath = pathSegments.slice(1).join('/');
-                    console.log(`[parseGitHubPath] Case 3.1: Custom Domain Project Page, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+                    console.log(`[parseGitHubPath Debug] Case 3.1: Custom Domain Project Page, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
                     // 没有 pathSegments，假设 CNAME 直接指向用户/组织仓库根目录
                     currentRepo = `${githubUsername}.github.io`; 
                     currentBasePath = '';
-                    console.log(`[parseGitHubPath] Case 3.2: Custom Domain User/Org Page Root, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+                    console.log(`[parseGitHubPath Debug] Case 3.2: Custom Domain User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             }
             
-            // 最终安全检查和修正
+            // 最终安全检查和修正：确保 repo 不为空
             if (!currentRepo || currentRepo.trim() === '') {
-                console.warn("[parseGitHubPath] Final adjustment: currentRepo is empty or invalid, defaulting to user site repo.");
+                console.warn("[parseGitHubPath Debug] Final adjustment: currentRepo is empty or invalid, defaulting to user site repo.");
                 currentRepo = `${githubUsername}.github.io`;
             }
 
-            console.log(`[parseGitHubPath] Final determination - Owner: ${githubUsername}, Repo: ${currentRepo}, BasePath: "${currentBasePath}"`);
+            console.log(`[parseGitHubPath Final] Owner: ${githubUsername}, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
             return { owner: githubUsername, repo: currentRepo, basePath: currentBasePath };
         };
 
@@ -615,6 +668,7 @@
             const postListContainer = blogContentDiv.querySelector('.post-list');
 
             if (blogPosts.length === 0) {
+                // basePath 为空字符串时 href="/admin.html"，非空时为 "/{basePath}/admin.html"
                 postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1; font-weight: normal;">暂无文章。去<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
                 return;
             }
@@ -626,12 +680,15 @@
                 const excerpt = post.content.split('<!--more-->')[0].trim();
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
-                // 添加图片预览 (可选，需要post数据中有图片字段)
-                // const firstImageMatch = post.content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
-                // const imageUrl = firstImageMatch ? firstImageMatch[1] : ''; 
-                // const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${imageUrl}" alt="${post.title}"></div>` : '';
+                
+                // 提取文章中的第一张图片作为封面图
+                const firstImageMatch = post.content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
+                const imageUrl = firstImageMatch ? firstImageMatch[1] : ''; 
+                // 添加图片预览 HTML (使用代理链接)
+                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="https://gh-proxy.com/${imageUrl}" alt="${post.title}" loading="lazy"></div>` : '';
 
                 postCard.innerHTML = `
+                    ${imagePreviewHtml}
                     <div class="post-card-content">
                         <h2><a href="#/post/${post.id}">${post.title}</a></h2>
                         <div class="meta">
@@ -655,6 +712,7 @@
                 return;
             }
 
+            // 对文章内容进行 Markdown 渲染
             blogContentDiv.innerHTML = `
                 <article class="post-full">
                     <h1>${post.title}</h1>
@@ -668,14 +726,17 @@
                 </article>
             `;
             blogContentDiv.style.display = 'block';
-            hljs.highlightAll();
+            hljs.highlightAll(); // 突出显示代码块
 
             if (siteConfig && siteConfig.gitalk && siteConfig.gitalk.enabled) {
                 gitalkContainerEl.innerHTML = '';
                 gitalkContainerEl.style.display = 'block';
 
-                let gitalkIdSource = `${post.title}-${postId}`;
-                if (gitalkIdSource.length > 50) gitalkIdSource = gitalkIdSource.slice(0, 50);
+                // Gitalk 的 id 必须是唯一的，且只包含英文、数字、中划线。
+                // 推荐使用 slugify 工具处理标题，确保纯英文数字，并截断
+                const safePostId = post.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 20); // 从 post.id 中提取安全部分
+                const safeTitleSlug = md.utils.slugify(post.title).replace(/[^a-zA-Z0-9-]/g, '').slice(0, 30); // 标题的安全 slug
+                const gitalkId = `${safeTitleSlug}-${safePostId}`; // 组合生成唯一ID
 
                 try {
                     const gitalk = new Gitalk({
@@ -684,13 +745,13 @@
                         repo: siteConfig.gitalk.repo,
                         owner: siteConfig.gitalk.owner,
                         admin: siteConfig.gitalk.admin,
-                        id: gitalkIdSource,
-                        distractionFreeMode: siteConfig.gitalk.distractionFreeMode, // 从配置中读取
+                        id: gitalkId,
+                        distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
                         title: post.title,
-                        labels: [...siteConfig.gitalk.labels, post.category || '未分类'], 
+                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])], // 确保标签唯一
                         body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
                         createIssueManually: false,
-                        perPage: siteConfig.gitalk.perPage, // 从配置中读取
+                        perPage: siteConfig.gitalk.perPage || 10,
                     });
                     gitalk.render('gitalk-container');
                 } catch (e) {
@@ -728,13 +789,16 @@
             if (path.startsWith('/post/')) {
                 const postId = path.replace('/post/', '');
                 renderPostPage(postId);
-                document.querySelector('#main-nav a[data-route="home"]').classList.add('active');
+                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
+                if (homeNavLink) homeNavLink.classList.add('active'); // 帖子页面也高亮首页
             } else if (path === '/about') {
                 renderAboutPage();
-                document.querySelector('#main-nav a[data-route="about"]').classList.add('active');
+                const aboutNavLink = document.querySelector('#main-nav a[data-route="about"]');
+                if (aboutNavLink) aboutNavLink.classList.add('active');
             } else {
                 renderHomePage();
-                document.querySelector('#main-nav a[data-route="home"]').classList.add('active');
+                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
+                if (homeNavLink) homeNavLink.classList.add('active');
             }
         };
 
@@ -748,15 +812,17 @@
                      tempOwner = prompt("请手动输入您的GitHub用户名 (例如: pkq66882):", "pkq66882");
                      if (!tempOwner) throw new Error("GitHub用户名是必须的。");
                 }
-                const resolvedOwner = tempOwner; // 使用局部变量存储解析的 owner
+                const resolvedOwner = tempOwner; 
                 
+                // 确保 repo 和 basePath 是基于解析后的 owner
                 const parsedPath = parseGitHubPath(resolvedOwner);
-                owner = parsedPath.owner; // 更新全局变量，确保Gitalk等后续使用正确
-                repo = parsedPath.repo;   // 更新全局变量
-                basePath = parsedPath.basePath; // 更新全局变量
+                owner = parsedPath.owner; 
+                repo = parsedPath.repo;   
+                basePath = parsedPath.basePath; 
 
                 console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
 
+                // 使用确定好的 owner 和 repo 获取文件
                 const configData = await GitHubAPI.getFile(owner, repo, getFilePath('config.json'));
                 const postsData = await GitHubAPI.getFile(owner, repo, getFilePath('posts.json'));
 
@@ -767,48 +833,47 @@
                 siteConfig = JSON.parse(configData.content);
                 blogPosts = JSON.parse(postsData.content);
 
-                // Apply dynamic styles (注入到head，而非直接修改body style)
+                // 应用动态样式 (注入到head)
                 const styleElement = document.createElement('style');
                 styleElement.textContent = `
                     body {
                         background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
                         color: ${siteConfig.styling.textColor || '#212529'};
                         ${siteConfig.styling.backgroundImageUrl ? `
-                            background-image: url(${siteConfig.styling.backgroundImageUrl});
+                            background-image: url("https://gh-proxy.com/${siteConfig.styling.backgroundImageUrl}");
                             background-size: cover;
                             background-attachment: fixed;
                             background-position: center;
                         ` : ''}
                     }
-                    a { color: ${siteConfig.styling.accentColor || '#0d6efd'}; }
-                    a:hover { color: ${siteConfig.styling.accentHover || '#2980b9'}; } /* accentHover需要被定义或者推断 */
-                    .post-card .read-more { background-color: ${siteConfig.styling.accentColor || '#3498db'}; }
-                    .post-card .read-more:hover { background-color: ${siteConfig.styling.accentHover || '#2980b9'}; }
-                    .post-content blockquote { border-left-color: ${siteConfig.styling.accentColor || '#3498db'}; background-color: ${siteConfig.styling.accentColor + '08' || '#f5fafd'}; }
-                    .post-full .meta i { color: ${siteConfig.styling.accentColor || '#95a5a6'}; }
-                    
-                    /* Gitalk specific styles based on accent colors */
-                    .gt-hdr-btn, .gt-btn-public, .gt-btn-preview { background-color: ${siteConfig.styling.accentColor || '#3498db'}; border-color: ${siteConfig.styling.accentColor || '#3498db'}; }
-                    .gt-hdr-btn:hover, .gt-btn-public:hover, .gt-btn-preview:hover { background-color: ${siteConfig.styling.accentHover || '#2980b9'}; border-color: ${siteConfig.styling.accentHover || '#2980b9'}; }
-                    .gt-link, .gt-comment-username { color: ${siteConfig.styling.accentColor || '#0d6efd'}; }
-                    .gt-popup-wrap a.label:hover, .gt-popup-wrap .label-item-btn:hover { background-color: ${siteConfig.styling.accentColor || '#0d6efd'}; }
+                    /* 使用 --accent-color 变量，并在 Gitalk CSS 之前定义，以便覆盖 */
+                    :root {
+                        --accent-color: ${siteConfig.styling.accentColor || '#0d6efd'};
+                        --accent-hover: ${siteConfig.styling.accentHover || '#2980b9'}; /* 假设accentHover在config里定义或在此推断 */
+                        /* 可以添加更多自定义颜色变量 */
+                        --header-bg-color: ${siteConfig.styling.headerBgColor || '#fff'};
+                        --header-text-color: ${siteConfig.styling.headerTextColor || '#2c3e50'};
+                        --header-description-color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
+                        --footer-bg-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
+                        --footer-text-color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
+                        --footer-link-color: ${siteConfig.styling.footerLinkColor || '#3498db'};
+                    }
 
                     header {
-                        background-color: ${siteConfig.styling.headerBgColor || '#fff'};
-                        color: ${siteConfig.styling.headerTextColor || '#2c3e50'};
+                        background-color: var(--header-bg-color);
                     }
                     header h1 {
-                         color: ${siteConfig.styling.headerTitleColor || '#2c3e50'};
+                         color: var(--header-text-color);
                     }
                     header p {
-                         color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
+                         color: var(--header-description-color);
                     }
                     footer {
-                        background-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
-                        color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
+                        background-color: var(--footer-bg-color);
+                        color: var(--footer-text-color);
                     }
                     footer a {
-                        color: ${siteConfig.styling.footerLinkColor || '#3498db'};
+                        color: var(--footer-link-color);
                     }
                 `;
                 document.head.appendChild(styleElement);
@@ -829,7 +894,6 @@
             } catch (error) {
                 console.error("博客初始化失败:", error);
                 document.title = "错误 - 博客";
-                // 确保管理后台链接包含 basePath
                 blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
                 blogContentDiv.style.display = 'block';
             } finally {
