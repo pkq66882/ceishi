@@ -145,19 +145,6 @@
             object-fit: cover; /* Crop to fill, maintain ratio */
             min-height: 100%; /* Ensure height fills */
         }
-        /* Fallback for error images */
-        .post-card-image .image-error-placeholder {
-            padding: 20px;
-            color: #888;
-            font-size: 0.9em;
-            text-align: center;
-            background-color: #f0f0f0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
         .post-card-content {
             padding: 25px;
             flex-grow: 1;
@@ -543,26 +530,34 @@
     <script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
 
     <script>
-        // ==================== Global Variables & Utility Functions ====================
+        // A simple slugify function for generating URL-friendly strings
+        const slugify = (text) => {
+            if (!text) return '';
+            return text.toString().toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')         // Replace spaces with -
+                .replace(/[^\p{L}\p{N}_\-.]/gu, '')     // Remove all non-alphanumeric, non-dash, non-dot, non-underscore (Unicode-aware)
+                .replace(/--+/g, '-')         // Replace multiple - with single -
+                .substring(0, 60);            // Limit length for safer IDs
+        };
+
         const md = new markdownit({
             html: true,
             linkify: true,
             typographer: true,
             highlight: function (str, lang) {
-                // ALWAYS explicitly escape the code block content before highlight.js
-                // This is the correct way to prevent XSS and address highlight.js's security warning.
+                // Ensure the string passed to highlight.js is HTML-escaped to prevent XSS and warnings.
                 const escapedStr = md.utils.escapeHtml(str); 
                 if (lang && hljs.getLanguage(lang)) {
                     try {
                         return '<pre><code class="hljs">' +
                                hljs.highlight(escapedStr, { language: lang, ignoreIllegals: true }).value + 
                                '</code></pre>';
-                    } catch (e) {
-                        console.warn('Highlight.js failed, falling back to basic escape:', e);
+                    } catch (__) {
+                        console.warn('Highlight.js failed, falling back to basic escape.');
                     }
                 }
-                // Fallback for non-highlighted code or errors also uses escaped string
-                return '<pre><code class="hljs">' + escapedStr + '</code></pre>'; 
+                return '<pre><code class="hljs">' + escapedStr + '</code></pre>'; // Fallback also uses escaped string
             }
         });
 
@@ -636,63 +631,65 @@
             async getRawFile(owner, repo, path) {
                 const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
                 console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
-                const response = await fetch(rawUrl, {cache: 'no-store'}); // Added cache: 'no-store'
+                const response = await fetch(rawUrl);
                 if (!response.ok) {
+                    // Specific handling for 404 for config.json/posts.json
+                    if (response.status === 404) {
+                        console.info(`File not found: ${rawUrl}. This is expected for initial setup.`);
+                        // Return default empty structures for 404 to avoid breaking initialization
+                        return path === 'posts.json' ? [] : {}; 
+                    }
                     throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
                 }
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const textContent = await response.text();
-                    if (!textContent.trim()) {
-                         console.warn(`File ${rawUrl} is empty or non-JSON content. Returning empty JSON.`);
-                         return {}; 
-                    }
-                    try {
-                        return JSON.parse(textContent);
-                    } catch (e) {
-                        throw new Error(`文件 ${rawUrl} 内容不是有效的JSON格式: ${e.message}`);
-                    }
+                const textContent = await response.text();
+                // Handle empty or whitespace-only files
+                if (!textContent.trim()) {
+                    console.warn(`File ${rawUrl} is empty or contains only whitespace. Returning empty JSON interpretation.`);
+                    return path === 'posts.json' ? [] : {}; 
                 }
-                return response.json(); 
+                try {
+                    return JSON.parse(textContent);
+                } catch (e) {
+                    console.error(`Error parsing JSON from ${rawUrl}: ${e.message}. Content: ${textContent.substring(0, 100)}...`);
+                    throw new Error(`文件 ${rawUrl} 内容不是有效的JSON格式: ${e.message}`);
+                }
             }
         };
 
         // Unified function to process image URLs for display (always return proxied URL)
         const getProxiedImageUrl = (inputUrl) => {
-            if (!inputUrl || typeof inputUrl !== 'string' || inputUrl.trim() === '') {
-                return ''; // Return empty string for invalid input.
-            }
-            
-            let finalTargetUrl = inputUrl;
+            if (!inputUrl) return '';
 
-            // Step 1: If it's already a gh-proxy URL, decode it to get the raw target.
-            if (finalTargetUrl.startsWith('https://gh-proxy.com/')) {
+            let urlToProcess = inputUrl;
+
+            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
+            if (urlToProcess.startsWith('https://gh-proxy.com/')) {
                 try {
-                    finalTargetUrl = decodeURIComponent(finalTargetUrl.substring('https://gh-proxy.com/'.length));
+                    urlToProcess = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
                 } catch (e) {
-                    console.warn('[getProxiedImageUrl] Failed to decode existing gh-proxy URL, proceeding with original:', e, finalTargetUrl);
-                    return inputUrl; 
+                    console.warn('Failed to decode existing gh-proxy URL, using as is for further processing:', e, urlToProcess);
                 }
             }
 
-            // Step 2: Now `finalTargetUrl` should be the raw.githubusercontent.com URL or a generic HTTP URL.
-            // We need to get its *fully unescaped* raw form, then encode *that* for gh-proxy.
-            if (finalTargetUrl.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(finalTargetUrl)) {
-                let unescapedRawUrl;
+            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com),
+            // we will parse it, explicitly decode path components, then re-encode for the proxy.
+            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
                 try {
-                    // Use decodeURI on the entire URL string. This decodes common URI escape sequences like %20, %7E.
-                    // This is the key to preventing double encoding for proxy.
-                    unescapedRawUrl = decodeURI(finalTargetUrl);
+                    const urlObj = new URL(urlToProcess);
+                    // Explicitly decode the path and search components fully.
+                    // This handles cases where GitHub's download_url might return partially encoded URLs
+                    // or contain characters like '~' that were not directly percent-encoded by GitHub but need it for the proxy.
+                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
+                    urlObj.search = decodeURIComponent(urlObj.search);
+                    urlToProcess = urlObj.toString();
                 } catch (e) {
-                    console.warn('[getProxiedImageUrl] Failed to decodeURI raw URL, using original:', e, finalTargetUrl);
-                    unescapedRawUrl = finalTargetUrl; // Fallback
+                    console.warn("URL parsing/decoding for path normalization failed, using raw URL for encoding:", e, urlToProcess);
                 }
-                
-                // Then encode this *unescaped* raw URL for gh-proxy.
-                return `https://gh-proxy.com/${encodeURIComponent(unescapedRawUrl)}`;
+                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized) URL.
+                return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
             }
 
-            // If it's not a recognizable external HTTP/HTTPS URL, return as is.
+            // For any other URL (e.g., relative paths, data URIs, etc.), return as is.
             return inputUrl; 
         };
 
@@ -718,19 +715,9 @@
                 // Extract first image from markdown (raw URL will be processed by getProxiedImageUrl for display)
                 const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); 
                 let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
-                let imageAlt = firstImageMatch ? firstImageMatch[1] : `图片 - ${post.title}`; // Default alt text
+                let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
 
-                let imagePreviewHtml = '';
-                if (imageUrl) {
-                    const proxiedUrl = getProxiedImageUrl(imageUrl);
-                    imagePreviewHtml = `
-                        <div class="post-card-image">
-                            <img src="${proxiedUrl}" alt="${imageAlt}" loading="lazy" 
-                                 onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'15\' text-anchor=\'middle\' dominant-baseline=\'central\' fill=\'#e74c3c\'>❌ Image Load Failed</text></svg>'; this.classList.add('image-error-placeholder');">
-                        </div>`;
-                } else {
-                    imagePreviewHtml = `<div class="post-card-image"><div class="image-error-placeholder">暂无图片</div></div>`;
-                }
+                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${getProxiedImageUrl(imageUrl)}" alt="${imageAlt}" loading="lazy"></div>` : '';
 
                 postCard.innerHTML = `
                     ${imagePreviewHtml}
@@ -758,14 +745,9 @@
             }
 
             // Standardize all image URLs within the post content for display
-            // This replaces image markdown with HTML <img> tags, applying getProxiedImageUrl and onerror
             let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
-                const proxiedUrl = getProxiedImageUrl(url);
-                // Directly return an HTML img tag with error fallback
-                return `<img src="${proxiedUrl}" alt="${alt}" loading="lazy" 
-                           onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'15\' text-anchor=\'middle\' dominant-baseline=\'central\' fill=\'#e74c3c\'>❌ Image Load Failed</text></svg>'; this.style.backgroundColor='#f0f0f0'; this.style.objectFit='contain'; this.style.padding='10px'; this.height='150'">`;
+                return `![${alt}](${getProxiedImageUrl(url)})`;
             });
-
 
             blogContentDiv.innerHTML = `
                 <article class="post-full">
@@ -786,8 +768,8 @@
                 gitalkContainerEl.innerHTML = '';
                 gitalkContainerEl.style.display = 'block';
 
-                const safePostId = post.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 20); 
-                const safeTitleSlug = md.utils.slugify(post.title).replace(/[^a-zA-Z0-9-]/g, '').slice(0, 30); 
+                const safePostId = slugify(post.id).slice(0, 20); 
+                const safeTitleSlug = slugify(post.title).slice(0, 30); 
                 const gitalkId = `${safeTitleSlug}-${safePostId}`; 
 
                 try {
@@ -861,7 +843,7 @@
             try {
                 let tempUsernameFromHost = window.location.hostname.split('.')[0];
                 if (tempUsernameFromHost.toLowerCase() === 'localhost' || tempUsernameFromHost.toLowerCase() === '127.0.0.1' || !tempUsernameFromHost) {
-                    tempUsernameFromHost = "pkq66882"; // Default fallback to your username
+                    tempUsernameFromHost = "pkq66882"; // Default fallback
                     console.warn(`[index.html] Running locally or on custom domain. Defaulting GitHub username for repo detection to "${tempUsernameFromHost}".`);
                 }
                 const resolvedOwner = tempUsernameFromHost; 
@@ -879,7 +861,6 @@
                 console.log(`[index.html] Attempting to fetch config.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${configRawFilepath}`);
                 console.log(`[index.html] Attempting to fetch posts.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${postsRawFilepath}`);
 
-                // Fetch with no-store to ensure fresh data
                 const fetchConfig = GitHubAPI_Frontend.getRawFile(owner, repo, configRawFilepath);
                 const fetchPosts = GitHubAPI_Frontend.getRawFile(owner, repo, postsRawFilepath);
 
@@ -911,16 +892,10 @@
                 });
 
                 const styleElement = document.createElement('style');
-                styleElement.textContent = `
+                let dynamicCss = `
                     body {
                         background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
                         color: ${siteConfig.styling.textColor || '#212529'};
-                        ${siteConfig.styling.backgroundImageUrl ? `
-                            background-image: url("${getProxiedImageUrl(siteConfig.styling.backgroundImageUrl)}");
-                            background-size: cover;
-                            background-attachment: fixed;
-                            background-position: center;
-                        ` : ''}
                     }
                     :root {
                         --accent-color: ${siteConfig.styling.accentColor || '#0d6efd'};
@@ -938,8 +913,20 @@
                         color: var(--header-link-hover-color); 
                         text-decoration: underline;
                     }
-
                 `;
+                // Only add background-image if URL is valid
+                if (siteConfig.styling.backgroundImageUrl && /^https?:\/\//i.test(siteConfig.styling.backgroundImageUrl)) {
+                    dynamicCss += `
+                        body {
+                            background-image: url("${getProxiedImageUrl(siteConfig.styling.backgroundImageUrl)}");
+                            background-size: cover;
+                            background-attachment: fixed;
+                            background-position: center;
+                        }
+                    `;
+                }
+
+                styleElement.textContent = dynamicCss;
                 document.head.appendChild(styleElement);
 
                 siteTitleEl.textContent = siteConfig.site.title || `${owner}的博客`;
