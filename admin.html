@@ -786,8 +786,11 @@
                 const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', ...options.headers };
                 const response = await fetch(url, { ...options, headers });
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}` }));
-                    throw new Error(errorData.message || 'GitHub API request failed');
+                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, documentation_url: response.url }));
+                    const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}`;
+                    console.error('GitHub API Error:', errorMessage, errorData);
+                    const specificError = errorData.documentation_url && errorData.documentation_url.includes('api.github.com/v3/auth') ? '你的 GitHub Token 可能无效或权限不足。请检查：[链接到Token生成页面](https://github.com/settings/tokens)' : '';
+                    throw new Error(`${errorMessage} ${specificError}`);
                 }
                 if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
                 return response.json();
@@ -796,10 +799,19 @@
             async getFile(token, owner, repo, path) {
                 try {
                     const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!result || typeof result.content !== 'string') return null; // 文件不存在
+                    if (!result || typeof result.content !== 'string') {
+                        // 如果内容为空或不是字符串，我们认为文件逻辑上不存在或不合格
+                        console.warn(`File content for ${path} is empty or invalid.`);
+                        return null; 
+                    }
                     return { content: b64_to_utf8(result.content), sha: result.sha };
                 } catch (error) {
-                    if (error.message.toLowerCase().includes('not found') || error.message.includes('file not found')) return null;
+                    // 明确处理 404 错误
+                    if (error.message.toLowerCase().includes('not found') || error.message.includes('file not found')) {
+                        console.info(`File not found: ${path}. This is expected during initialization.`);
+                        return null;
+                    }
+                    console.error(`Error fetching file ${path}:`, error);
                     throw error;
                 }
             },
@@ -840,19 +852,24 @@
         // ==================== UI 辅助函数 ====================
         const showAdminView = (viewName) => {
             Object.values(adminViews).forEach(v => v.style.display = 'none');
-            Object.values(navButtons).forEach(b => b.classList.remove('active'));
-            // 确保 EasyMDE 在隐藏时被销毁，显示时被初始化
-            if (easyMDE) {
+            // 确保 EasyMDE 在隐藏时被销毁，显示时被初始化，避免在非编辑器视图下占用资源
+            if (easyMDE && viewName !== 'editor') {
                 easyMDE.toTextArea(); // 销毁 EasyMDE 实例
                 document.getElementById('post-content').style.display = ''; // 恢复 textarea
                 easyMDE = null;
             }
 
-            adminViews[viewName].style.display = 'block';
-            if (navButtons[viewName]) {
-                 navButtons[viewName].classList.add('active');
+            Object.values(navButtons).forEach(b => b.classList.remove('active'));
+            const currentNavLink = document.querySelector(`[data-view="${viewName}"]`);
+            if (currentNavLink) {
+                 currentNavLink.classList.add('active');
+            } else if (viewName === 'editor') {
+                navButtons.posts.classList.add('active'); // 编辑器时高亮文章管理
             }
-            if (viewName === 'editor') {
+            
+            adminViews[viewName].style.display = 'block';
+            
+            if (viewName === 'editor' && !easyMDE) { // 只有在需要时才初始化
                 initializeEasyMDE(); // 重新初始化 EasyMDE
             }
             document.querySelector('.admin-wrapper').classList.remove('sidebar-visible'); // 移动端关闭侧边栏
@@ -889,18 +906,17 @@
              if (storedToken) {
                  tokenInput.value = storedToken;
                  rememberTokenCheckbox.checked = true;
-             }
-             if (storedToken && !initialMessageEl.textContent) { // 如果有存储且无其他提示，自动尝试登录
-                 startBtn.click();
+                // 尝试自动登录
+                startAdmin();
              }
         };
 
         const startAdmin = async () => {
             const userToken = tokenInput.value.trim();
-            if (!userToken) { initialMessageEl.textContent = 'Token 不能为空。'; return; }
+            if (!userToken) { initialMessageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Token 不能为空。'; return; }
             token = userToken;
             setButtonsDisabled(true);
-            initialMessageEl.textContent = '<i class="fas fa-spinner fa-spin"></i> 正在验证并加载...';
+            initialMessageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在验证并加载...';
             initialMessageEl.style.color = 'var(--text-color)';
 
             try {
@@ -909,12 +925,30 @@
                 repo = `${owner}.github.io`; // 假设仓库名是 your-username.github.io
                 basePath = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'admin.html').join('/');
 
-                // 首次登录或仓库初始化
-                let configData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
-                let postsData = await GitHubAPI.getFile(token, owner, repo, getPath('posts.json'));
+                // 尝试获取 config.json 和 posts.json
+                let configData = null;
+                try {
+                    configData = await GitHubAPI.getFile(token, owner, repo, getPath('config.json'));
+                } catch (e) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 获取 config.json 失败: ${e.message}`;
+                    throw e; // 重新抛出，停止后续操作
+                }
+                
+                let postsData = null;
+                try {
+                    postsData = await GitHubAPI.getFile(token, owner, repo, getPath('posts.json'));
+                } catch (e) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 获取 posts.json 失败: ${e.message}`;
+                    throw e; // 重新抛出，停止后续操作
+                }
 
-                if (!configData || !postsData) {
-                    initialMessageEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 未检测到核心文件，正在为您初始化系统...';
+
+                const hasExistingConfig = !!configData;
+                const hasExistingPosts = !!postsData;
+
+                if (!hasExistingConfig || !hasExistingPosts) {
+                    initialMessageEl.innerHTML = '<i class="fas fa-hammer"></i> 检测到核心文件缺失，正在为您初始化系统...';
+
                     const initialConfig = {
                         site: {
                             title: `${user.login}的博客`,
@@ -947,19 +981,78 @@
                     }];
 
                     // 确保images目录存在，否则图片上传会报错
-                    await GitHubAPI.createFile(token, owner, repo, getPath('images/.gitkeep'), '', 'feat: initialize images directory').catch(() => {}); // 如果目录已存在会报错，忽略此错误
+                    // 使用 .catch() 忽略文件已存在的错误
+                    await GitHubAPI.createFile(token, owner, repo, getPath('images/.gitkeep'), '', 'feat: initialize images directory').catch(err => {
+                        if (!err.message.includes('already exists')) { // 忽略 "file already exists" 错误
+                            console.warn("Could not create .gitkeep:", err);
+                        }
+                    });
 
-                    const [configRes, postsRes] = await Promise.all([
-                         GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize blog config'),
-                         GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), 'feat: initialize first post')
-                    ]);
-                    config = initialConfig; configSha = configRes.content.sha;
-                    posts = initialPosts; postsSha = postsRes.content.sha;
-                    showAlert('系统激活成功！', 'success');
+                    // 创建或更新 config.json
+                    let currentConfig = initialConfig;
+                    if (hasExistingConfig) {
+                        try {
+                            currentConfig = JSON.parse(configData.content);
+                            // 合并默认配置，保留用户已有设置
+                            Object.assign(currentConfig, initialConfig); 
+                            Object.assign(currentConfig.site, initialConfig.site);
+                            Object.assign(currentConfig.styling, initialConfig.styling);
+                            // 如果gitalk不存在或部分缺失，则补充
+                            if (!currentConfig.gitalk) currentConfig.gitalk = initialConfig.gitalk;
+                            else Object.assign(currentConfig.gitalk, initialConfig.gitalk);
+                        } catch (e) {
+                            console.warn("Invalid config.json, overwriting with default.", e);
+                            showAlert('config.json 内容无效，已使用默认配置覆盖。', 'warning');
+                        }
+                         const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(currentConfig, null, 2), configData.sha, 'feat: update config with default values');
+                         configSha = res.content.sha;
+                    } else {
+                         const res = await GitHubAPI.createFile(token, owner, repo, getPath('config.json'), JSON.stringify(initialConfig, null, 2), 'feat: initialize config');
+                         configSha = res.content.sha;
+                         currentConfig = initialConfig;
+                    }
+                    config = currentConfig;
+
+                    // 创建或更新 posts.json
+                    let currentPosts = initialPosts;
+                    if (hasExistingPosts) {
+                         try {
+                            currentPosts = JSON.parse(postsData.content);
+                            if (currentPosts.length === 0) { // 如果 posts.json 存在但为空，则填入初始文章
+                                currentPosts = initialPosts;
+                            }
+                         } catch (e) {
+                            console.warn("Invalid posts.json, overwriting with default post.", e);
+                            showAlert('posts.json 内容无效，已使用默认文章覆盖。', 'warning');
+                            currentPosts = initialPosts;
+                         }
+                         // 检查是否已经有了初始文章，避免重复添加。简单通过 title 判断
+                         if (!currentPosts.some(p => p.title === initialPosts[0].title)) {
+                             currentPosts.push(initialPosts[0]);
+                         }
+                         currentPosts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)); // 再次排序确保最新文章在前
+
+                         const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(currentPosts, null, 2), postsData.sha, 'feat: update posts with initial entries');
+                         postsSha = res.content.sha;
+
+                    } else {
+                        const res = await GitHubAPI.createFile(token, owner, repo, getPath('posts.json'), JSON.stringify(initialPosts, null, 2), 'feat: initialize first post');
+                        postsSha = res.content.sha;
+                        currentPosts = initialPosts;
+                    }
+                    posts = currentPosts;
+
+                    showAlert('系统初始化或更新成功！', 'success');
                 } else {
-                    config = JSON.parse(configData.content); configSha = configData.sha;
-                    posts = postsData.content ? JSON.parse(postsData.content) : [];
-                    postsSha = postsData.sha;
+                    // 如果文件都存在，则直接解析
+                    try {
+                        config = JSON.parse(configData.content); configSha = configData.sha;
+                        posts = postsData.content ? JSON.parse(postsData.content) : [];
+                        postsSha = postsData.sha;
+                    } catch (e) {
+                        initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 解析文件内容失败，可能 JSON 格式错误: ${e.message}`;
+                        throw e;
+                    }
                 }
                 
                 loginWrapper.style.display = 'none';
@@ -976,7 +1069,7 @@
                 }
 
             } catch (error) {
-                initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}`;
+                initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}<br>请仔细检查您的Token权限、GitHub Pages配置和网络连接。`;
                 initialMessageEl.style.color = 'var(--danger-color)';
                 token = null;
                 localStorage.removeItem('github_token'); // 失败清空token
@@ -1068,6 +1161,8 @@
                 const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: ${id ? 'update' : 'create'} post "${title}"`);
                 postsSha = res.content.sha;
                 showAlert('文章保存成功！', 'success');
+                // 更新标签建议列表
+                updateUniqueTags();
                 renderPostList();
                 showAdminView('posts');
             } catch (error) {
@@ -1091,6 +1186,8 @@
                 const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: delete post "${postToDelete.title}"`);
                 postsSha = res.content.sha;
                 showAlert('文章删除成功！', 'success');
+                // 更新标签建议列表
+                updateUniqueTags();
                 renderPostList();
                 showAdminView('posts');
             } catch (error) {
@@ -1256,8 +1353,7 @@
                 input.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (file) {
-                        const spinnerIcon = 'fas fa-spinner fa-spin';
-                        easyMDE.togglePreview(); // 切换到预览，如果不在预览模式，避免用户编辑
+                        setButtonsDisabled(true); // 禁用按钮防止重复操作
                         showAlert(`正在上传图片 ${file.name}...`, 'info', 'image-upload-alert');
 
                         try {
@@ -1273,7 +1369,7 @@
                         } catch (error) {
                             // 错误已在 uploadFile 中处理
                         } finally {
-                            easyMDE.togglePreview(); // 恢复编辑模式
+                            setButtonsDisabled(false);
                         }
                     }
                 };
@@ -1322,6 +1418,11 @@
             const tagsContainer = document.getElementById('tag-token-container');
             tagsContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
             currentTags.forEach(tag => addTagToInput(tag, inputElement));
+
+            // ensure the input field is re-focused if it was active
+            // if (document.activeElement === tagsInput) {
+            //     tagsInput.focus();
+            // }
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1331,8 +1432,8 @@
 
             // 聚焦时显示所有标签建议
             tagsInput.addEventListener('focus', () => {
-                if (tagsInput.value.trim() === '') {
-                    showTagSuggestions('');
+                if (posts.length > 0) { // 只有当有文章加载后才提供建议
+                     showTagSuggestions(tagsInput.value.trim().toLowerCase());
                 }
             });
             // 失焦时隐藏建议，延迟执行以允许点击建议项
@@ -1362,14 +1463,14 @@
                     // 如果输入框为空，按退格键删除上一个标签
                     const lastTagToken = tagTokenContainer.querySelector('.tag-token:last-of-type');
                     if (lastTagToken) {
-                        const tagText = lastTagToken.textContent.replace(' ✖', '').trim(); // 假设删除按钮是 &#x2716;
+                        const tagText = lastTagToken.textContent.split(' ')[0].trim(); // 假设删除按钮是 &#x2716; / <i class="fas fa-times"></i>
                         removeTagFromInput(tagText, tagsInput);
                     }
                 }
             });
 
             tagTokenContainer.addEventListener('click', (e) => {
-                if (e.target === tagTokenContainer) {
+                if (e.target === tagTokenContainer || e.target.classList.contains('tag-token')) {
                     tagsInput.focus();
                 }
             });
@@ -1392,6 +1493,13 @@
                         });
                         tagSuggestionsBox.appendChild(div);
                     });
+                     // 确保 suggestions box 的位置正确
+                    const inputRect = tagsInput.getBoundingClientRect();
+                    const containerRect = tagTokenContainer.getBoundingClientRect();
+                    tagSuggestionsBox.style.top = `${containerRect.height + 5}px`; // 紧贴着 token 容器底部
+                    tagSuggestionsBox.style.left = `0`;
+                    tagSuggestionsBox.style.width = `${tagTokenContainer.offsetWidth}px`;
+
                     tagSuggestionsBox.style.display = 'block';
                 } else {
                     tagSuggestionsBox.style.display = 'none';
