@@ -441,6 +441,14 @@
         .post-content ol li, .about-content ol li {
             list-style-type: decimal;
         }
+        /* Custom styles from config variables */
+        header a {
+            color: var(--header-link-color, var(--accent-color));
+        }
+        header a:hover {
+            color: var(--header-link-hover-color, var(--accent-hover));
+        }
+
 
         /* Responsiveness */
         @media (max-width: 768px) {
@@ -523,35 +531,6 @@
 
     <script>
         // ==================== Global Variables & Utility Functions ====================
-        const utf8_to_b64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-        const b64_to_utf8 = (b64String) => {
-            try {
-                const binaryString = atob(b64String);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                return new TextDecoder('utf-8').decode(bytes);
-            } catch (e) {
-                console.error("Base64 decoding to UTF-8 failed:", e);
-                return atob(b64String); 
-            }
-        };
-
-        // GitHubAPI_Frontend: Used for fetching public JSON files from raw.githubusercontent.com
-        const GitHubAPI_Frontend = {
-            async getRawFile(owner, repo, path) {
-                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-                console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
-                const response = await fetch(rawUrl);
-                if (!response.ok) {
-                    throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
-                }
-                return response.json(); // Assuming JSON file
-            }
-        };
-
         const md = new markdownit({
             html: true,
             linkify: true,
@@ -604,7 +583,7 @@
 
             const hostnameLow = hostname.toLowerCase();
             const usernameLow = githubUsername.toLowerCase();
-            const userGithubIoPattern = new RegExp(`^${usernameLow}\\.github\\.io$`);
+            const userGithubIoPattern = new RegExp(`^${usernameLow}(\\.github\\.io)?$`); // Allow both user.github.io and user for consistency
             
             console.log(`[parseGitHubPath Debug] Hostname: ${hostname}, Username: ${githubUsername}, PathSegments: [${pathSegments.join(', ')}]`);
 
@@ -614,7 +593,7 @@
                     currentBasePath = pathSegments.slice(1).join('/'); 
                     console.log(`[parseGitHubPath Debug] Case 1.1: Project Page under User.github.io or Local, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
-                    currentRepo = hostnameLow; 
+                    currentRepo = `${usernameLow}.github.io`; // Default to user page repo if root
                     currentBasePath = '';
                     console.log(`[parseGitHubPath Debug] Case 1.2: User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
@@ -629,11 +608,13 @@
                     console.log(`[parseGitHubPath Debug] Case 2.2: Generic .github.io No Path, Default to User Repo, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 }
             } else { 
+                // Custom domain case (or other non-github.io)
                 if (pathSegments.length > 0) {
-                    currentRepo = pathSegments[0];
+                    currentRepo = pathSegments[0]; // Assume first segment is repo if on custom domain
                     currentBasePath = pathSegments.slice(1).join('/');
                     console.log(`[parseGitHubPath Debug] Case 3.1: Custom Domain Project Page, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
                 } else {
+                    // Fallback for custom domains without path or assuming user.github.io for custom root
                     currentRepo = `${githubUsername}.github.io`; 
                     currentBasePath = '';
                     console.log(`[parseGitHubPath Debug] Case 3.2: Custom Domain User/Org Page Root, Repo: "${currentRepo}", BasePath: "${currentBasePath}"`);
@@ -649,13 +630,54 @@
             return { owner: githubUsername, repo: currentRepo, basePath: currentBasePath };
         };
 
+
+        // GitHubAPI_Frontend: Used for fetching public JSON files from raw.githubusercontent.com
+        const GitHubAPI_Frontend = {
+            async getRawFile(owner, repo, path) {
+                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
+                console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
+                const response = await fetch(rawUrl);
+                if (!response.ok) {
+                    throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
+                }
+                return response.json(); // Assuming JSON file
+            }
+        };
+
+        // Unified function to process image URLs for display (always return proxied URL)
+        const getProxiedImageUrl = (inputUrl) => {
+            if (!inputUrl) return '';
+
+            let originalUrl = inputUrl;
+
+            // If inputUrl is already a gh-proxy URL, decode it to get the original URL part.
+            // This is crucial to prevent double encoding if a URL was saved with a gh-proxy prefix by accident.
+            if (originalUrl.startsWith('https://gh-proxy.com/')) {
+                try {
+                    originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
+                } catch (e) {
+                    // console.warn("Error decoding URL from gh-proxy prefix, using as is:", e, originalUrl);
+                }
+            }
+            
+            // Now, apply gh-proxy and encode the *entire* original URL once.
+            // We proxy any standard HTTP(S) link, especially raw.githubusercontent.com.
+            if (originalUrl.startsWith('https://raw.githubusercontent.com/') || originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
+                return `https://gh-proxy.com/${encodeURIComponent(originalUrl)}`;
+            }
+
+            // For other cases (e.g., relative paths that are not handled as images directly), return as is.
+            return originalUrl;
+        };
+
+
         // ==================== Render Functions ====================
         const renderHomePage = () => {
             blogContentDiv.innerHTML = `<div class="post-list"></div>`;
             const postListContainer = blogContentDiv.querySelector('.post-list');
 
             if (blogPosts.length === 0) {
-                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1; font-weight: normal;">暂无文章。去<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
+                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1;"><i class="fas fa-info-circle"></i> 暂无文章。去<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
                 return;
             }
 
@@ -667,15 +689,12 @@
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
                 
-                // Extract first image from markdown
-                const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); // Matches ![alt](url)
-                let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; // Capture group 2 is URL
-                let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title; // Capture group 1 is Alt Text
+                // Extract first image from markdown (raw URL will be processed by getProxiedImageUrl)
+                const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); // Matches ![alt](raw_url)
+                let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
+                let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
 
-                // Standardize image URL for display
-                imageUrl = processImageUrlForDisplay(imageUrl);
-                
-                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${imageUrl}" alt="${imageAlt}" loading="lazy"></div>` : '';
+                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${getProxiedImageUrl(imageUrl)}" alt="${imageAlt}" loading="lazy"></div>` : '';
 
                 postCard.innerHTML = `
                     ${imagePreviewHtml}
@@ -704,8 +723,7 @@
 
             // Standardize all image URLs within the post content for display
             let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
-                const finalUrl = processImageUrlForDisplay(url);
-                return `![${alt}](${finalUrl})`;
+                return `![${alt}](${getProxiedImageUrl(url)})`;
             });
 
             blogContentDiv.innerHTML = `
@@ -773,38 +791,6 @@
             gitalkContainerEl.style.display = 'none';
         };
 
-        // Unified function to process image URLs for display
-        const processImageUrlForDisplay = (inputUrl) => {
-            if (!inputUrl) return '';
-
-            let rawUrl = inputUrl;
-
-            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
-            // This handles cases where URLs are saved with gh-proxy prefixes in markdown.
-            if (rawUrl.startsWith('https://gh-proxy.com/')) {
-                const urlAfterProxy = rawUrl.substring('https://gh-proxy.com/'.length);
-                try {
-                    rawUrl = decodeURIComponent(urlAfterProxy);
-                    // console.log("Decoded from proxy to raw URL:", rawUrl);
-                } catch (e) {
-                    console.warn("Could not decode part of URL after gh-proxy, using as is:", e, urlAfterProxy);
-                    rawUrl = urlAfterProxy; // Fallback
-                }
-            }
-
-            // Step 2: Now that we have the (hopefully) raw URL, apply gh-proxy and encode it once.
-            // Check if it's a raw.githubusercontent.com URL or another http(s) URL.
-            if (rawUrl.startsWith('https://raw.githubusercontent.com/') || rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-                const encodedRawUrl = encodeURIComponent(rawUrl);
-                return `https://gh-proxy.com/${encodedRawUrl}`;
-            }
-
-            // If it's a relative path or other unsupported format, return as is (might not load).
-            console.warn("Unsupported image URL format, not applying gh-proxy:", rawUrl);
-            return rawUrl;
-        };
-
-
         // ==================== Router Handling ====================
         const handleRoute = () => {
             const path = window.location.hash.slice(1);
@@ -829,13 +815,15 @@
 
         // ==================== Blog Initialization ====================
         const initializeBlog = async () => {
-            loadingDiv.style.display = 'block';
+             loadingDiv.style.display = 'block';
 
             try {
+                // Try to infer GitHub username from GitHub Pages hostname
                 let tempOwner = window.location.hostname.split('.')[0];
-                if (!tempOwner || tempOwner.toLowerCase() === 'localhost' || tempOwner.toLowerCase() === '127.0.0.1') {
-                     tempOwner = prompt("请手动输入您的GitHub用户名 (例如: pkq66882):", "pkq66882");
-                     if (!tempOwner) throw new Error("GitHub用户名是必须的。");
+                if (tempOwner.toLowerCase() === 'localhost' || tempOwner.toLowerCase() === '127.0.0.1') {
+                    // Fallback for local development or custom domains without a clear user prefix
+                    tempOwner = "pkq66882"; // Default to your GitHub username for fallback
+                    console.warn(`[index.html] Running locally or on custom domain. Defaulting GitHub username to "${tempOwner}". If this is incorrect, manually specify in the code.`);
                 }
                 const resolvedOwner = tempOwner; 
                 
@@ -846,37 +834,38 @@
 
                 console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
 
-                const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`;
                 const configRawFilepath = getFilePath('config.json');
                 const postsRawFilepath = getFilePath('posts.json');
 
-                console.log(`[index.html] Attempting to fetch config.json from: ${rawBaseUrl}/${configRawFilepath}`);
-                console.log(`[index.html] Attempting to fetch posts.json from: ${rawBaseUrl}/${postsRawFilepath}`);
+                console.log(`[index.html] Attempting to fetch config.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${configRawFilepath}`);
+                console.log(`[index.html] Attempting to fetch posts.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${postsRawFilepath}`);
 
                 const fetchConfig = GitHubAPI_Frontend.getRawFile(owner, repo, configRawFilepath);
                 const fetchPosts = GitHubAPI_Frontend.getRawFile(owner, repo, postsRawFilepath);
 
                 const [configJson, postsJson] = await Promise.all([fetchConfig, fetchPosts]);
 
-                if (!configJson || !postsJson || !Array.isArray(postsJson)) { 
-                    throw new Error("博客核心文件 (config.json 或 posts.json) 未找到、为空或内容无效，请先前往管理后台初始化。");
+                if (!configJson) {
+                    throw new Error("config.json 文件未找到或为空，请先前往管理后台初始化。");
+                }
+                if (!postsJson || !Array.isArray(postsJson)) { 
+                    throw new Error("posts.json 文件未找到、为空或内容无效，请先前往管理后台初始化。");
                 }
 
                 siteConfig = configJson;
-                // Standardize image URLs in markdown content once during initialization
+                // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
                 blogPosts = postsJson.map(post => {
                     let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
-                        let processedUrl = url;
-                        // If URL is already a gh-proxy URL, decode it to get the original raw GitHub URL.
-                        if (processedUrl.startsWith('https://gh-proxy.com/')) {
-                            const urlAfterProxy = processedUrl.substring('https://gh-proxy.com/'.length);
+                        let originalUrl = url;
+                        // If it came from a proxied URL, decode it back to raw GitHub URL for storage
+                        if (originalUrl.startsWith('https://gh-proxy.com/')) {
                             try {
-                                processedUrl = decodeURIComponent(urlAfterProxy);
+                                originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
                             } catch (e) {
-                                console.warn("Error decoding URL part during post content standardization:", e, urlAfterProxy);
+                                console.warn("Error decoding URL part during post content standardization:", e, originalUrl);
                             }
                         }
-                        return `![${alt}](${processedUrl})`; // Store the raw URL in post content
+                        return `![${alt}](${originalUrl})`; // Store the raw URL in post content
                     });
                     return { ...post, content: newContent };
                 });
@@ -887,7 +876,7 @@
                         background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
                         color: ${siteConfig.styling.textColor || '#212529'};
                         ${siteConfig.styling.backgroundImageUrl ? `
-                            background-image: url("${processImageUrlForDisplay(siteConfig.styling.backgroundImageUrl)}");
+                            background-image: url("${getProxiedImageUrl(siteConfig.styling.backgroundImageUrl)}");
                             background-size: cover;
                             background-attachment: fixed;
                             background-position: center;
@@ -899,27 +888,17 @@
                         --header-bg-color: ${siteConfig.styling.headerBgColor || '#fff'};
                         --header-text-color: ${siteConfig.styling.headerTitleColor || '#2c3e50'}; 
                         --header-description-color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
+                        --header-link-color: ${siteConfig.styling.headerLinkColor || 'var(--accent-color)'};
+                        --header-link-hover-color: ${siteConfig.styling.headerLinkHoverColor || 'var(--accent-hover)'};
                         --footer-bg-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
                         --footer-text-color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
                         --footer-link-color: ${siteConfig.styling.footerLinkColor || '#3498db'};
                     }
+                    header nav a.active {
+                        color: var(--header-link-hover-color); /* Active link styling */
+                        text-decoration: underline;
+                    }
 
-                    header {
-                        background-color: var(--header-bg-color);
-                    }
-                    header h1 {
-                         color: var(--header-text-color);
-                    }
-                    header p {
-                         color: var(--header-description-color);
-                    }
-                    footer {
-                        background-color: var(--footer-bg-color);
-                        color: var(--footer-text-color);
-                    }
-                    footer a {
-                        color: var(--footer-link-color);
-                    }
                 `;
                 document.head.appendChild(styleElement);
 
@@ -939,7 +918,7 @@
             } catch (error) {
                 console.error("博客初始化失败:", error);
                 document.title = "错误 - 博客";
-                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
+                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${window.location.protocol}//${window.location.host}${basePath ? `/${basePath}` : ''}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
                 blogContentDiv.style.display = 'block';
             } finally {
                 loadingDiv.style.display = 'none';
@@ -953,7 +932,7 @@
             // Fix for home navigation to truly remove hash
             document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
                 e.preventDefault();
-                const cleanUrl = window.location.origin + window.location.pathname;
+                const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
                 if (window.location.href !== cleanUrl) {
                     window.location.replace(cleanUrl); // Replace current history entry
                 } else {
