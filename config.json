@@ -12,7 +12,7 @@
   },
   "gitalk": {
     "enabled": true,
-    "clientID": "https://pkq66882.github.io/ceishi",
+    "clientID": "https://pkq66882.github.io/ceishi/index.html",
     "clientSecret": "Ov23liaX5BLdnJj0nYD7",
     "repo": "ceishi",
     "owner": "pkq66882",
