@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正在加载博客...</title>
+    <meta name="description" content="一个由GitHub驱动的现代化半静态博客">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' font-size='90' text-anchor='middle' dominant-baseline='central'%3E✍%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Highlight.js (代码高亮) CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <!-- Dark Mode version of Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" media="(prefers-color-scheme: dark), (data-theme: dark)">
+
+    <!-- Gitalk (评论系统) CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+    <style>
+        /* ==================== CSS 变量及基础样式 ==================== */
+        :root {
+            --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            --font-heading: 'Merriweather', serif;
+            --font-mono: Menlo, Monaco, Consolas, "Courier New", monospace;
+
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --heading-color: #343a40;
+            --accent-color: #0d6efd;
+            --accent-light: #52a3ff;
+            --link-hover-color: #0a58ca;
+            --border-color: #e9ecef;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* 更明显的阴影 */
+            --meta-color: #6c757d;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+
+            /* Dark Mode Variables (默认值，通过JS切换) */
+            --dark-bg-color: #282c35;
+            --dark-text-color: #abb2bf;
+            --dark-heading-color: #e0e6ed;
+            --dark-accent-color: #5d9eef;
+            --dark-link-hover-color: #8daaea;
+            --dark-border-color: #3e4451;
+            --dark-card-bg: #343a47;
+            --dark-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            --dark-meta-color: #9cb3ce;
+        }
+
+        /* Dark Mode 通过 data-theme 属性切换 */
+        [data-theme="dark"] {
+            --bg-color: var(--dark-bg-color);
+            --text-color: var(--dark-text-color);
+            --heading-color: var(--dark-heading-color);
+            --accent-color: var(--dark-accent-color);
+            --link-hover-color: var(--dark-link-hover-color);
+            --border-color: var(--dark-border-color);
+            --card-bg: var(--dark-card-bg);
+            --card-shadow: var(--dark-card-shadow);
+            --meta-color: var(--dark-meta-color);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            transition: background-color .3s, color .3s;
+            display: flex; /* 便于页脚固定或全屏加载 */
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: color .2s ease-in-out;
+        }
+        a:hover { color: var(--link-hover-color); }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-heading);
+            color: var(--heading-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.8em;
+            line-height: 1.25;
+            font-weight: 700;
+        }
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; }
+        h3 { font-size: 1.75rem; }
+        h4 { font-size: 1.5rem; }
+
+        .container {
+            max-width: 960px; /* 略微扩大容器宽度 */
+            margin: 0 auto;
+            padding: 1.5rem; /* 增加内边距 */
+            background-color: transparent;
+            box-shadow: none;
+            flex-grow: 1; /* 让内容区域占据大部分空间 */
+        }
+
+        /* ==================== 头部及导航 ==================== */
+        .header {
+            background-color: var(--card-bg);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .site-title {
+            font-size: 2.8rem; /* 增大标题 */
+            margin: 0;
+            color: var(--heading-color);
+            font-family: var(--font-heading);
+            line-height: 1.1;
+        }
+        .site-title a { color: inherit; text-decoration: none; }
+        .site-description {
+            font-size: 1.1rem;
+            margin: 10px 0 0;
+            color: var(--meta-color);
+            max-width: 700px;
+        }
+
+        .main-nav {
+            margin-top: 1.5rem;
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap; /* 适配小屏幕 */
+            justify-content: center;
+            gap: 1.5rem; /* 增加间隔 */
+        }
+        .main-nav-item a {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--heading-color);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color .2s, color .2s;
+        }
+        .main-nav-item a:hover, .main-nav-item a.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .theme-switcher {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            background: var(--card-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--card-shadow);
+            transition: background-color .2s;
+            border: 1px solid var(--border-color);
+        }
+        .theme-switcher:hover {
+            opacity: 0.8;
+        }
+        .theme-switcher svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-color);
+            transition: fill .2s;
+        }
+
+        /* ==================== 文章列表 ==================== */
+        .posts-list-view {
+            padding-top: 1rem;
+        }
+
+        .post-card {
+            background-color: var(--card-bg);
+            margin-bottom: 2rem;
+            padding: 2rem;
+            border-radius: 10px; /* 更圆润的边角 */
+            box-shadow: var(--card-shadow);
+            transition: transform .3s ease, box-shadow .3s ease; /* 添加transform动画 */
+            display: flex;
+            flex-direction: column;
+        }
+        .post-card:hover {
+            transform: translateY(-5px); /* 悬浮上移效果 */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); /* 悬浮阴影增强 */
+        }
+        .post-card-header {
+            margin-bottom: 1.5rem;
+        }
+        .post-card-title {
+            margin: 0 0 10px;
+            font-size: 2rem; /* 增大列表文章标题 */
+            line-height: 1.3;
+        }
+        .post-card-title a {
+            color: var(--heading-color);
+            text-decoration: none;
+            transition: color .2s;
+        }
+        .post-card-title a:hover {
+            color: var(--accent-color);
+        }
+        .post-meta {
+            font-size: 0.9rem;
+            color: var(--meta-color);
+            line-height: 1.5;
+        }
+        .post-meta span {
+            margin-right: 10px;
+        }
+        .post-summary {
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+            word-break: break-word;
+            flex-grow: 1; /* 让摘要占据可用空间 */
+        }
+        .post-summary p:last-of-type { margin-bottom: 0; }
+        .post-summary img { display: none; /* 列表摘要不显示图片，或显示小图 */ }
+
+        .post-images-preview {
+            display: grid;
+            grid-gap: 12px; /* 增加图片间隔 */
+            margin-bottom: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* 更大的预览图 */
+        }
+        .post-images-preview img {
+            width: 100%;
+            height: 140px; /* 增大预览图高度 */
+            object-fit: cover;
+            border-radius: 8px; /* 更圆润的边角 */
+            transition: transform .2s ease;
+        }
+        .post-images-preview img:hover {
+            transform: scale(1.05); /* 悬浮放大效果 */
+        }
+
+        .read-more-btn {
+            display: inline-block;
+            padding: 10px 20px; /* 增大按钮面积 */
+            background-color: var(--accent-color);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color .2s ease;
+            align-self: flex-start; /* 按钮靠左 */
+        }
+        .read-more-btn:hover {
+            background-color: var(--link-hover-color);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ==================== 文章详情页 ==================== */
+        #post-detail-view {
+            display: none;
+            background-color: var(--card-bg);
+            padding: 2.5rem; /* 增加内边距 */
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+        }
+        .post-full-header {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center; /* 标题居中 */
+        }
+        .post-full-title {
+            font-size: 3rem; /* 详情页标题更大 */
+            color: var(--heading-color);
+            margin: 0 0 1.2rem;
+            line-height: 1.2;
+        }
+        .post-full-meta {
+            font-size: 1rem;
+            color: var(--meta-color);
+            margin: 0.5rem 0;
+        }
+        .post-full-meta span {
+            margin: 0 8px;
+        }
+
+        .post-full-content {
+            font-size: 1.1rem; /* 内容字体稍大 */
+            line-height: 1.8;
+            word-wrap: break-word;
+            max-width: 760px; /* 限制内容宽度，提高可读性 */
+            margin: 0 auto;
+        }
+        .post-full-content h1, .post-full-content h2, .post-full-content h3, .post-full-content h4, .post-full-content h5, .post-full-content h6 {
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+        }
+        .post-full-content p { margin-bottom: 1.5rem; }
+        .post-full-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 2rem 0;
+            display: block; /* 保证图片独占一行 */
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* 图片阴影 */
+        }
+        .post-full-content ul, .post-full-content ol {
+            margin-left: 25px;
+            margin-bottom: 1.5rem;
+            padding-left: 0;
+        }
+        .post-full-content li {
+            margin-bottom: 0.5rem;
+        }
+        .post-full-content blockquote {
+            margin: 2rem 0;
+            padding: 0.5rem 1.5rem;
+            border-left: 5px solid var(--accent-color);
+            color: var(--meta-color);
+            background-color: rgba(var(--accent-color-rgb, 13, 110, 253), 0.05); /* 稍微带点颜色的背景 */
+            border-radius: 5px;
+            font-style: italic;
+        }
+        .post-full-content blockquote p { margin-bottom: 0.5rem; }
+        .post-full-content code {
+            font-family: var(--font-mono);
+            background-color: var(--border-color);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .post-full-content pre {
+            background-color: #282c34; /* For light theme, Highlight.js dark theme overrides this */
+            color: #abb2bf;
+            padding: 1.2rem 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            margin: 2.5rem 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 代码块阴影 */
+        }
+
+        /* Gitalk 样式覆盖 */
+        #gitalk-container {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px dashed var(--border-color);
+            background-color: var(--card-bg); /* 与文章详情背景一致 */
+            border-radius: 10px;
+        }
+        [data-theme="dark"] #gitalk-container {
+            background-color: var(--dark-card-bg);
+            color: var(--dark-text-color);
+            border-color: var(--dark-border-color);
+        }
+        /* 评论区标题 */
+        #gitalk-container .gt-header-comment {
+            color: var(--heading-color) !important;
+            border-bottom-color: var(--border-color) !important;
+        }
+        #gitalk-container .gt-btn {
+            background-color: var(--accent-color) !important;
+            border-color: var(--accent-color) !important;
+            color: white !important;
+        }
+        #gitalk-container .gt-btn:hover {
+            background-color: var(--link-hover-color) !important;
+            border-color: var(--link-hover-color) !important;
+        }
+        #gitalk-container .gt-btn.gt-btn-text {
+            color: var(--accent-color) !important;
+        }
+        #gitalk-container .gt-btn.gt-btn-text:hover {
+            color: var(--link-hover-color) !important;
+        }
+        #gitalk-container .gt-user .gt-ico svg path {
+            fill: var(--accent-color) !important; /* Gitalk图标颜色 */
+        }
+        #gitalk-container .gt-popup .gt-popup-body {
+            background-color: var(--card-bg) !important;
+            border-color: var(--border-color) !important;
+        }
+        #gitalk-container .gt-popup .gt-popup-body a {
+            color: var(--accent-color) !important;
+        }
+
+        .back-to-home {
+            display: inline-block;
+            margin-top: 3rem;
+            padding: 10px 20px;
+            background-color: var(--meta-color);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: background-color .2s;
+            float: left; /* 与评论区居中对齐 */
+        }
+        .back-to-home:hover { background-color: #5a6268; }
+
+        /* ==================== 分页和搜索 ==================== */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 3rem;
+            gap: 10px;
+        }
+        .pagination button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color .2s;
+            font-size: 0.95rem;
+        }
+        .pagination button:hover:not(:disabled) {
+            background-color: var(--link-hover-color);
+        }
+        .pagination button:disabled {
+            background-color: var(--meta-color);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .pagination span {
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .search-container input {
+            width: 100%;
+            max-width: 600px;
+            padding: 12px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            transition: border-color .2s;
+        }
+        .search-container input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb, 13, 110, 253), 0.25);
+        }
+
+        /* ==================== Loader ==================== */
+        #loader {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        .spinner {
+            border: 8px solid var(--border-color);
+            border-top: 8px solid var(--accent-color);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ==================== 底部 ==================== */
+        .site-footer {
+            text-align: center;
+            padding: 2.5rem 0;
+            margin-top: 3rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--meta-color);
+            font-size: 0.95rem;
+        }
+
+        /* ==================== 'About' 和 'Tags/Categories' 页面 ==================== */
+        .page-content {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            max-width: 840px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .page-content h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+        }
+        .tags-list, .categories-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            list-style: none;
+            padding: 0;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+        .tags-list li a, .categories-list li a {
+            display: inline-block;
+            background-color: var(--border-color);
+            color: var(--text-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: background-color .2s, color .2s;
+        }
+        .tags-list li a:hover, .categories-list li a:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        /* 当没有文章时居中 */
+        .no-posts-message {
+            text-align: center;
+            color: var(--meta-color);
+            font-size: 1.1rem;
+            padding: 50px 0;
+        }
+        
+        /* ============== GitHub Corner ============== */
+        .github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}
+
+        /* ==================== 响应式设计 ==================== */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .header { padding: 1rem; margin-bottom: 1.5rem; border-radius: 0; }
+            .site-title { font-size: 2rem; }
+            .site-description { font-size: 0.9rem; }
+            .main-nav { margin-top: 1rem; padding-top: 1rem; gap: 0.8rem; }
+            .main-nav-item a { padding: 0.4rem 0.8rem; font-size: 0.9rem; }
+            .theme-switcher { top: 1rem; right: 1rem; width: 25px; height: 25px; }
+            .theme-switcher svg { width: 18px; height: 18px; }
+
+            .post-card { padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px; }
+            .post-card-title { font-size: 1.5rem; }
+            .post-meta { font-size: 0.8rem; }
+            .post-summary { font-size: 0.95rem; }
+            .post-images-preview { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); grid-gap: 8px; }
+            .post-images-preview img { height: 100px;}
+            .read-more-btn { padding: 8px 16px; font-size: 0.9rem; }
+
+            #post-detail-view { padding: 1.5rem; border-radius: 8px; }
+            .post-full-header { margin-bottom: 1.5rem; padding-bottom: 1rem; }
+            .post-full-title { font-size: 2.2rem; }
+            .post-full-meta { font-size: 0.85rem; }
+            .post-full-content { font-size: 1rem; line-height: 1.7; max-width: 100%; }
+            .post-full-content img { margin: 1.5rem 0; }
+            .post-full-content blockquote { margin: 1.5rem 0; padding: 0.5rem 1rem; }
+            .post-full-content pre { padding: 1rem; margin: 1.5rem 0; }
+
+            .back-to-home { margin-top: 2rem; padding: 8px 16px; font-size: 0.9rem; }
+            .search-container input { padding: 10px 15px; font-size: 0.9rem; }
+            .page-content { padding: 1.5rem; border-radius: 8px; }
+            .page-content h2 { font-size: 2rem; }
+            .tags-list li a, .categories-list li a { padding: 6px 12px; font-size: 0.85rem; }
+        }
+        
+        @media (max-width: 480px) {
+            .site-title { font-size: 1.8rem; }
+            .post-card-title { font-size: 1.3rem; }
+            .post-full-title { font-size: 2rem; }
+            .post-images-preview { grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); } /* 在更小屏幕上再缩小图片 */
+            .post-images-preview img { height: 80px;}
+            .main-nav { justify-content: space-around; }
+            .theme-switcher { display: none; /* 移动端可以隐藏，或放到导航里 */ }
+        }
+    </style>
+</head>
+<body>
+    <!-- GitHub Corner (可选，用于链接到你的GitHub项目) -->
+    <a href="https://github.com/your-github-username/your-blog-repo" class="github-corner" aria-label="View source on GitHub" target="_blank">
+        <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.7,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.2,117.8 L128.3,109.0 L130.6,101.9 L130.6,101.9 L133.1,109.1 L135.3,113.6 L128.3,109.0 C125.7,112.2 119.7,115.9 116.2,118.1 C113.9,119.5 110.9,120.8 109.0,121.8 L97.2,125.5 C95.9,125.9 94.0,125.4 92.5,124.7 L87.5,122.2 C86.2,121.5 83.1,119.1 82.1,117.1 C80.1,112.3 79.9,110.1 79.9,110.1 C77.5,108.8 77.1,111.9 77.1,111.9 C77.1,112.5 77.2,114.2 78.5,116.0 C79.8,118.4 82.0,120.9 84.7,123.2 C87.8,125.5 90.8,127.2 93.9,128.7 C96.6,130.0 99.6,131.0 102.4,131.7 C105.7,132.6 109.0,133.3 112.2,133.3 C116.4,133.3 120.4,132.0 123.4,129.8 C126.5,127.6 127.7,124.7 127.7,124.7 C127.7,124.7 123.9,120.5 120.9,118.8 C118.8,117.6 114.9,115.1 115.0,115.0 Z" fill="currentColor" class="octo-body"></path>
+        </svg>
+    </a>
+
+    <!-- Initial Loading Spinner -->
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="site-title"><a href="#"></a></h1>
+            <p class="site-description"></p>
+            
+            <nav class="main-nav">
+                <div class="main-nav-item"><a href="#/" class="active" data-route="home">首页</a></div>
+                <div class="main-nav-item"><a href="#/tags" data-route="tags">标签</a></div>
+                <div class="main-nav-item"><a href="#/categories" data-route="categories">分类</a></div>
+                <div class="main-nav-item"><a href="#/about" data-route="about">关于我</a></div>
+                 <!-- 主题切换按钮 -->
+                <button id="theme-switcher" class="theme-switcher" title="切换主题">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div id="home-view">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="搜索文章...">
+                </div>
+                <div id="posts-list-view" class="posts-list-view">
+                    <p class="no-posts-message">正在加载文章...</p>
+                </div>
+                <div id="pagination" class="pagination" style="display: none;">
+                    <button id="prev-page-btn" disabled>&larr; 上一页</button>
+                    <span id="page-info"></span>
+                    <button id="next-page-btn" disabled>下一页 &rarr;</button>
+                </div>
+            </div>
+
+            <div id="post-detail-view" style="display: none;">
+                <!-- 文章详情将在此处渲染 -->
+                <div id="post-full-content-wrapper"></div>
+                <div id="gitalk-container"></div> <!-- Gitalk 评论容器 -->
+                <a href="#" class="back-to-home">&larr; 返回</a>
+            </div>
+
+            <div id="tags-view" class="page-content" style="display: none;">
+                <h2>所有标签</h2>
+                <ul id="tags-list" class="tags-list"></ul>
+            </div>
+
+            <div id="categories-view" class="page-content" style="display: none;">
+                <h2>所有分类</h2>
+                <ul id="categories-list" class="categories-list"></ul>
+            </div>
+
+            <div id="about-view" class="page-content" style="display: none;">
+                <h2>关于我</h2>
+                <div id="about-content">
+                    <p>这里是关于我的介绍页面。可以在 `config.json` 或单独的 `about.md` 文件中编辑此内容。</p>
+                    <p>欢迎探索我的博客，了解更多技术分享和个人心得。</p>
+                </div>
+                <h3>留言与投稿</h3>
+                <p>如果你有任何问题或想分享你的想法，欢迎通过以下方式与我联系：</p>
+                <ul>
+                    <li><a href="mailto:your_email@example.com">发送邮件给我</a></li>
+                    <li><a href="https://github.com/your-github-username/your-blog-repo/issues/new?assignees=&labels=feedback&projects=&template=feedback.md&title=反馈%3A " target="_blank">在GitHub上提交反馈/建议 (Issue)</a></li>
+                </ul>
+                <p>如果你想投稿文章，可以考虑以下方式：</p>
+                <ol>
+                    <li>在GitHub上 Fork 本项目，撰写你的文章 (Markdown 格式)，然后发送 Pull Request。</li>
+                    <li>如果你不熟悉 Git，可以通过发送邮件的方式，将 Markdown 格式的文章内容发送给我，我审核后会进行发布。</li>
+                    <li>**【高级功能，待未来实现】** 考虑集成一个轻量级的 Serverless Function 作为投稿接口，用户提交内容，后端将其转换为 Markdown 文件，并提交到 GitHub Repo。这将在不暴露您的 GitHub Token 的情况下实现更友好的用户投稿体验。</li>
+                </ol>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <p>&copy; <span id="current-year"></span> <a href="#" class="site-title-footer"></a>. All rights reserved.</p>
+            <p>Powered by <a href="https://github.com/" target="_blank">GitHub</a> & <a href="https://ai.rjdsq.com/" target="_blank">期望ai</a></p>
+        </footer>
+    </div>
+
+    <!-- 外部 JS 库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    
+    <script>
+        // ==================== 全局变量和工具函数 ====================
+        const b64_to_utf8 = (str) => {
+            try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch (e) { return atob(str); }
+        };
+
+        const getFileFromApi = async (owner, repo, path) => {
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+            const response = await fetch(url, { cache: "no-store", headers: { 'Accept': 'application/vnd.github.v3.raw' } }); // 直接请求原始内容
+            if (response.status === 404) return null; // 文件不存在
+            if (!response.ok) throw new Error(`无法从API获取文件: ${path} (HTTP ${response.status})`);
+            return response.text(); // 直接返回文本内容
+        };
+
+        // GitHub 仓库信息 (假设是用户.github.io 仓库)
+        const REPO_OWNER = window.location.hostname.split('.')[0];
+        const REPO_NAME = `${REPO_OWNER}.github.io`;
+        // 如果博客部署在子路径，例如 your-username.github.io/blog/
+        // 那么 basePath = 'blog'，文件路径会是 'blog/config.json'
+        const BASE_PATH = window.location.pathname.split('/').filter(p => p && p.toLowerCase() !== 'index.html').join('/');
+        const getAssetPath = (fileName) => BASE_PATH ? `${BASE_PATH}/${fileName}` : fileName;
+        const getAdminUrl = () => { // 获取 Admin 页面URL用于 footer 链接
+             const currentPathSegments = window.location.pathname.split('/').filter(p => p);
+             const adminFileName = 'admin.html';
+             if (currentPathSegments.length === 0) { // 根目录
+                 return `/${adminFileName}`;
+             }
+             if (currentPathSegments[currentPathSegments.length - 1].toLowerCase() === 'index.html') {
+                 currentPathSegments.pop(); // 移除 index.html
+             }
+             return `/${currentPathSegments.join('/')}/${adminFileName}`;
+        };
+
+        let allPosts = [];
+        let siteConfig = {};
+        let filteredPosts = []; // 用于搜索和筛选后的文章列表
+        let currentPage = 1;
+        const POSTS_PER_PAGE = 8; // 每页显示文章数量
+
+        // Markdown 渲染器配置
+        marked.setOptions({
+            gfm: true, // GitHub Flavored Markdown
+            breaks: true, // 启用换行符
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-', // highlight.js CSS类前缀
+        });
+
+        // ==================== DOM 元素缓存 ====================
+        const loader = document.getElementById('loader');
+        const blogTitleEl = document.querySelector('.site-title a');
+        const blogDescriptionEl = document.querySelector('.site-description');
+        const postsListView = document.getElementById('posts-list-view');
+        const postDetailView = document.getElementById('post-detail-view');
+        const postFullContentWrapper = document.getElementById('post-full-content-wrapper');
+        const homeView = document.getElementById('home-view');
+        const tagsView = document.getElementById('tags-view');
+        const categoriesView = document.getElementById('categories-view');
+        const aboutView = document.getElementById('about-view');
+        const mainNavItems = document.querySelectorAll('.main-nav-item a');
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const searchInput = document.getElementById('search-input');
+        const paginationContainer = document.getElementById('pagination');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageInfoSpan = document.getElementById('page-info');
+        const gitalkContainer = document.getElementById('gitalk-container');
+        const backToHomeBtn = document.querySelector('.back-to-home');
+        const currentYearSpan = document.getElementById('current-year');
+        const siteTitleFooter = document.querySelector('.site-title-footer');
+
+
+        // ==================== 主题切换功能 ====================
+        const applyTheme = (theme) => {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            const isDark = theme === 'dark';
+            themeSwitcher.innerHTML = isDark
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`
+                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+        };
+
+        const toggleTheme = () => {
+            const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+        };
+
+        themeSwitcher.addEventListener('click', toggleTheme);
+
+        // 初始化主题
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initialTheme = localStorage.getItem('theme') || (prefersDarkScheme ? 'dark' : 'light');
+        applyTheme(initialTheme);
+        // 更新CSS变量以支持Gitalk的自定义颜色
+        const updateCssVarsForGitalk = () => {
+             const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+             if (accentColor) {
+                // 尝试解析 accentColor 为 RGB 值，以便用于 rgba()
+                let rgb = accentColor;
+                if (accentColor.startsWith('#')) {
+                    const hex = accentColor.slice(1);
+                    const r = parseInt(hex.substring(0, 2), 16);
+                    const g = parseInt(hex.substring(2, 4), 16);
+                    const b = parseInt(hex.substring(4, 6), 16);
+                    rgb = `${r}, ${g}, ${b}`;
+                } else if (accentColor.startsWith('rgb')) {
+                    rgb = accentColor.match(/\d+/g).join(', ');
+                }
+                document.documentElement.style.setProperty('--accent-color-rgb', rgb);
+             }
+        };
+
+
+        // ==================== 页面渲染函数 ====================
+
+        /**
+         * 渲染文章列表。支持搜索和分页。
+         * @param {Array} postsToRender - 要渲染的文章数组。
+         * @param {number} page - 当前页码。
+         */
+        const renderPostList = (postsToRender = allPosts, page = 1) => {
+            // 切换视图
+            homeView.style.display = 'block';
+            postsListView.style.display = 'block';
+            postDetailView.style.display = 'none';
+            tagsView.style.display = 'none';
+            categoriesView.style.display = 'none';
+            aboutView.style.display = 'none';
+
+            // 激活导航栏
+            mainNavItems.forEach(item => item.classList.remove('active'));
+            document.querySelector('[data-route="home"]').classList.add('active');
+            
+            postsListView.innerHTML = '';
+            
+            if (postsToRender.length === 0) {
+                postsListView.innerHTML = '<p class="no-posts-message">暂无匹配文章。</p>';
+                paginationContainer.style.display = 'none';
+                document.title = siteConfig.site.title || '博客'; // 搜索无结果时恢复主标题
+                return;
+            }
+
+            // 排序文章
+            postsToRender.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            // 分页逻辑
+            const totalPages = Math.ceil(postsToRender.length / POSTS_PER_PAGE);
+            currentPage = Math.min(Math.max(1, page), totalPages); // 确保页码在有效范围内
+
+            const start = (currentPage - 1) * POSTS_PER_PAGE;
+            const end = start + POSTS_PER_PAGE;
+            const paginatedPosts = postsToRender.slice(start, end);
+
+            paginatedPosts.forEach(post => {
+                const postEl = document.createElement('article');
+                postEl.className = 'post-card';
+                
+                // 提取摘要
+                let summaryHtml = '';
+                const moreMarker = '<!--more-->';
+                const postContentHtml = marked.parse(DOMPurify.sanitize(post.content || '')); // Markdown to HTML
+                const markerIndex = postContentHtml.indexOf(moreMarker);
+
+                if (markerIndex !== -1) {
+                    summaryHtml = postContentHtml.substring(0, markerIndex);
+                } else {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = postContentHtml;
+                    summaryHtml = tempDiv.textContent.substring(0, 200) + (tempDiv.textContent.length > 200 ? '...' : '');
+                    // Sanitize the plain text summary to ensure no lingering HTML is injected
+                    summaryHtml = DOMPurify.sanitize(summaryHtml, { USE_PROFILES: { html: false } });
+                }
+                
+                // 提取图片（最多3张）
+                const tempDivForImages = document.createElement('div');
+                tempDivForImages.innerHTML = postContentHtml; // 直接使用解析后的HTML来提取，更准确
+                const images = Array.from(tempDivForImages.querySelectorAll('img')).map(img => img.src).slice(0, 3);
+                let imagesHtml = '';
+                if (images.length > 0) {
+                    imagesHtml += '<div class="post-images-preview">';
+                    images.forEach(imgUrl => { imagesHtml += `<img src="${imgUrl}" alt="Post image preview">`; });
+                    imagesHtml += '</div>';
+                }
+                
+                postEl.innerHTML = `
+                    <header class="post-card-header">
+                        <h2 class="post-card-title"><a href="#/post/${post.id}">${post.title}</a></h2>
+                        <p class="post-meta">
+                            <span>发布于 <time datetime="${post.createdAt}">${new Date(post.createdAt).toLocaleDateString()}</time></span>
+                            ${post.tags && post.tags.length > 0 ? `<span>标签: ${post.tags.map(tag => `<a href="#/tags/${encodeURIComponent(tag)}">${DOMPurify.sanitize(tag)}</a>`).join(', ')}</span>` : ''}
+                            ${post.category ? `<span>分类: <a href="#/categories/${encodeURIComponent(post.category)}">${DOMPurify.sanitize(post.category)}</a></span>` : ''}
+                        </p>
+                    </header>
+                    <div class="post-summary">${summaryHtml}</div>
+                    ${imagesHtml}
+                    <a href="#/post/${post.id}" class="read-more-btn">阅读全文 &rarr;</a>
+                `;
+                postsListView.appendChild(postEl);
+            });
+
+            // 更新分页UI
+            paginationContainer.style.display = totalPages > 1 ? 'flex' : 'none';
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+            pageInfoSpan.textContent = `第 ${currentPage} / ${totalPages} 页`;
+
+            document.title = siteConfig.site.title || '博客'; // 重置页面标题
+        };
+
+        /**
+         * 渲染单篇文章详情页。
+         * @param {string} postId - 文章ID。
+         */
+        const renderSinglePost = (postId) => {
+            const post = allPosts.find(p => p.id === postId);
+
+            // 切换视图
+            homeView.style.display = 'none';
+            postsListView.style.display = 'none';
+            postDetailView.style.display = 'block';
+            tagsView.style.display = 'none';
+            categoriesView.style.display = 'none';
+            aboutView.style.display = 'none';
+            // 确保导航项都未激活
+            mainNavItems.forEach(item => item.classList.remove('active'));
+
+            if (post) {
+                document.title = `${post.title} - ${siteConfig.site.title}`;
+                
+                const sanitizedContent = DOMPurify.sanitize(marked.parse(post.content || ''));
+
+                postFullContentWrapper.innerHTML = `
+                    <article class="post-full">
+                        <header class="post-full-header">
+                            <h1 class="post-full-title">${post.title}</h1>
+                            <p class="post-full-meta">
+                                <span>发布于 <time datetime="${post.createdAt}">${new Date(post.createdAt).toLocaleDateString()}</time></span>
+                                ${post.tags && post.tags.length > 0 ? `<span>标签: ${post.tags.map(tag => `<a href="#/tags/${encodeURIComponent(tag)}">${DOMPurify.sanitize(tag)}</a>`).join(', ')}</span>` : ''}
+                                ${post.category ? `<span>分类: <a href="#/categories/${encodeURIComponent(post.category)}">${DOMPurify.sanitize(post.category)}</a></span>` : ''}
+                            </p>
+                        </header>
+                        <section class="post-full-content">
+                            ${sanitizedContent}
+                        </section>
+                    </article>
+                `;
+
+                // 代码高亮
+                postFullContentWrapper.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+
+                // 初始化 Gitalk 评论
+                initGitalk(post);
+
+            } else {
+                document.title = `未找到文章 - ${siteConfig.site.title}`;
+                postFullContentWrapper.innerHTML = `
+                    <article class="post-full">
+                        <h1 class="post-full-title">404 - 未找到文章</h1>
+                        <p>抱歉，您要查找的文章不存在。</p>
+                    </article>
+                `;
+                gitalkContainer.innerHTML = ''; // 清空评论区
+            }
+        };
+
+        /**
+         * 渲染标签列表页。
+         */
+        const renderTagsPage = () => {
+            // 切换视图
+            homeView.style.display = 'none';
+            postsListView.style.display = 'none';
+            postDetailView.style.display = 'none';
+            tagsView.style.display = 'block';
+            categoriesView.style.display = 'none';
+            aboutView.style.display = 'none';
+            // 激活导航栏
+            mainNavItems.forEach(item => item.classList.remove('active'));
+            document.querySelector('[data-route="tags"]').classList.add('active');
+
+            document.title = `标签 - ${siteConfig.site.title}`;
+
+            const tagsSet = new Set();
+            allPosts.forEach(post => {
+                if (post.tags) {
+                    post.tags.forEach(tag => tagsSet.add(tag));
+                }
+            });
+
+            const tagsListEl = document.getElementById('tags-list');
+            tagsListEl.innerHTML = '';
+            if (tagsSet.size > 0) {
+                Array.from(tagsSet).sort().forEach(tag => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<a href="#/tags/${encodeURIComponent(tag)}">${DOMPurify.sanitize(tag)} (${allPosts.filter(p => p.tags && p.tags.includes(tag)).length})</a>`;
+                    tagsListEl.appendChild(li);
+                });
+            } else {
+                tagsListEl.innerHTML = '<p class="no-posts-message">暂无标签。</p>';
+            }
+        };
+
+        /**
+         * 渲染分类列表页。
+         */
+        const renderCategoriesPage = () => {
+            // 切换视图
+            homeView.style.display = 'none';
+            postsListView.style.display = 'none';
+            postDetailView.style.display = 'none';
+            tagsView.style.display = 'none';
+            categoriesView.style.display = 'block';
+            aboutView.style.display = 'none';
+            // 激活导航栏
+            mainNavItems.forEach(item => item.classList.remove('active'));
+            document.querySelector('[data-route="categories"]').classList.add('active');
+
+            document.title = `分类 - ${siteConfig.site.title}`;
+
+            const categoriesMap = new Map();
+            allPosts.forEach(post => {
+                if (post.category) {
+                    categoriesMap.set(post.category, (categoriesMap.get(post.category) || 0) + 1);
+                }
+            });
+
+            const categoriesListEl = document.getElementById('categories-list');
+            categoriesListEl.innerHTML = '';
+            if (categoriesMap.size > 0) {
+                Array.from(categoriesMap.keys()).sort().forEach(category => {
+                    const li = document.createElement('li');
+                    const count = categoriesMap.get(category);
+                    li.innerHTML = `<a href="#/categories/${encodeURIComponent(category)}">${DOMPurify.sanitize(category)} (${count})</a>`;
+                    categoriesListEl.appendChild(li);
+                });
+            } else {
+                categoriesListEl.innerHTML = '<p class="no-posts-message">暂无分类。</p>';
+            }
+        };
+
+        /**
+         * 渲染“关于我”页面。
+         */
+        const renderAboutPage = async () => {
+            // 切换视图
+            homeView.style.display = 'none';
+            postsListView.style.display = 'none';
+            postDetailView.style.display = 'none';
+            tagsView.style.display = 'none';
+            categoriesView.style.display = 'none';
+            aboutView.style.display = 'block';
+            // 激活导航栏
+            mainNavItems.forEach(item => item.classList.remove('active'));
+            document.querySelector('[data-route="about"]').classList.add('active');
+            
+            document.title = `关于我 - ${siteConfig.site.title}`;
+
+            const aboutContentEl = document.getElementById('about-content');
+            aboutContentEl.innerHTML = '<p>正在加载...</p>'; // 显示加载提示
+
+            let aboutMarkdown = siteConfig.site.aboutContent || null; // 优先从config.json读取
+
+            if (!aboutMarkdown) {
+                try {
+                    // 尝试从 about.md 文件加载
+                    aboutMarkdown = await getFileFromApi(REPO_OWNER, REPO_NAME, getAssetPath('about.md'));
+                } catch (error) {
+                    console.warn("未找到 about.md 文件或加载失败。", error);
+                    aboutMarkdown = `
+# 关于我
+
+这是一个由 GitHub Pages 驱动的博客。
+
+您可以在博客管理后台的 "网站设置" 中配置 "关于我" 页面的内容，或者在存储库根目录（或子目录 ${BASE_PATH || '.'}）下创建一个名为 \`about.md\` 的文件来定义此页面内容。
+
+---
+
+**联系方式:**
+
+*   邮箱: your_email@example.com
+*   GitHub: [${REPO_OWNER}](https://github.com/${REPO_OWNER})
+
+期待与您的交流！
+                    `;
+                }
+            }
+            
+            if (aboutMarkdown) {
+                // 将 Markdown 转换为 HTML 并净化
+                const sanitizedHtml = DOMPurify.sanitize(marked.parse(aboutMarkdown));
+                aboutContentEl.innerHTML = sanitizedHtml;
+                // 对关于我页面中的代码块进行高亮
+                aboutContentEl.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            } else {
+                aboutContentEl.innerHTML = '<p>关于我的内容未设置。</p>';
+            }
+        };
+
+        // ==================== 路由处理 ====================
+        const handleRoute = async () => {
+            // 隐藏所有视图
+            homeView.style.display = 'none';
+            postDetailView.style.display = 'none';
+            tagsView.style.display = 'none';
+            categoriesView.style.display = 'none';
+            aboutView.style.display = 'none';
+
+            // 重置搜索框
+            searchInput.value = '';
+            filteredPosts = allPosts; // 每次路由切换重置筛选
+
+            const hash = window.location.hash;
+            if (hash.startsWith('#/post/')) {
+                const postId = hash.substring(7);
+                await renderSinglePost(postId);
+            } else if (hash.startsWith('#/tags/')) {
+                const tag = decodeURIComponent(hash.substring(7));
+                filteredPosts = allPosts.filter(post => post.tags && post.tags.includes(tag));
+                renderPostList(filteredPosts);
+                document.title = `标签: ${tag} - ${siteConfig.site.title}`;
+                // 高亮'标签'导航项
+                mainNavItems.forEach(item => item.classList.remove('active'));
+                document.querySelector('[data-route="tags"]').classList.add('active');
+            } else if (hash.startsWith('#/categories/')) {
+                const category = decodeURIComponent(hash.substring(13));
+                filteredPosts = allPosts.filter(post => post.category === category);
+                renderPostList(filteredPosts);
+                document.title = `分类: ${category} - ${siteConfig.site.title}`;
+                 // 高亮'分类'导航项
+                mainNavItems.forEach(item => item.classList.remove('active'));
+                document.querySelector('[data-route="categories"]').classList.add('active');
+            } else if (hash === '#/tags') {
+                renderTagsPage();
+            } else if (hash === '#/categories') {
+                renderCategoriesPage();
+            } else if (hash === '#/about') {
+                await renderAboutPage();
+            }
+            else { // 默认显示首页文章列表
+                renderPostList(allPosts.map(p => ({ ...p })), 1); // 传入 allPosts 的副本，避免修改原数组
+                document.title = siteConfig.site.title || '博客';
+            }
+            window.scrollTo(0, 0); // 每次路由切换滚动到顶部
+        };
+
+        // ==================== 搜索功能 ====================
+        searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            if (searchTerm === '') {
+                filteredPosts = allPosts;
+            } else {
+                filteredPosts = allPosts.filter(post =>
+                    post.title.toLowerCase().includes(searchTerm) ||
+                    post.content.toLowerCase().includes(searchTerm) ||
+                    (post.tags && post.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
+                    (post.category && post.category.toLowerCase().includes(searchTerm))
+                );
+            }
+            renderPostList(filteredPosts, 1); // 搜索后重置到第一页
+        });
+
+        // ==================== Gitalk 评论系统 ====================
+        let gitalkInstance = null;
+        const initGitalk = (post) => {
+            if (!post || !siteConfig.gitalk) { // 检查配置是否存在
+                gitalkContainer.innerHTML = '<p class="no-posts-message" style="border:none;padding:0;">评论系统未开启或未配置。</p>';
+                return;
+            }
+
+            // 确保 gitalkInstance 在每次文章切换时重新初始化或销毁
+            if (gitalkInstance) {
+                gitalkInstance = null; // 释放旧实例
+                gitalkContainer.innerHTML = ''; // 清空容器
+            }
+
+            gitalkInstance = new Gitalk({
+                clientID: siteConfig.gitalk.clientID,
+                clientSecret: siteConfig.gitalk.clientSecret,
+                repo: siteConfig.gitalk.repo, // 你的 GitHub 仓库名
+                owner: siteConfig.gitalk.owner, // GitHub 仓库所有者
+                admin: siteConfig.gitalk.admin, // 仓库的管理员，可以是数组
+                id: post.id,   // 文章 ID，确保唯一性，建议使用 `post.id`
+                title: post.title, // 文章标题
+                body: `${window.location.href}\n\n${post.summaryHtml || post.title}`, // 评论 Issue 的内容
+                distractionFreeMode: false, // 沉浸式模式
+                language: 'zh-CN', // 语言
+            });
+
+            gitalkInstance.render('gitalk-container');
+        };
+
+        // ==================== 初始化函数 ====================
+        const initializeBlog = async () => {
+             // GitHub Corner 链接替换
+            const githubCorner = document.querySelector('.github-corner');
+            if (githubCorner) {
+                githubCorner.href = `https://github.com/${REPO_OWNER}/${REPO_NAME}`;
+            }
+
+            try {
+                // 1. 加载博客配置
+                const configContent = await getFileFromApi(REPO_OWNER, REPO_NAME, getAssetPath('config.json'));
+                if (!configContent) throw new Error("config.json 文件未找到或为空。");
+                siteConfig = JSON.parse(configContent);
+
+                // 2. 应用网站配置
+                document.title = siteConfig.site.title || '我的博客';
+                blogTitleEl.textContent = siteConfig.site.title || '我的博客';
+                blogDescriptionEl.textContent = siteConfig.site.description || '一个简洁的博客';
+                siteTitleFooter.textContent = siteConfig.site.title || '我的博客';
+
+                const { backgroundColor, textColor, accentColor, backgroundImageUrl } = siteConfig.styling;
+                if (backgroundColor) document.documentElement.style.setProperty('--bg-color', backgroundColor);
+                if (textColor) document.documentElement.style.setProperty('--text-color', textColor);
+                if (accentColor) document.documentElement.style.setProperty('--accent-color', accentColor);
+                if (backgroundImageUrl) {
+                    document.body.style.backgroundImage = `url(${backgroundImageUrl})`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
+                    document.body.style.backgroundAttachment = 'fixed';
+                } else {
+                    document.body.style.backgroundImage = 'none';
+                }
+                updateCssVarsForGitalk(); // 更新与accent-color相关的CSS变量
+
+                // 3. 加载文章数据
+                const postsContent = await getFileFromApi(REPO_OWNER, REPO_NAME, getAssetPath('posts.json'));
+                if (!postsContent) {
+                    allPosts = [];
+                    postsListView.innerHTML = '<p class="no-posts-message">暂无文章。博客即将开启！</p>';
+                } else {
+                    allPosts = JSON.parse(postsContent);
+                }
+                // 为所有文章添加 category 属性，如果缺失的话
+                allPosts.forEach(post => {
+                    if (!post.category) {
+                        // 尝试从标签中提取第一个作为分类，或设置默认
+                        post.category = post.tags && post.tags.length > 0 ? post.tags[0] : '未分类';
+                    }
+                });
+
+                // 4. 设置当前年份
+                currentYearSpan.textContent = new Date().getFullYear();
+
+                // 5. 设置路由事件监听并初始化路由
+                window.addEventListener('hashchange', handleRoute);
+                handleRoute();
+
+                // 6. 绑定分页按钮事件
+                prevPageBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        window.location.hash = '#/'; // 回到首页路由，但保留页码信息
+                        renderPostList(filteredPosts, currentPage - 1);
+                    }
+                });
+                nextPageBtn.addEventListener('click', () => {
+                    const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+                    if (currentPage < totalPages) {
+                        window.location.hash = '#/'; // 回到首页路由，但保留页码信息
+                        renderPostList(filteredPosts, currentPage + 1);
+                    }
+                });
+
+            } catch (error) {
+                console.error("博客初始化失败:", error);
+                document.title = '博客加载失败';
+                blogTitleEl.textContent = '博客加载失败';
+                blogDescriptionEl.textContent = '出现了一个错误';
+                postsListView.innerHTML = `<p class="no-posts-message"><b>错误:</b> ${error.message}。</p><p class="no-posts-message">请确认仓库配置正确，并已发布文章和设置 Gitalk。</p>`;
+            } finally {
+                // 确保加载动画消失
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', initializeBlog);
+    </script>
+</body>
+</html>
