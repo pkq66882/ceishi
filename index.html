@@ -294,7 +294,7 @@
         }
         /* Highlight.js code color variables needed for dark theme */
         .hljs {
-            background: #282c34 !important; /* Overwrite github-dark bg to match our pre */
+            background: #282c34 !important; 
             color: #abb2bf !important;
         }
         .post-content code {
@@ -433,7 +433,7 @@
         .post-content ul, .post-content ol, .about-content ul, .about-content ol {
             padding-left: 20px;
             margin-left: 0;
-            list-style-position: inside; /* 项目符号在文本内部 */
+            list-style-position: inside; 
         }
         .post-content ul li, .about-content ul li {
             list-style-type: disc;
@@ -487,7 +487,7 @@
                 <h1 id="site-title"></h1>
                 <p id="site-description"></p>
                 <nav id="main-nav">
-                    <!-- href="#" 是为了让屏幕阅读器或JS禁用时有默认行为，实际路由由JS控制 -->
+                    <!-- 修正导航链接，通过JS处理点击，防止#的出现 -->
                     <a href="javascript:void(0);" class="nav-link active" data-route="home">首页</a>
                     <a href="javascript:void(0);" class="nav-link" data-route="about">关于我</a>
                     <!-- adminLinkEl 的 href 会在 initializeBlog 中设置 -->
@@ -539,7 +539,8 @@
             }
         };
 
-        const GitHubAPI_Frontend = { // 前端仅用于读取公开仓库的JSON，不需认证
+        // GitHubAPI_Frontend: 用于读取 raw.githubusercontent.com 上的公开文件
+        const GitHubAPI_Frontend = {
             async getRawFile(owner, repo, path) {
                 const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
                 console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
@@ -549,7 +550,6 @@
                 }
                 return response.json(); // 假设是 JSON 文件
             }
-            // 后端管理界面会使用 admin.html 里的 GitHubAPI，需要认证
         };
 
         const md = new markdownit({
@@ -563,7 +563,6 @@
                                hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
                                '</code></pre>';
                     } catch (__) {
-                        // fallback if highlight.js fails
                         console.warn('Highlight.js failed, falling back to basic escape.');
                     }
                 }
@@ -656,6 +655,7 @@
             const postListContainer = blogContentDiv.querySelector('.post-list');
 
             if (blogPosts.length === 0) {
+                // basePath 为空字符串时 href="/admin.html"，非空时为 "/{basePath}/admin.html"
                 postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1; font-weight: normal;">暂无文章。去<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
                 return;
             }
@@ -668,20 +668,14 @@
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
                 
-                const firstImageMatch = post.content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
-                let imageUrl = firstImageMatch ? firstImageMatch[1] : ''; 
-                // 确保图片 URL 经过代理，且只被代理一次
-                if (imageUrl) {
-                    if (!imageUrl.startsWith('https://gh-proxy.com/')) {
-                         imageUrl = `https://gh-proxy.com/${encodeURIComponent(imageUrl)}`;
-                    } else {
-                        // 如果已经代理过，也要确保路径部分正确编码，但不要重复代理前缀
-                        const urlAfterProxy = imageUrl.substring('https://gh-proxy.com/'.length);
-                        imageUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(urlAfterProxy))}`;
-                    }
-                }
+                // 提取文章中的第一张图片作为封面图
+                const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); // 匹配 ![alt](url)
+                let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; // 捕获组2是URL
+
+                // 统一图片 URL 处理逻辑
+                imageUrl = processImageUrlForDisplay(imageUrl);
                 
-                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${imageUrl}" alt="${post.title}" loading="lazy"></div>` : '';
+                const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${imageUrl}" alt="${firstImageMatch ? firstImageMatch[1] : post.title}" loading="lazy"></div>` : '';
 
                 postCard.innerHTML = `
                     ${imagePreviewHtml}
@@ -709,17 +703,11 @@
             }
 
             // 对文章内容进行 Markdown 渲染
+            // 确保渲染前，文章内容中的图片URL也被正确代理和编码
             let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
-                let proxiedUrl = url;
-                if (!proxiedUrl.startsWith('https://gh-proxy.com/')) {
-                    proxiedUrl = `https://gh-proxy.com/${encodeURIComponent(url)}`;
-                } else {
-                    const urlAfterProxy = proxiedUrl.substring('https://gh-proxy.com/'.length);
-                    proxiedUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(urlAfterProxy))}`;
-                }
-                return `![${alt}](${proxiedUrl})`;
+                const finalUrl = processImageUrlForDisplay(url);
+                return `![${alt}](${finalUrl})`;
             });
-
 
             blogContentDiv.innerHTML = `
                 <article class="post-full">
@@ -786,6 +774,34 @@
             gitalkContainerEl.style.display = 'none';
         };
 
+        // 处理图片URL，确保只代理一次且编码正确
+        const processImageUrlForDisplay = (rawUrl) => {
+            if (!rawUrl) return '';
+
+            let finalUrl = rawUrl;
+
+            // 1. 如果url已经包含gh-proxy，则剥离gh-proxy，然后重新编码和代理
+            if (finalUrl.startsWith('https://gh-proxy.com/')) {
+                // 解码gh-proxy后的URL部分，以获取原始URL
+                const urlAfterProxy = finalUrl.substring('https://gh-proxy.com/'.length);
+                try {
+                    finalUrl = decodeURIComponent(urlAfterProxy);
+                } catch (e) {
+                    console.warn("Could not decode part of image URL after gh-proxy:", e, urlAfterProxy);
+                    finalUrl = urlAfterProxy; // Fallback if decoding fails
+                }
+            }
+            
+            // 2. 重新添加gh-proxy并对整个“内部URL”进行编码
+            // 注意：encodeURIComponent 应该对完整的 raw.githubusercontent.com URL 进行，而不是部分
+            if (finalUrl) { // 避免空字符串被编码
+                finalUrl = `https://gh-proxy.com/${encodeURIComponent(finalUrl)}`;
+            }
+
+            return finalUrl;
+        };
+
+
         // ==================== 路由处理 ====================
         const handleRoute = () => {
             const path = window.location.hash.slice(1);
@@ -828,30 +844,40 @@
                 console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
 
                 const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`;
-                // 确保文件路径是相对于 basePath 的完整路径
-                const configRawUrl = `${rawBaseUrl}/${getFilePath('config.json')}`;
-                const postsRawUrl = `${rawBaseUrl}/${getFilePath('posts.json')}`;
-                
-                console.log(`[index.html] Attempting to fetch config.json from: ${configRawUrl}`);
-                console.log(`[index.html] Attempting to fetch posts.json from: ${postsRawUrl}`);
+                const configRawFilepath = getFilePath('config.json');
+                const postsRawFilepath = getFilePath('posts.json');
 
-                const fetchConfig = fetch(configRawUrl).then(res => {
-                    if (!res.ok) throw new Error(`无法加载 config.json (${res.status} ${res.statusText} from ${configRawUrl})`);
-                    return res.json();
-                });
-                const fetchPosts = fetch(postsRawUrl).then(res => {
-                    if (!res.ok) throw new Error(`无法加载 posts.json (${res.status} ${res.statusText} from ${postsRawUrl})`);
-                    return res.json();
-                });
+                console.log(`[index.html] Attempting to fetch config.json from: ${rawBaseUrl}/${configRawFilepath}`);
+                console.log(`[index.html] Attempting to fetch posts.json from: ${rawBaseUrl}/${postsRawFilepath}`);
+
+                const fetchConfig = GitHubAPI_Frontend.getRawFile(owner, repo, configRawFilepath);
+                const fetchPosts = GitHubAPI_Frontend.getRawFile(owner, repo, postsRawFilepath);
 
                 const [configJson, postsJson] = await Promise.all([fetchConfig, fetchPosts]);
 
-                if (!configJson || !postsJson || postsJson.length === 0) { 
+                if (!configJson || !postsJson || !Array.isArray(postsJson)) { // postsJson 必须是数组
                     throw new Error("博客核心文件 (config.json 或 posts.json) 未找到、为空或内容无效，请先前往管理后台初始化。");
                 }
 
                 siteConfig = configJson;
-                blogPosts = postsJson;
+                // 对 posts 中的图片 URL 进行预处理/标准化（存储为原始 raw.githubusercontent.com URL）
+                blogPosts = postsJson.map(post => {
+                    let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                        let processedUrl = url;
+                        // 如果 URL 已经包含 gh-proxy，就先剥离它，以便后续统一处理
+                        if (processedUrl.startsWith('https://gh-proxy.com/')) {
+                            const urlAfterProxy = processedUrl.substring('https://gh-proxy.com/'.length);
+                            try {
+                                processedUrl = decodeURIComponent(urlAfterProxy);
+                            } catch (e) {
+                                console.warn("Error decoding URL part:", e, urlAfterProxy);
+                            }
+                        }
+                        // 确保存储的是原始的 raw.githubusercontent.com 格式
+                        return `![${alt}](${processedUrl})`;
+                    });
+                    return { ...post, content: newContent };
+                });
 
                 const styleElement = document.createElement('style');
                 styleElement.textContent = `
@@ -859,7 +885,7 @@
                         background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
                         color: ${siteConfig.styling.textColor || '#212529'};
                         ${siteConfig.styling.backgroundImageUrl ? `
-                            background-image: url("https://gh-proxy.com/${encodeURIComponent(siteConfig.styling.backgroundImageUrl)}");
+                            background-image: url("${processImageUrlForDisplay(siteConfig.styling.backgroundImageUrl)}");
                             background-size: cover;
                             background-attachment: fixed;
                             background-position: center;
@@ -899,7 +925,7 @@
                 siteDescriptionEl.textContent = siteConfig.site.description || "一个由GitHub Pages驱动的现代化博客。";
                 
                 if (adminLinkEl) {
-                    adminLinkEl.href = `${basePath ? `/${basePath}` : ''}/admin.html`;
+                    adminLinkEl.href = `${window.location.origin}${basePath ? `/${basePath}` : ''}/admin.html`;
                 }
 
                 mainFooterEl.innerHTML = `
@@ -922,17 +948,12 @@
         window.addEventListener('hashchange', handleRoute);
         document.addEventListener('DOMContentLoaded', () => {
             initializeBlog(); 
-            // 修复首页和关于我导航链接的 href，使其在点击后保持正确的 basePath
             document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
                 e.preventDefault();
-                // 仅修改 hash，且确保 hash 为空时 URL 不会变成 example.com/#
-                // History API 更优雅，但为了兼容单文件，用 window.location.replace
-                if (window.location.hash !== '') {
-                    // 如果当前URL带hash了，则通过 replaceState 删除hash
-                    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-                }
-                // 强制触发路由处理，因为URL可能没变，但内容需要刷新
-                handleRoute(); 
+                // 导航到不带 hash 的基础 URL
+                window.location.assign(window.location.origin + window.location.pathname);
+                // 这里可能需要手动触发一次 handleRoute，因为 assign 可能不触发 hashchange
+                // 或者在加载后等待页面完全刷新
             });
             document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => {
                 e.preventDefault();
