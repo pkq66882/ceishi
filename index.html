@@ -144,6 +144,7 @@
             height: auto; /* Maintain aspect ratio */
             object-fit: cover; /* Crop to fill, maintain ratio */
             min-height: 100%; /* Ensure height fills */
+            max-height: 100%; /* Ensure max height */
         }
         .post-card-content {
             padding: 25px;
@@ -538,7 +539,8 @@
                 .replace(/\s+/g, '-')         // Replace spaces with -
                 .replace(/[^\p{L}\p{N}_\-.]/gu, '')     // Remove all non-alphanumeric, non-dash, non-dot, non-underscore (Unicode-aware)
                 .replace(/--+/g, '-')         // Replace multiple - with single -
-                .substring(0, 60);            // Limit length for safer IDs
+                .substring(0, 60)             // Limit length for safer IDs
+                .replace(/^[_\-.]+|[_\-.]+$/g, ''); // Remove leading/trailing non-alphanumeric
         };
 
         const md = new markdownit({
@@ -629,14 +631,13 @@
         // GitHubAPI_Frontend: Used for fetching public JSON files from raw.githubusercontent.com
         const GitHubAPI_Frontend = {
             async getRawFile(owner, repo, path) {
-                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}?r=${Date.now()}`; // Add cache-buster
+                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
                 console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
                 const response = await fetch(rawUrl);
                 if (!response.ok) {
                     // Specific handling for 404 for config.json/posts.json
                     if (response.status === 404) {
                         console.info(`File not found: ${rawUrl}. This is expected for initial setup.`);
-                        // Return default empty structures for 404 to avoid breaking initialization
                         return path === 'posts.json' ? [] : {}; 
                     }
                     throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
@@ -665,32 +666,48 @@
             // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
             if (urlToProcess.startsWith('https://gh-proxy.com/')) {
                 try {
-                    urlToProcess = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
+                    const decodedPart = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
+                    if (decodedPart.startsWith('https://raw.githubusercontent.com/') || decodedPart.startsWith('http')) {
+                        urlToProcess = decodedPart;
+                    } else {
+                        console.warn('URL was gh-proxy but decoded target seems invalid, keeping original for re-encoding:', urlToProcess);
+                        urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
+                    }
                 } catch (e) {
-                    console.warn('Failed to decode existing gh-proxy URL, using as is for further processing:', e, urlToProcess);
+                    console.warn('Failed to decode existing gh-proxy URL, processing the encoded part directly:', e, urlToProcess);
+                    urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
                 }
             }
 
-            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com),
-            // we will parse it, explicitly decode path components, then re-encode for the proxy.
+            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com)
             if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
                 try {
                     const urlObj = new URL(urlToProcess);
-                    // Explicitly decode the path and search components fully.
-                    // This handles cases where GitHub's download_url might return partially encoded URLs
-                    // or contain characters like '~' that were not directly percent-encoded by GitHub but need it for the proxy.
                     urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
                     urlObj.search = decodeURIComponent(urlObj.search);
                     urlToProcess = urlObj.toString();
                 } catch (e) {
-                    console.warn("URL parsing/decoding for path normalization failed, using raw URL for encoding:", e, urlToProcess);
+                    console.warn("URL parsing/decoding for path normalization failed, falling back to direct encoding:", e, urlToProcess);
                 }
-                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized) URL.
+                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized or original) URL.
                 return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
             }
 
-            // For any other URL (e.g., relative paths, data URIs, etc.), return as is.
+            console.warn("getProxiedImageUrl received a URL that wasn't an absolute HTTP/S or gh-proxy link, returning as is/empty:", inputUrl);
             return inputUrl; 
+        };
+
+        // Function to resolve relative image paths to full raw GitHub URLs
+        const resolveMarkdownImageUrl = (url, currentOwner, currentRepo) => {
+            if (!url) return '';
+            // If it's already an absolute HTTP/HTTPS URL, return it as is (for getProxiedImageUrl to process)
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return url;
+            }
+            // If it's a relative path (e.g., 'images/image.png' or '/images/image.png')
+            // Construct the raw.githubusercontent.com URL
+            let cleanPath = url.startsWith('/') ? url.substring(1) : url; // Remove leading "/"
+            return `https://raw.githubusercontent.com/${currentOwner}/${currentRepo}/main/${cleanPath}`;
         };
 
 
@@ -712,15 +729,18 @@
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
                 
-                // Extract first image from markdown (raw URL will be processed by getProxiedImageUrl for display)
-                const firstImageMatch = post.content.match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/); 
+                // Extract first image from markdown (now also handles relative paths better)
+                // Broader regex to capture any non-empty URL-like path
+                const firstImageMatch = post.content.match(/!\[(.*?)\]\((.+?)\)/); 
                 let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
                 let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
 
-                let imagePreviewHtml = '';
-                if (imageUrl) {
-                    imagePreviewHtml = `<div class="post-card-image"><img src="${getProxiedImageUrl(imageUrl)}" alt="${imageAlt}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'30\\' text-anchor=\\'middle\\' dominant-baseline=\\'central\\'%3E🖼️Error%3C/text%3E%3C/svg%3E';" /></div>`;
-                }
+                const resolvedImageUrl = resolveMarkdownImageUrl(imageUrl, owner, repo);
+                const proxiedImageUrl = getProxiedImageUrl(resolvedImageUrl);
+
+                const imagePreviewHtml = proxiedImageUrl ? 
+                                         `<div class="post-card-image"><img src="${proxiedImageUrl}" alt="${imageAlt}" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.style.opacity='0.5'; this.title='图片加载失败';"></div>` : 
+                                         '';
 
                 postCard.innerHTML = `
                     ${imagePreviewHtml}
@@ -748,8 +768,11 @@
             }
 
             // Standardize all image URLs within the post content for display
-            let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
-                return `![${alt}](${getProxiedImageUrl(url)})`;
+            let processedContent = post.content.replace(/!\[(.*?)\]\((.+?)\)/g, (match, alt, url) => {
+                 const resolved = resolveMarkdownImageUrl(url, owner, repo);
+                const proxied = getProxiedImageUrl(resolved);
+                // Add onerror to markdown images as well
+                return `![${alt}](${proxied})" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.style.opacity='0.5'; this.title='图片加载失败';"`;
             });
 
             blogContentDiv.innerHTML = `
@@ -771,10 +794,9 @@
                 gitalkContainerEl.innerHTML = '';
                 gitalkContainerEl.style.display = 'block';
 
-                // Use the global slugify function
-                const safePostId = slugify(post.id); 
-                const safeTitleSlug = slugify(post.title); 
-                const gitalkId = `${safeTitleSlug}-${safePostId}`.substring(0, 50); // GitHub issue titles have a length limit
+                const safePostId = slugify(post.id).slice(0, 20); 
+                const safeTitleSlug = slugify(post.title).slice(0, 30); 
+                const gitalkId = `${safeTitleSlug}-${safePostId}`; 
 
                 try {
                     const gitalk = new Gitalk({
@@ -783,10 +805,10 @@
                         repo: siteConfig.gitalk.repo,
                         owner: siteConfig.gitalk.owner,
                         admin: siteConfig.gitalk.admin,
-                        id: gitalkId, // Unique ID for the issue
+                        id: gitalkId,
                         distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
                         title: post.title,
-                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])].slice(0, 10), // Limit labels to 10
+                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])], 
                         body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
                         createIssueManually: false,
                         perPage: siteConfig.gitalk.perPage || 10,
@@ -876,47 +898,10 @@
                 if (!postsJson || !Array.isArray(postsJson)) { 
                     throw new Error("posts.json 文件未找到、为空或内容无效，请先前往管理后台初始化。");
                 }
-                
-                // Ensure default values for critical Gitalk config are present if not in configJson
-                if (!configJson.gitalk) {
-                    configJson.gitalk = {
-                        repo: repo, 
-                        owner: owner,
-                        admin: [owner],
-                        enabled: false,
-                        clientID: '',
-                        clientSecret: '',
-                        distractionFreeMode: false,
-                        labels: ['Gitalk', '评论'],
-                        perPage: 10,
-                    };
-                } else { // Merge with defaults to ensure all properties exist
-                    configJson.gitalk = {
-                        repo: repo, 
-                        owner: owner,
-                        admin: [owner], // Default admin if not specified or for fallback
-                        enabled: false,
-                        clientID: '',
-                        clientSecret: '',
-                        distractionFreeMode: false,
-                        labels: ['Gitalk', '评论'],
-                        perPage: 10,
-                        ...configJson.gitalk
-                    };
-                     if (!Array.isArray(configJson.gitalk.admin)) { // Ensure admin is array
-                        configJson.gitalk.admin = [configJson.gitalk.admin].filter(Boolean);
-                    }
-                     if (!configJson.gitalk.admin.includes(owner)) { // Add owner to admin if not present
-                         configJson.gitalk.admin.push(owner);
-                     }
-                     configJson.gitalk.admin = [...new Set(configJson.gitalk.admin)]; // Remove duplicates
-                }
-
 
                 siteConfig = configJson;
                 // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
                 blogPosts = postsJson.map(post => {
-                    // This step ensures any potentially proxied/double-encoded URLs from older saves are normalized to raw URLs.
                     let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
                         let originalUrl = url;
                         if (originalUrl.startsWith('https://gh-proxy.com/')) {
@@ -926,7 +911,7 @@
                                 console.warn("Error decoding URL part during post content normalization for storage:", e, originalUrl);
                             }
                         }
-                        return `![${alt}](${originalUrl})`; // Store the raw URL in post content
+                        return `![${alt}](${originalUrl})`; 
                     });
                     return { ...post, content: newContent };
                 });
@@ -954,7 +939,7 @@
                         text-decoration: underline;
                     }
                 `;
-                // Only add background-image if URL is valid and starts with http(s)
+                // Only add background-image if URL is valid and looks good.
                 if (siteConfig.styling.backgroundImageUrl && /^https?:\/\//i.test(siteConfig.styling.backgroundImageUrl)) {
                     dynamicCss += `
                         body {
@@ -964,8 +949,6 @@
                             background-position: center;
                         }
                     `;
-                } else if (siteConfig.styling.backgroundImageUrl) { // If URL exists but is invalid
-                    console.warn(`Invalid or incomplete background image URL in config: "${siteConfig.styling.backgroundImageUrl}". Not applying background image.`);
                 }
 
                 styleElement.textContent = dynamicCss;
