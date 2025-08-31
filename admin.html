@@ -1129,6 +1129,7 @@
             
             console.log(`[parseGitHubPath Debug] Hostname: ${hostname}, Username: ${githubUsername}, PathSegments: [${pathSegments.join(', ')}]`);
 
+            // 修正了 userGithubIoIoPattern 拼写错误
             if (userGithubIoPattern.test(hostnameLow) || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
                 // 情况1: hostname 是 user.github.io (如 pkq66882.github.io) 或本地调试
                 if (pathSegments.length > 0) {
@@ -1177,23 +1178,24 @@
         };
 
 
-        // **将 createGitHubDirectory 移动到全局作用域**
+        // **将 createGitHubDirectory 移动到全局作用域并修正逻辑**
         async function createGitHubDirectory(apiToken, apiOwner, apiRepo, directoryPath) {
             const gitkeepPath = `${directoryPath}/.gitkeep`; 
             console.log(`Checking/Creating directory: ${apiOwner}/${apiRepo}/${gitkeepPath}`);
             try {
+                // 首先尝试获取 .gitkeep 文件
                 const fileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
-                if (!fileData) { // 文件不存在，尝试创建
+                
+                if (fileData === null) { // 文件不存在，创建新文件
                     console.log(`Creating new .gitkeep for directory ${directoryPath}`);
                     await GitHubAPI.createFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', `feat: create directory ${directoryPath}`);
                     console.log(`Directory ${directoryPath} created successfully.`);
-                    return true;
                 } else { // 文件存在，更新文件 (传入 SHA)
                     console.log(`Updating existing .gitkeep for directory ${directoryPath}`);
-                    await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', fileData.sha, `ci: update .gitkeep for directory ${directoryPath}`);
+                    await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, fileData.content, fileData.sha, `ci: update .gitkeep content for directory ${directoryPath}`);
                     console.log(`Directory ${directoryPath} updated successfully.`);
-                    return true;
                 }
+                return true;
             } catch (error) {
                 console.error(`Failed to create/update directory ${directoryPath}:`, error);
                 throw error; 
@@ -1514,7 +1516,7 @@
 
             const sortedPostsByCreate = [...posts].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
             if (sortedPostsByCreate.length > 0 && 
-                (sortedPostsByUpdate.length === 0 || sortedPostsByUpdate.length > 0 && sortedPostsByUpdate[0].id !== sortedPostsByCreate[0].id)) {
+                (sortedPostsByUpdate.length === 0 || sortedPostsByCreate[0].id !== sortedPostsByUpdate[0].id)) {
                 const latestCreatedPost = sortedPostsByCreate[0];
                 const createdActivity = document.createElement('div');
                 createdActivity.className = 'activity-item';
@@ -1962,7 +1964,7 @@
 
                         try {
                             const imageUrl = await uploadFile(file, 'images', `feat: upload image "${file.name}" for post`);
-                            const ghProxyUrl = `https://gh-proxy.com/${encodeURIComponent(imageUrl)}`; // 确保只代理一次
+                            const ghProxyUrl = `https://gh-proxy.com/${encodeURIComponent(imageUrl)}`;
                             const markdownImage = `![${file.name.split('.')[0]}](${ghProxyUrl})`;
                             
                             const cm = easyMDE.codemirror;
@@ -2160,8 +2162,7 @@
                 const url = settingBgImageUrlInput.value.trim();
                 const displayUrl = url.startsWith('http') ? url : '';
                 if (displayUrl) {
-                    // 如果用户输入的是一个完整的URL，直接预览
-                    settingBgImagePreview.innerHTML = `<img src="${displayUrl}" alt="背景图预览" loading="lazy">`;
+                    settingBgImagePreview.innerHTML = `<img src="https://gh-proxy.com/${encodeURIComponent(displayUrl)}" alt="背景图预览" loading="lazy">`; // 确保这里也用代理
                     uploadBgImageBtn.style.display = 'none';
                 } else {
                     settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
@@ -2179,7 +2180,7 @@
                         showAlert(`正在上传背景图片 ${file.name}...`, 'info');
                         const url = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`);
                         document.getElementById('setting-bg-image-url').value = url;
-                        settingBgImagePreview.innerHTML = `<img src="https://gh-proxy.com/${encodeURIComponent(url)}" alt="背景图预览" loading="lazy">`; // 确保预览图也用代理
+                        settingBgImagePreview.innerHTML = `<img src="https://gh-proxy.com/${encodeURIComponent(url)}" alt="背景图预览" loading="lazy">`; 
                         uploadBgImageBtn.style.display = 'none';
                         showAlert('背景图片上传并设置成功！请点击保存设置！', 'success');
                     } catch (error) {
