@@ -539,8 +539,9 @@
             text-align: center;
             line-height: 25px;
             color: var(--text-color);
-            font-size: 0.9em;
+            font-size: 0.9em; /* Ensures text is visible on dark bar too */
             z-index: 1;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.2); /* For better contrast on dark bar */
         }
         /* Editor specific progress bar */
         .editor.progress-container {
@@ -1051,7 +1052,7 @@
         </main>
     </div>
 
-    <!-- EasyMDE Markdown Editor JS -->
+    <!-- EasyMDE Markdown 编辑器 JS -->
     <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 
     <script>
@@ -1411,7 +1412,8 @@
                 initializeEasyMDE();
             }
             if (viewName === 'mediaLibrary') {
-                if (mediaLibraryGrid) renderMediaLibrary();
+                // When navigating to media library, force a fresh render
+                if (mediaLibraryGrid) renderMediaLibrary(true); // Pass true to force no cache
             }
             if (viewName === 'dashboard') {
                 renderDashboard();
@@ -1445,18 +1447,27 @@
         };
 
         // ==================== Upload Progress Functions ====================
-        const updateProgressBar = (percentage, message = '') => {
-            uploadProgressContainer.style.display = 'block';
-            uploadProgressBar.style.width = `${percentage}%`;
-            uploadProgressBar.textContent = `${Math.round(percentage)}%`;
-            uploadProgressText.textContent = message || `${Math.round(percentage)}%`;
+        const updateProgressBar = (percentage, message = '', elementId = 'upload-progress-container', barId = 'upload-progress-bar', textId = 'upload-progress-text') => {
+            const container = document.getElementById(elementId);
+            const bar = document.getElementById(barId);
+            const text = document.getElementById(textId);
+
+            if (!container || !bar || !text) {
+                console.error("Progress bar elements not found.");
+                return;
+            }
+
+            container.style.display = 'block';
+            bar.style.width = `${percentage}%`;
+            bar.textContent = `${Math.round(percentage)}%`;
+            text.textContent = message || `${Math.round(percentage)}%`;
             if (percentage >= 100) {
-                uploadProgressText.textContent = '完成！'; // Show "完成！" on 100%
+                text.textContent = '完成！'; // Show "完成！" on 100%
                 setTimeout(() => {
-                    uploadProgressContainer.style.display = 'none';
-                    uploadProgressBar.style.width = '0%';
-                    uploadProgressBar.textContent = '0%';
-                    uploadProgressText.textContent = '0%'; // Reset text
+                    container.style.display = 'none';
+                    bar.style.width = '0%';
+                    bar.textContent = '0%';
+                    text.textContent = '0%'; // Reset text
                 }, 1000); // Hide after a short delay
             }
         };
@@ -1578,13 +1589,17 @@
 
                         currentConfig.gitalk.repo = currentConfig.gitalk.repo || repo; 
                         currentConfig.gitalk.owner = currentConfig.gitalk.owner || owner;
-                        if (!Array.isArray(currentConfig.gitalk.admin) || !currentConfig.gitalk.admin.includes(owner)) {
-                            currentConfig.gitalk.admin = currentConfig.gitalk.admin ? [...new Set([...currentConfig.gitalk.admin, owner])] : [owner];
+                        // Ensure owner is always in admin array
+                        if (!Array.isArray(currentConfig.gitalk.admin)) {
+                            currentConfig.gitalk.admin = [owner];
+                        } else if (!currentConfig.gitalk.admin.includes(owner)) {
+                            currentConfig.gitalk.admin.push(owner);
+                            currentConfig.gitalk.admin = [...new Set(currentConfig.gitalk.admin)]; // Remove duplicates
                         }
                         
-                        // Ensure backgroundImageUrl is a valid URL, otherwise clear it
+                        // Ensure backgroundImageUrl is a valid URL, otherwise clear it to prevent SyntaxError
                         if (currentConfig.styling.backgroundImageUrl && !/^https?:\/\//i.test(currentConfig.styling.backgroundImageUrl)) {
-                            console.warn("Invalid backgroundImageUrl found in config.json, clearing it.");
+                            console.warn("Invalid backgroundImageUrl found in config.json, clearing it during initialization.");
                             currentConfig.styling.backgroundImageUrl = "";
                         }
 
@@ -1611,7 +1626,7 @@
                         const createRes = await GitHubAPI.createFile(token, owner, repo, 'config.json', JSON.stringify(initialConfig, null, 2), commitMessage);
                         configSha = createRes.content.sha;
                         currentConfig = initialConfig;
-                    } catch (e) {
+                    } catches (e) {
                         console.error(`Error creating config.json: ${e.message}`);
                         initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 创建 config.json 失败: ${e.message}`;
                         throw e;
@@ -1994,23 +2009,39 @@
                 setButtonsDisabled(false);
             }
         };
+        
+        // This object will track whether fetch requests for media need to bypass browser cache
+        const fetchCacheBuster = {};
 
         // ==================== Media Library Functions ====================
-        const renderMediaLibrary = async () => {
+        const renderMediaLibrary = async (forceNoCache = false) => {
             mediaLibraryGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;"><i class="fas fa-spinner fa-spin"></i> 加载图像中...</p>';
             setButtonsDisabled(true);
             try {
-                const imageContents = await GitHubAPI.getDirectoryContents(token, owner, repo, 'images');
+                // If forceNoCache is true (e.g., after upload/delete), add a cache-busting parameter to the directory fetch
+                const cacheParam = forceNoCache ? `?t=${Date.now()}` : '';
+                const imageContents = await GitHubAPI.getDirectoryContents(token, owner, repo, `images${cacheParam}`);
+                
                 mediaLibraryGrid.innerHTML = '';
                 let imagesFound = false;
+
+                // Sort images alphabetically for consistent display
+                imageContents.sort((a, b) => a.name.localeCompare(b.name));
+
                 for (const item of imageContents) {
                     if (item.type === 'file' && item.name !== '.gitkeep') {
                         imagesFound = true;
                         const mediaItem = document.createElement('div');
                         mediaItem.className = 'media-item';
+
+                        // Add cache-busting query parameter to actual image URL if forceNoCache
+                        const imageUrlToDisplay = getProxiedImageUrl(item.download_url);
+                        // However, for GitHub Raw directly using item.download_url as is, the proxy will handle cache.
+                        // For display, `getProxiedImageUrl` handles the proxying. No need for extra ?t= on src.
+                        
                         mediaItem.innerHTML = `
                             <div class="media-item-thumbnail">
-                                <img src="${getProxiedImageUrl(item.download_url)}" alt="${item.name}" loading="lazy">
+                                <img src="${imageUrlToDisplay}" alt="${item.name}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ctext x=\'50%25\' y=\'50%25\' font-size=\'30\' text-anchor=\'middle\' dominant-baseline=\'central\'%3E🖼️Error%3C/text%3E%3C/svg%3E';" />
                             </div>
                             <div class="media-item-info">
                                 <div class="name" title="${item.name}">${item.name}</div>
@@ -2079,9 +2110,9 @@
             try {
                 await GitHubAPI.deleteFile(token, owner, repo, filePath, fileSha, `feat: delete media file ${filePath.split('/').pop()}`);
                 showAlert('图片删除成功！', 'success');
-                // Ensure media library is rendered from fresh data
-                // Introducing a small delay to allow GitHub's CDN to update, if necessary
-                setTimeout(() => renderMediaLibrary(), 1000); 
+                // Force a fresh render without cache after deletion
+                // Adding a small delay to work around potential GitHub CDN propagation issues
+                setTimeout(() => renderMediaLibrary(true), 1500); 
             } catch (error) {
                 showAlert(`图片删除失败: ${error.message}`, 'danger');
             } finally {
@@ -2092,8 +2123,6 @@
         const handleMediaFileUpload = async (files) => {
             if (!files || files.length === 0) return;
             setButtonsDisabled(true);
-            // initialMessageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传图片...'; // Removed global message for dedicated progress bar
-            // initialMessageEl.style.color = 'var(--text-color)';
             
             uploadProgressContainer.style.display = 'block';
             updateProgressBar(0, '准备上传...');
@@ -2140,8 +2169,9 @@
                 if (successCount === 0 && failureCount === 0) {
                      showAlert('没有图片被上传。', 'info');
                 }
-                // Small delay to ensure progress bar is seen before hiding and rendering media library
-                setTimeout(() => renderMediaLibrary(), 1500); 
+                // Force a fresh render without cache after upload
+                // Adding a small delay to work around potential GitHub CDN propagation issues
+                setTimeout(() => renderMediaLibrary(true), 1500); 
 
             } catch (error) {
                  showAlert(`图片上传过程中发生未知错误: ${error.message}`, 'danger');
@@ -2149,7 +2179,6 @@
                  uploadProgressContainer.style.display = 'none';
             } finally {
                 setButtonsDisabled(false);
-                // initialMessageEl.innerHTML = ''; // Removed global message for dedicated progress bar
             }
         };
 
@@ -2168,7 +2197,7 @@
             const bgImagePreview = document.getElementById('setting-bg-image-preview');
             const uploadBgImageBtn = document.getElementById('upload-bg-image-btn');
             
-            if (bgImageUrl) {
+            if (bgImageUrl && /^https?:\/\//i.test(bgImageUrl)) { // Only show preview if URL is valid
                 bgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(bgImageUrl)}" alt="背景图预览" loading="lazy">`;
                 uploadBgImageBtn.style.display = 'none';
             } else {
@@ -2192,7 +2221,7 @@
                 newBgImageUrl = ""; // Clear invalid URL
                 document.getElementById('setting-bg-image-url').value = ""; // Update UI
                 document.getElementById('setting-bg-image-preview').innerHTML = `<span class="placeholder">无背景图</span>`;
-                document.getElementById('upload-bg-image-btn').style.display = 'inline-flex';
+                document.getElementById('upload-bg-image-btn').style.display = 'inline-flex'; // Show upload btn if cleared
             }
 
             newConfig.styling = {
@@ -2272,20 +2301,23 @@
                     
                     const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
                     const fileExtension = file.name.split('.').pop().toLowerCase();
-                    const baseFileName = file.name.substring(0, file.name.lastIndexOf('.'));
-                    // Sanitize filename: replace non-alphanumeric, non-dot, non-dash characters with underscore
-                    const sanitizedBaseFileName = baseFileName
-                        .replace(/[^\p{L}\p{N}_\-.]/gu, '_') // Allows unicode letters/numbers, underscore, dash, dot
+                    const baseFileNameDirty = file.name.substring(0, file.name.lastIndexOf('.'));
+                    
+                    // Sanitize filename: remove all characters except alphanumeric, underscore, dash, dot
+                    // Also filter out common problematic patterns like ~tplv or _origin
+                    const sanitizedBaseFileName = baseFileNameDirty
+                        .replace(/(~tplv|origin~|_origin~)+.*$/i, '') // Remove specific problematic patterns and anything after them
+                        .replace(/[^\p{L}\p{N}_\-.]/gu, '') // Keep only letters, numbers, underscore, dash, dot (Unicode-aware)
                         .replace(/_+/g, '_') // Replace multiple underscores with single
+                        .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
                         .replace(/^[_\-.]+|[_\-.]+$/g, '') // Remove leading/trailing unwanted chars
-                        .slice(0, 100); // Limit length to avoid long paths
+                        .slice(0, 100); // Limit length to avoid long paths on GitHub
 
                     const finalFileName = `${timestamp}_${sanitizedBaseFileName}.${fileExtension}`;
                     const blobPath = `${uploadDirectory}/${finalFileName}`;
                     
                     try {
                         const uploadResult = await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress);
-                        // GitHub's API response directly contains the raw_url
                         const rawGithubUrl = uploadResult.content.download_url || `https://raw.githubusercontent.com/${owner}/${repo}/main/${blobPath}`; // Fallback if download_url is missing
                         resolve(rawGithubUrl); 
                     } catch (error) {
@@ -2347,21 +2379,17 @@
                         const editorProgressBar = editorProgressBarContainer.querySelector('#editor-progress-bar');
                         const editorProgressText = editorProgressBarContainer.querySelector('#editor-progress-text');
 
-                        const updateEditorProgressBar = (percentage, msg = '') => {
-                            editorProgressBar.style.width = `${percentage}%`;
-                            editorProgressText.textContent = msg || `${Math.round(percentage)}%`;
-                             if (percentage >= 100) {
-                                editorProgressText.textContent = '完成！'; // Show "完成！" on 100%
-                            }
+                        const updateEditorProgressBarLocal = (percentage, msg = '') => {
+                            updateProgressBar(percentage, msg, editorProgressBarContainer.id, editorProgressBar.id, editorProgressText.id);
                         };
-                        updateEditorProgressBar(0, '初始化上传...');
+                        updateEditorProgressBarLocal(0, '初始化上传...');
 
                         try {
                             const rawImageUrl = await uploadFile(
                                 file,
                                 'images', 
                                 `feat: upload image "${file.name}" for post`,
-                                (progress) => updateEditorProgressBar(progress, `上传 ${file.name}: ${Math.round(progress)}%`)
+                                (progress) => updateEditorProgressBarLocal(progress, `上传 ${file.name}: ${Math.round(progress)}%`)
                             );
                             // IMPORTANT: Insert the RAW GitHub URL into markdown content.
                             // The blog's frontend (index.html) will handle proxying for display.
@@ -2371,7 +2399,7 @@
                             const pos = cm.getCursor();
                             cm.replaceRange(markdownImage, pos);
                             showAlert(`图片 ${file.name} 上传成功并已插入！`, 'success', uploadAlertId);
-                            updateEditorProgressBar(100, '完成！');
+                            updateEditorProgressBarLocal(100, '完成！');
                         } catch (error) {
                             showAlert(`图片 ${file.name} 上传失败: ${error.message}`, 'danger', uploadAlertId);
                         } finally {
@@ -2578,7 +2606,8 @@
                     if (!settingBgImageInput.files || settingBgImageInput.files.length === 0) {
                          uploadBgImageBtn.style.display = 'inline-flex'; 
                     } else {
-                        uploadBgImageBtn.style.display = 'none'; // File input has precedence for upload
+                        // If a file is selected, the upload button should still be hidden as we wait for explicit upload click
+                        uploadBgImageBtn.style.display = 'none'; 
                     }
                 }
             });
