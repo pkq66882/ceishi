@@ -9,7 +9,7 @@
     <!-- Gitalk CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
     <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css"> <!-- 使用更通用的 dark 主题 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -124,6 +124,7 @@
             display: flex;
             flex-direction: column;
             text-align: left;
+            position: relative; /* 用于徽章定位 */
         }
         .post-card:hover {
             transform: translateY(-5px);
@@ -140,8 +141,9 @@
         }
         .post-card-image img {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
+            height: auto; /* 保持图片比例 */
+            object-fit: cover; /* 裁剪以填充，保持比例 */
+            min-height: 100%; /* 确保高度填充 */
         }
         .post-card-content {
             padding: 25px;
@@ -152,6 +154,12 @@
             color: #2c3e50;
             margin-bottom: 12px;
             line-height: 1.3;
+        }
+        .post-card h2 a {
+            color: inherit; /* 标题链接颜色继承 */
+        }
+        .post-card h2 a:hover {
+            text-decoration: underline;
         }
         .post-card .meta {
             font-size: 0.85rem;
@@ -195,6 +203,19 @@
             background-color: #2980b9;
             text-decoration: none;
         }
+        /* New badge for post-card */
+        .post-card .new-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-bottom-left-radius: 8px;
+            z-index: 10;
+        }
 
         /* Single Post View */
         .post-full {
@@ -233,6 +254,7 @@
             font-size: 1.05rem;
             color: #34495e;
             line-height: 1.8;
+            word-wrap: break-word; /* 确保长单词换行 */
         }
         .post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6 {
             color: #2c3e50;
@@ -269,6 +291,11 @@
             border-radius: 5px;
             overflow-x: auto;
             margin: 20px 0;
+        }
+        /* Highlight.js code color variables needed for dark theme */
+        .hljs {
+            background: #282c34 !important; /* Overwrite github-dark bg to match our pre */
+            color: #abb2bf !important;
         }
         .post-content code {
             background-color: #e0e0e0;
@@ -329,6 +356,7 @@
              font-size: 1.05rem;
             color: #34495e;
             line-height: 1.8;
+            word-wrap: break-word; /* 确保长单词换行 */
         }
         .about-content h2, .about-content h3 {
              color: #2c3e50;
@@ -405,6 +433,7 @@
         .post-content ul, .post-content ol, .about-content ul, .about-content ol {
             padding-left: 20px;
             margin-left: 0;
+            list-style-position: inside; /* 项目符号在文本内部 */
         }
         .post-content ul li, .about-content ul li {
             list-style-type: disc;
@@ -458,9 +487,11 @@
                 <h1 id="site-title"></h1>
                 <p id="site-description"></p>
                 <nav id="main-nav">
-                    <a href="#" class="nav-link active" data-route="home">首页</a>
-                    <a href="#" class="nav-link" data-route="about">关于我</a>
-                    <a id="admin-link" href="admin.html" target="_blank" class="nav-link admin-link">管理后台</a>
+                    <!-- href="#" 是为了让屏幕阅读器或JS禁用时有默认行为，实际路由由JS控制 -->
+                    <a href="javascript:void(0);" class="nav-link active" data-route="home">首页</a>
+                    <a href="javascript:void(0);" class="nav-link" data-route="about">关于我</a>
+                    <!-- adminLinkEl 的 href 会在 initializeBlog 中设置 -->
+                    <a id="admin-link" target="_blank" class="nav-link admin-link">管理后台</a>
                 </nav>
             </div>
         </header>
@@ -508,30 +539,17 @@
             }
         };
 
-        const GitHubAPI = {
-            BASE_URL: 'https://api.github.com',
-            async request(token, endpoint) {
-                const url = `${this.BASE_URL}${endpoint}`;
-                const headers = { 
-                    'Accept': 'application/vnd.github.v3+json', 
-                };
-                if (token) {
-                    headers['Authorization'] = `token ${token}`;
-                }
-
-                const response = await fetch(url, { headers });
+        const GitHubAPI_Frontend = { // 前端仅用于读取公开仓库的JSON，不需认证
+            async getRawFile(owner, repo, path) {
+                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
+                console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
+                const response = await fetch(rawUrl);
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, documentation_url: response.url || endpoint }));
-                    const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}`;
-                    console.error('GitHub API Error (frontend):', errorMessage, errorData);
-                    throw new Error(errorMessage);
+                    throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
                 }
-                if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
-                return response.json();
-            },
-            // index.html 不再使用 GitHub API 的 getFile，而是直接从 raw.githubusercontent.com 获取
-            // 但为保持 GitHubAPI 对象的完整性，这里可以暂时留空或抛错，或者仅用于 authenticated 的情况
-            // 在 initializeBlog 中，我们将直接使用 fetch(rawUrl)
+                return response.json(); // 假设是 JSON 文件
+            }
+            // 后端管理界面会使用 admin.html 里的 GitHubAPI，需要认证
         };
 
         const md = new markdownit({
@@ -544,7 +562,10 @@
                         return '<pre><code class="hljs">' +
                                hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
                                '</code></pre>';
-                    } catch (__) {}
+                    } catch (__) {
+                        // fallback if highlight.js fails
+                        console.warn('Highlight.js failed, falling back to basic escape.');
+                    }
                 }
                 return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>';
             }
@@ -635,7 +656,6 @@
             const postListContainer = blogContentDiv.querySelector('.post-list');
 
             if (blogPosts.length === 0) {
-                // basePath 为空字符串时 href="/admin.html"，非空时为 "/{basePath}/admin.html"
                 postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1; font-weight: normal;">暂无文章。去<a href="${basePath ? `/${basePath}` : ''}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
                 return;
             }
@@ -648,16 +668,17 @@
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
                 
-                // 提取文章中的第一张图片作为封面图
                 const firstImageMatch = post.content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
                 let imageUrl = firstImageMatch ? firstImageMatch[1] : ''; 
                 // 确保图片 URL 经过代理，且只被代理一次
-                if (imageUrl && !imageUrl.startsWith('https://gh-proxy.com/')) {
-                    imageUrl = `https://gh-proxy.com/${encodeURIComponent(imageUrl)}`;
-                } else if (imageUrl) {
-                    // 如果已经代理过，也需要 ensure encodeURIComponent in case of special chars in URL
-                    imageUrl = imageUrl.split('https://gh-proxy.com/')[1] || imageUrl; // Remove existing proxy
-                    imageUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(imageUrl))}`; // Re-encode might fix issues
+                if (imageUrl) {
+                    if (!imageUrl.startsWith('https://gh-proxy.com/')) {
+                         imageUrl = `https://gh-proxy.com/${encodeURIComponent(imageUrl)}`;
+                    } else {
+                        // 如果已经代理过，也要确保路径部分正确编码，但不要重复代理前缀
+                        const urlAfterProxy = imageUrl.substring('https://gh-proxy.com/'.length);
+                        imageUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(urlAfterProxy))}`;
+                    }
                 }
                 
                 const imagePreviewHtml = imageUrl ? `<div class="post-card-image"><img src="${imageUrl}" alt="${post.title}" loading="lazy"></div>` : '';
@@ -688,15 +709,13 @@
             }
 
             // 对文章内容进行 Markdown 渲染
-            // 确保渲染前，文章内容中的图片URL也被正确代理和编码
             let processedContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
                 let proxiedUrl = url;
                 if (!proxiedUrl.startsWith('https://gh-proxy.com/')) {
                     proxiedUrl = `https://gh-proxy.com/${encodeURIComponent(url)}`;
                 } else {
-                    // 如果已经代理过，也要确保正确编码
-                    proxiedUrl = proxiedUrl.split('https://gh-proxy.com/')[1] || proxiedUrl;
-                    proxiedUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(proxiedUrl))}`;
+                    const urlAfterProxy = proxiedUrl.substring('https://gh-proxy.com/'.length);
+                    proxiedUrl = `https://gh-proxy.com/${encodeURIComponent(decodeURIComponent(urlAfterProxy))}`;
                 }
                 return `![${alt}](${proxiedUrl})`;
             });
@@ -809,6 +828,7 @@
                 console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`);
 
                 const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`;
+                // 确保文件路径是相对于 basePath 的完整路径
                 const configRawUrl = `${rawBaseUrl}/${getFilePath('config.json')}`;
                 const postsRawUrl = `${rawBaseUrl}/${getFilePath('posts.json')}`;
                 
@@ -849,7 +869,7 @@
                         --accent-color: ${siteConfig.styling.accentColor || '#0d6efd'};
                         --accent-hover: ${siteConfig.styling.accentHover || '#2980b9'}; 
                         --header-bg-color: ${siteConfig.styling.headerBgColor || '#fff'};
-                        --header-text-color: ${siteConfig.styling.headerTitleColor || '#2c3e50'}; /* 修正为headerTitleColor */
+                        --header-text-color: ${siteConfig.styling.headerTitleColor || '#2c3e50'}; 
                         --header-description-color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
                         --footer-bg-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
                         --footer-text-color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
@@ -901,11 +921,18 @@
         // Events
         window.addEventListener('hashchange', handleRoute);
         document.addEventListener('DOMContentLoaded', () => {
-            initializeBlog(); // 页面加载后立即初始化
-            // 修复首页导航链接的 href，使其在点击后保持正确的 basePath
+            initializeBlog(); 
+            // 修复首页和关于我导航链接的 href，使其在点击后保持正确的 basePath
             document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
                 e.preventDefault();
-                window.location.hash = '/'; // 仅修改 hash，不刷新页面
+                // 仅修改 hash，且确保 hash 为空时 URL 不会变成 example.com/#
+                // History API 更优雅，但为了兼容单文件，用 window.location.replace
+                if (window.location.hash !== '') {
+                    // 如果当前URL带hash了，则通过 replaceState 删除hash
+                    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+                }
+                // 强制触发路由处理，因为URL可能没变，但内容需要刷新
+                handleRoute(); 
             });
             document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => {
                 e.preventDefault();
