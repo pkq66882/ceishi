@@ -1,0 +1,36 @@
+{
+  "site": {
+    "title": "pkq66882的博客",
+    "description": "由GitHub驱动的现代化博客",
+    "logoUrl": "",
+    "faviconUrl": ""
+  },
+  "styling": {
+    "backgroundColor": "#f8f9fa",
+    "textColor": "#212529",
+    "headingColor": "#343a40",
+    "accentColor": "#0d6efd",
+    "linkHoverColor": "#0a58ca",
+    "borderColor": "#dee2e6",
+    "cardBgColor": "#ffffff",
+    "cardShadow": "0 4px 12px rgba(0, 0, 0, 0.08)",
+    "metaColor": "#6c757d",
+    "codeBgColor": "#282c34",
+    "codeTextColor": "#abb2bf",
+    "backgroundImageUrl": "",
+    "darkModeToggle": true
+  },
+  "features": {
+    "commentSystem": {
+      "enabled": true,
+      "type": "custom-serverless",
+      "apiEndpoint": "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/comments",
+      "adminApiEndpoint": "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/admin",
+      "postSubmitApiEndpoint": "YOUR_SERVERLESS_API_ENDPOINT_HERE/api/posts/submit"
+    },
+    "userPostingEnabled": false,
+    "highlightJsTheme": "atom-one-dark"
+  },
+  "socialLinks": [],
+  "footerText": "© 2025 pkq66882's Blog. All rights reserved."
+}
