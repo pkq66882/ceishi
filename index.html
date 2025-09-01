@@ -1,575 +1,99 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>加载中...</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' font-size='90' text-anchor='middle' dominant-baseline='central'%3E✍️%3C/text%3E%3C/svg%3E" type="image/svg+xml">
 
-    <!-- Gitalk CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
-    <!-- Highlight.js for code syntax highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css">
-    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
-        /* Modern CSS Reset (simplified) */
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
-        body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, figure, figcaption, blockquote, dl, dd {
-            margin: 0;
-            padding: 0;
-        }
-        html {
-            scroll-behavior: smooth;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            background-color: #f8f9fa; /* Default background */
-            color: #212529; /* Default text color */
-        }
-        a {
-            color: #0d6efd; /* Default accent color for links */
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        ul, ol {
-            list-style: none; /* Remove default list styles */
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-        pre {
-            overflow-x: auto;
-        }
-        code {
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-        }
-
-        /* Layout and General Styling */
-        #app {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            flex-grow: 1; /* Allow container to grow */
-        }
-
-        header {
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            padding: 20px 0;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        header h1 {
-            font-size: 2.5rem;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        header p {
-            font-size: 1.1rem;
-            color: #7f8c8d;
-        }
-        nav {
-            margin-top: 15px;
-        }
-        nav a {
-            margin: 0 15px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #3498db;
-            transition: color 0.2s ease;
-        }
-        nav a:hover {
-            color: #2980b9;
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 40px;
-            background-color: #f0f2f5;
-            color: #7f8c8d;
-            font-size: 0.9rem;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.03);
-        }
-        footer a { color: #3498db; }
-
-        /* Blog Post List */
-        .post-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-        .post-card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
-            overflow: hidden;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-            position: relative; /* Used for badge positioning */
-        }
-        .post-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
-        }
-        .post-card-image {
-            width: 100%;
-            height: 200px; 
-            overflow: hidden;
-            background-color: #e9ecef;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .post-card-image img {
-            width: 100%;
-            height: auto; /* Maintain aspect ratio */
-            object-fit: cover; /* Crop to fill, maintain ratio */
-            min-height: 100%; /* Ensure height fills */
-            max-height: 100%; /* Ensure max height */
-        }
-        .post-card-content {
-            padding: 25px;
-            flex-grow: 1;
-        }
-        .post-card h2 {
-            font-size: 1.8rem;
-            color: #2c3e50;
-            margin-bottom: 12px;
-            line-height: 1.3;
-        }
-        .post-card h2 a {
-            color: inherit; /* Title link color inherits */
-        }
-        .post-card h2 a:hover {
-            text-decoration: underline;
-        }
-        .post-card .meta {
-            font-size: 0.85rem;
-            color: #7f8c8d;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap; 
-        }
-        .post-card .meta span {
-            display: inline-flex;
-            align-items: center;
-        }
-        .post-card .meta i {
-            margin-right: 5px;
-            color: #95a5a6;
-        }
-        .post-card .excerpt {
-            font-size: 1rem;
-            color: #5d6d7e;
-            margin-bottom: 20px;
-            line-height: 1.7;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .post-card .read-more {
-            display: inline-block;
-            background-color: #3498db;
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 5px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: background-color 0.2s ease;
-        }
-        .post-card .read-more:hover {
-            background-color: #2980b9;
-            text-decoration: none;
-        }
-        /* New badge for post-card */
-        .post-card .new-badge {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background-color: var(--accent-color);
-            color: white;
-            padding: 5px 10px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border-bottom-left-radius: 8px;
-            z-index: 10;
-        }
-
-        /* Single Post View */
-        .post-full {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            text-align: left;
-        }
-        .post-full h1 {
-            font-size: 2.8rem;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            line-height: 1.2;
-        }
-        .post-full .meta {
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 20px;
-        }
-        .post-full .meta span {
-            display: inline-flex;
-            align-items: center;
-        }
-        .post-full .meta i {
-            margin-right: 8px;
-            color: #95a5a6;
-        }
-        .post-content {
-            font-size: 1.05rem;
-            color: #34495e;
-            line-height: 1.8;
-            word-wrap: break-word; /* Ensure long words wrap */
-        }
-        .post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6 {
-            color: #2c3e50;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .post-content h1 { font-size: 2.5rem; }
-        .post-content h2 { font-size: 2rem; }
-        .post-content h3 { font-size: 1.7rem; }
-        .post-content p {
-            margin-bottom: 1em;
-        }
-        .post-content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin: 1.5rem auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .post-content blockquote {
-            padding: 10px 20px;
-            margin: 20px 0;
-            border-left: 4px solid #3498db;
-            color: #5d6d7e;
-            background-color: #f5fafd;
-            border-radius: 5px;
-        }
-        .post-content pre {
-            background-color: #2d2d2d;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            margin: 20px 0;
-        }
-        /* Highlight.js code color variables needed for dark theme */
-        .hljs {
-            background: #282c34 !important; 
-            color: #abb2bf !important;
-        }
-        .post-content code {
-            background-color: #e0e0e0;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            word-break: break-all;
-        }
-        .post-content pre code {
-            background-color: transparent;
-            padding: 0;
-            font-size: 1em;
-            word-break: normal; 
-        }
-        .post-content ul, .post-content ol {
-            margin-left: 25px;
-            margin-bottom: 1em;
-            list-style-type: disc; 
-        }
-        .post-content ol {
-            list-style-type: decimal;
-        }
-        .post-content li {
-            margin-bottom: 0.5em;
-        }
-        .post-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            overflow-x: auto;
-            display: block;
-        }
-        .post-content th, .post-content td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        .post-content th {
-            background-color: #f2f2f2;
-        }
-
-        /* About Page */
-        .about-page {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            text-align: left;
-        }
-        .about-page h1 {
-            font-size: 2.5rem;
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-        .about-content {
-             font-size: 1.05rem;
-            color: #34495e;
-            line-height: 1.8;
-            word-wrap: break-word; /* Ensure long words wrap */
-        }
-        .about-content h2, .about-content h3 {
-             color: #2c3e50;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .about-content p { margin-bottom: 1em; }
-        .about-content ul, .about-content ol {
-            margin-left: 25px;
-            margin-bottom: 1em;
-            list-style-type: disc;
-        }
-
-        /* Error/Loading state */
-        .loading, .error {
-            text-align: center;
-            padding: 50px;
-            font-size: 1.2rem;
-            color: #7f8c8d;
-        }
-        .error {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        .loading i {
-            margin-right: 10px;
-            animation: spin 1.5s linear infinite;
-        }
-         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Gitalk Styling Adjustments */
-        #gitalk-container {
-            margin-top: 40px;
-            padding: 20px;
-            background-color: #fdfdfd;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .gt-container {
-            font-family: inherit; 
-        }
-        .gt-hd-text strong {
-            color: inherit; 
-        }
-        .gt-hdr-btn {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        .gt-hdr-btn:hover {
-            background-color: var(--accent-hover);
-            border-color: var(--accent-hover);
-        }
-        .gt-btn-public, .gt-btn-preview {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        .gt-btn-public:hover, .gt-btn-preview:hover {
-            background-color: var(--accent-hover);
-            border-color: var(--accent-hover);
-        }
-        .gt-link, .gt-comment-username {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-        .gt-link:hover, .gt-comment-username:hover {
-            text-decoration: underline;
-        }
-        /* Markdown-it generated list styles */
-        .post-content ul, .post-content ol, .about-content ul, .about-content ol {
-            padding-left: 20px;
-            margin-left: 0;
-            list-style-position: inside; 
-        }
-        .post-content ul li, .about-content ul li {
-            list-style-type: disc;
-        }
-        .post-content ol li, .about-content ol li {
-            list-style-type: decimal;
-        }
-        /* Custom styles from config variables */
-        header a {
-            color: var(--header-link-color, var(--accent-color));
-        }
-        header a:hover {
-            color: var(--header-link-hover-color, var(--accent-hover));
-        }
-
-
-        /* Responsiveness */
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2rem;
-            }
-            header p {
-                font-size: 1rem;
-            }
-            nav a {
-                margin: 0 10px;
-                font-size: 1rem;
-            }
-            .container {
-                padding: 15px;
-            }
-            .post-list {
-                grid-template-columns: 1fr;
-            }
-            .post-full, .about-page {
-                padding: 25px;
-            }
-            .post-full h1 {
-                font-size: 2rem;
-            }
-            .post-content, .about-content {
-                font-size: 1rem;
-            }
-             .post-full .meta {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            .post-card-image {
-                height: 180px; 
-            }
-        }
+        :root {
+            --accent: #3498db;
+            --accent-hover: #2980b9;
+        }
+        *{box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#212529;background:#f8f9fa;margin:0}
+        header{background:#fff;padding:20px 0;box-shadow:0 2px 4px rgba(0,0,0,0.05)}
+        .container{max-width:900px;margin:0 auto;padding:20px}
+        header h1{font-size:2rem;margin:0;color:#2c3e50}
+        header p{margin:8px 0 0;color:#7f8c8d}
+        nav{margin-top:12px}
+        nav a{margin-right:12px;color:var(--accent)}
+        .post-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+        .post-card{background:#fff;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.06);overflow:hidden;display:flex;flex-direction:column}
+        .post-card-image{height:200px;background:#eef2f5;display:flex;align-items:center;justify-content:center;overflow:hidden}
+        .post-card-image img{width:100%;height:100%;object-fit:cover}
+        .post-card-content{padding:18px}
+        .post-card h2{margin:0 0 8px 0}
+        .post-card .excerpt{color:#5d6d7e}
+        .post-full{background:#fff;padding:28px;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.06)}
+        .post-content img{max-width:100%;height:auto;border-radius:8px;margin:16px 0}
+        .loading,.error{text-align:center;padding:40px;color:#7f8c8d}
+        footer{background:#f0f2f5;padding:24px;text-align:center;color:#7f8c8d;margin-top:28px}
+        @media(max-width:768px){ .post-card-image{height:160px} }
     </style>
 </head>
 <body>
-    <div id="app">
-        <header>
-            <div class="container">
-                <h1 id="site-title"></h1>
-                <p id="site-description"></p>
-                <nav id="main-nav">
-                    <!-- Nav links use javascript:void(0) and are controlled by JS for routing -->
-                    <a href="javascript:void(0);" class="nav-link active" data-route="home">首页</a>
-                    <a href="javascript:void(0);" class="nav-link" data-route="about">关于我</a>
-                    <!-- adminLinkEl's href will be set dynamically in initializeBlog -->
-                    <a id="admin-link" target="_blank" class="nav-link admin-link">管理后台</a>
-                </nav>
-            </div>
-        </header>
+    <header>
+        <div class="container">
+            <h1 id="site-title">博客</h1>
+            <p id="site-description">一个由 GitHub Pages 驱动的博客</p>
+            <nav id="main-nav">
+                <a href="javascript:void(0)" class="nav-link active" data-route="home">首页</a>
+                <a href="javascript:void(0)" class="nav-link" data-route="about">关于</a>
+                <a id="admin-link" target="_blank" class="nav-link">管理后台</a>
+            </nav>
+        </div>
+    </header>
 
-        <main class="container">
-            <div id="loading" class="loading">
-                <i class="fas fa-spinner fa-spin"></i> 博客初始化中...
-            </div>
-            <div id="blog-content">
-                <!-- Blog content will be loaded here -->
-            </div>
-            <div id="gitalk-container" style="display: none;"></div>
-        </main>
+    <main class="container">
+        <div id="loading" class="loading"><i class="fas fa-spinner fa-spin"></i> 正在初始化博客...</div>
+        <div id="blog-content" style="display:none"></div>
+        <div id="gitalk-container" style="display:none;margin-top:20px"></div>
+    </main>
 
-        <footer id="main-footer"></footer>
-    </div>
+    <footer id="main-footer"></footer>
 
-    <!-- Markdown It and Highlight.js -->
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/json.min.js"></script>
-    <!-- Font Awesome Icons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- Gitalk JS -->
     <script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
-
     <script>
-        // A simple slugify function for generating URL-friendly strings
+        // Utilities
+        const utf8_to_b64 = str => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,(m,p)=>String.fromCharCode('0x'+p)));
+        const b64_to_utf8 = b64 => decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+
+        // slugify safe
         const slugify = (text) => {
             if (!text) return '';
-            return text.toString().toLowerCase()
-                .trim()
-                .replace(/\s+/g, '-')         // Replace spaces with -
-                .replace(/[^\p{L}\p{N}_\-.]/gu, '')     // Remove all non-alphanumeric, non-dash, non-dot, non-underscore (Unicode-aware)
-                .replace(/--+/g, '-')         // Replace multiple - with single -
-                .substring(0, 60)             // Limit length for safer IDs
-                .replace(/^[_\-.]+|[_\-.]+$/g, ''); // Remove leading/trailing non-alphanumeric
+            return text.toString().toLowerCase().trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^\p{L}\p{N}_\-.]/gu, '')
+                .replace(/--+/g, '-')
+                .substring(0,60)
+                .replace(/^[_\-.]+|[_\-.]+$/g, '');
         };
 
-        const md = new markdownit({
-            html: true,
-            linkify: true,
-            typographer: true,
+        const md = window.markdownit({
+            html:true, linkify:true, typographer:true,
             highlight: function (str, lang) {
-                // Ensure the string passed to highlight.js is HTML-escaped to prevent XSS and warnings.
-                const escapedStr = md.utils.escapeHtml(str); 
+                const escaped = md.utils.escapeHtml(str);
                 if (lang && hljs.getLanguage(lang)) {
-                    try {
-                        return '<pre><code class="hljs">' +
-                               hljs.highlight(escapedStr, { language: lang, ignoreIllegals: true }).value + 
-                               '</code></pre>';
-                    } catch (__) {
-                        console.warn('Highlight.js failed, falling back to basic escape.');
-                    }
+                    try { return '<pre><code class="hljs">' + hljs.highlight(escaped, {language:lang, ignoreIllegals:true}).value + '</code></pre>'; }
+                    catch (__) { console.warn('highlight fail', __); }
                 }
-                return '<pre><code class="hljs">' + escapedStr + '</code></pre>'; // Fallback also uses escaped string
+                return '<pre><code class="hljs">'+escaped+'</code></pre>';
             }
         });
 
         let siteConfig = null;
         let blogPosts = [];
-        let owner = ''; 
-        let repo = '';    
-        let publicUrlBase = ''; 
+        let owner = '', repo = '', publicUrlBase = '';
 
-        const appDiv = document.getElementById('app');
+        const appContainer = document.querySelector('.container');
         const blogContentDiv = document.getElementById('blog-content');
         const loadingDiv = document.getElementById('loading');
         const siteTitleEl = document.getElementById('site-title');
@@ -578,226 +102,155 @@
         const gitalkContainerEl = document.getElementById('gitalk-container');
         const adminLinkEl = document.getElementById('admin-link');
 
-
-        // Unified path parsing function (consistent with admin.html)
         const parseGitHubRepoAndBasePath = (githubUsername) => {
-            const hostname = window.location.hostname; 
-            let pathSegments = window.location.pathname.split('/').filter(p => p); 
-
-            // Remove current HTML file (admin.html or index.html) if it's the last segment
-            if (pathSegments.length > 0 && 
-                (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
-                 pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
-                pathSegments.pop();
-            }
-
+            const hostname = window.location.hostname;
+            let pathSegments = window.location.pathname.split('/').filter(p=>p);
+            if (pathSegments.length>0 && (pathSegments[pathSegments.length-1].toLowerCase()==='admin.html' || pathSegments[pathSegments.length-1].toLowerCase()==='index.html')) pathSegments.pop();
             const usernameLow = githubUsername.toLowerCase();
             const hostnameLow = hostname.toLowerCase();
-
-            let finalOwner = githubUsername; 
-            let finalRepo = '';
-            let finalPublicUrlBase = ''; 
-
-            // Scenario 1: User/Organization site (e.g., user.github.io) or local environment
+            let finalOwner = githubUsername, finalRepo = '', finalPublicUrlBase = '';
             if (hostnameLow === `${usernameLow}.github.io` || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
-                if (pathSegments.length > 0) {
-                    finalRepo = pathSegments[0];
-                    finalPublicUrlBase = `/${pathSegments[0]}`;
-                } else {
-                    finalRepo = `${usernameLow}.github.io`; 
-                    finalPublicUrlBase = '';
-                }
-            } 
-            // Scenario 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
-            else if (pathSegments.length > 0) {
-                finalRepo = pathSegments[0];
-                finalPublicUrlBase = `/${pathSegments[0]}`;
+                if (pathSegments.length>0) { finalRepo = pathSegments[0]; finalPublicUrlBase = `/${pathSegments[0]}`; }
+                else { finalRepo = `${usernameLow}.github.io`; finalPublicUrlBase = ''; }
+            } else if (pathSegments.length>0) {
+                finalRepo = pathSegments[0]; finalPublicUrlBase = `/${pathSegments[0]}`;
             } else {
-                finalRepo = `${usernameLow}.github.io`; 
-                finalPublicUrlBase = '';
+                finalRepo = `${usernameLow}.github.io`; finalPublicUrlBase = '';
             }
-
-            // Safety net: if repo is still empty (shouldn't happen with the above logic, but for robustness)
-            if (!finalRepo || finalRepo.trim() === '') {
-                finalRepo = `${usernameLow}.github.io`;
-                finalPublicUrlBase = '';
-            }
-
-            console.log(`[parseGitHubRepoAndBasePath Final] Owner: ${finalOwner}, Repo: "${finalRepo}", PublicUrlBase: "${finalPublicUrlBase}"`);
+            if (!finalRepo) { finalRepo = `${usernameLow}.github.io`; finalPublicUrlBase = ''; }
             return { owner: finalOwner, repo: finalRepo, publicUrlBase: finalPublicUrlBase };
         };
 
-
-        // GitHubAPI_Frontend: Used for fetching public JSON files from raw.githubusercontent.com
         const GitHubAPI_Frontend = {
-            async getRawFile(owner, repo, path) {
-                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-                console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
-                const response = await fetch(rawUrl);
-                if (!response.ok) {
-                    // Specific handling for 404 for config.json/posts.json
-                    if (response.status === 404) {
-                        console.info(`File not found: ${rawUrl}. This is expected for initial setup.`);
-                        return path === 'posts.json' ? [] : {}; 
+            async getRawFile(owner_, repo_, path) {
+                const rawUrl = `https://raw.githubusercontent.com/${owner_}/${repo_}/main/${path}`;
+                const res = await fetch(rawUrl);
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        if (path === 'posts.json') return []; else return {};
                     }
-                    throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
+                    throw new Error(`无法加载文件 (${res.status} ${res.statusText}) ${rawUrl}`);
                 }
-                const textContent = await response.text();
-                // Handle empty or whitespace-only files
-                if (!textContent.trim()) {
-                    console.warn(`File ${rawUrl} is empty or contains only whitespace. Returning empty JSON interpretation.`);
-                    return path === 'posts.json' ? [] : {}; 
-                }
-                try {
-                    return JSON.parse(textContent);
-                } catch (e) {
-                    console.error(`Error parsing JSON from ${rawUrl}: ${e.message}. Content: ${textContent.substring(0, 100)}...`);
-                    throw new Error(`文件 ${rawUrl} 内容不是有效的JSON格式: ${e.message}`);
-                }
+                const txt = await res.text();
+                if (!txt.trim()) return path === 'posts.json' ? [] : {};
+                try { return JSON.parse(txt); } catch (e) { throw new Error(`文件 ${rawUrl} 不是有效 JSON：${e.message}`); }
             }
         };
 
-        // Unified function to process image URLs for display (always return proxied URL)
+        // Normalize and proxy image URLs
         const getProxiedImageUrl = (inputUrl) => {
             if (!inputUrl) return '';
-
             let urlToProcess = inputUrl;
-
-            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
             if (urlToProcess.startsWith('https://gh-proxy.com/')) {
-                try {
-                    const decodedPart = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
-                    if (decodedPart.startsWith('https://raw.githubusercontent.com/') || decodedPart.startsWith('http')) {
-                        urlToProcess = decodedPart;
-                    } else {
-                        console.warn('URL was gh-proxy but decoded target seems invalid, keeping original for re-encoding:', urlToProcess);
-                        urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
-                    }
-                } catch (e) {
-                    console.warn('Failed to decode existing gh-proxy URL, processing the encoded part directly:', e, urlToProcess);
-                    urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
-                }
+                try { urlToProcess = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length)); } catch (e) {}
             }
-
-            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com)
-            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
+            if (/^https?:\/\//.test(urlToProcess)) {
                 try {
-                    const urlObj = new URL(urlToProcess);
-                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
-                    urlObj.search = decodeURIComponent(urlObj.search);
-                    urlToProcess = urlObj.toString();
-                } catch (e) {
-                    console.warn("URL parsing/decoding for path normalization failed, falling back to direct encoding:", e, urlToProcess);
-                }
-                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized or original) URL.
+                    const u = new URL(urlToProcess);
+                    u.pathname = u.pathname.split('/').map(seg => decodeURIComponent(seg || '')).join('/');
+                    u.search = decodeURIComponent(u.search || '');
+                    urlToProcess = u.toString();
+                } catch (e) { console.warn('getProxiedImageUrl parse fail', e); }
                 return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
             }
-
-            console.warn("getProxiedImageUrl received a URL that wasn't an absolute HTTP/S or gh-proxy link, returning as is/empty:", inputUrl);
-            return inputUrl; 
+            return inputUrl;
         };
 
-        // Function to resolve relative image paths to full raw GitHub URLs
-        const resolveMarkdownImageUrl = (url, currentOwner, currentRepo) => {
+        // Resolve relative markdown images to raw.githubusercontent absolute URL
+        const resolveMarkdownImageUrl = (url, curOwner, curRepo) => {
             if (!url) return '';
-            // If it's already an absolute HTTP/HTTPS URL, return it as is (for getProxiedImageUrl to process)
-            if (url.startsWith('http://') || url.startsWith('https://')) {
-                return url;
-            }
-            // If it's a relative path (e.g., 'images/image.png' or '/images/image.png')
-            // Construct the raw.githubusercontent.com URL
-            let cleanPath = url.startsWith('/') ? url.substring(1) : url; // Remove leading "/"
-            return `https://raw.githubusercontent.com/${currentOwner}/${currentRepo}/main/${cleanPath}`;
+            if (/^https?:\/\//i.test(url)) return url;
+            const clean = url.startsWith('/') ? url.substring(1) : url;
+            return `https://raw.githubusercontent.com/${curOwner}/${curRepo}/main/${clean}`;
         };
 
+        // After rendering, sanitize img elements: set loading=lazy, set onerror fallback, hide invalid src
+        const postRenderImagePostprocess = (containerEl) => {
+            try {
+                const imgs = containerEl.querySelectorAll('img');
+                imgs.forEach(img => {
+                    // ensure lazy
+                    img.loading = 'lazy';
+                    // if src empty or contains 'undefined', hide image
+                    if (!img.src || img.src.includes('undefined') || img.src.trim()==='') {
+                        img.style.display = 'none';
+                        return;
+                    }
+                    // attach robust onerror
+                    img.onerror = function() {
+                        this.onerror = null;
+                        this.src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Cpath fill=%27%23ccc%27 d=%27M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z%27/%3E%3C/svg%3E';
+                        this.style.opacity = '0.6';
+                        this.title = '图片加载失败';
+                    };
+                });
+            } catch (e) { console.warn('postRenderImagePostprocess error', e); }
+        };
 
-        // ==================== Render Functions ====================
+        // Render home page
         const renderHomePage = () => {
+            blogContentDiv.style.display = 'block';
             blogContentDiv.innerHTML = `<div class="post-list"></div>`;
-            const postListContainer = blogContentDiv.querySelector('.post-list');
-
-            if (blogPosts.length === 0) {
-                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1;"><i class="fas fa-info-circle"></i> 暂无文章。去<a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
+            const container = blogContentDiv.querySelector('.post-list');
+            if (!blogPosts || blogPosts.length===0) {
+                container.innerHTML = `<div class="loading"><i class="fas fa-info-circle"></i> 暂无文章，去管理后台发布一篇吧</div>`;
                 return;
             }
-
-            blogContentDiv.style.display = 'block';
-            gitalkContainerEl.style.display = 'none';
-
-            blogPosts.forEach(post => {
+            blogPosts.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).forEach(post => {
                 const excerpt = post.content.split('<!--more-->')[0].trim();
-                const postCard = document.createElement('div');
-                postCard.className = 'post-card';
-                
-                // Extract first image from markdown (now also handles relative paths better)
-                // Broader regex to capture any non-empty URL-like path
-                const firstImageMatch = post.content.match(/![(.*?)]\((.+?)\)/); 
-                let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
-                let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
-
-                const resolvedImageUrl = resolveMarkdownImageUrl(imageUrl, owner, repo);
-                const proxiedImageUrl = getProxiedImageUrl(resolvedImageUrl);
-
-                const imagePreviewHtml = proxiedImageUrl ? 
-                                         `<div class="post-card-image"><img src="${proxiedImageUrl}" alt="${imageAlt}" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.style.opacity='0.5'; this.title='图片加载失败';"></div>` : 
-                                         '';
-
-                postCard.innerHTML = `
-                    ${imagePreviewHtml}
+                let firstImage = '';
+                const match = post.content.match(/!\[(.*?)\]\((.+?)\)/);
+                if (match) firstImage = match[2];
+                const resolved = firstImage ? resolveMarkdownImageUrl(firstImage, owner, repo) : '';
+                const proxied = resolved ? getProxiedImageUrl(resolved) : '';
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.innerHTML = `
+                    ${proxied ? `<div class="post-card-image"><img src="${proxied}" alt="${post.title}" /></div>` : ''}
                     <div class="post-card-content">
                         <h2><a href="#/post/${post.id}">${post.title}</a></h2>
-                        <div class="meta">
-                            <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
-                            <span><i class="fas fa-tag"></i> ${post.category || '未分类'}</span>
-                            ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.join(', ')}</span>` : ''}
-                        </div>
+                        <div class="meta">${new Date(post.createdAt).toLocaleDateString()} • ${post.category || '未分类'}</div>
                         <div class="excerpt">${md.render(excerpt)}</div>
-                        <a href="#/post/${post.id}" class="read-more">阅读全文 <i class="fas fa-arrow-right"></i></a>
+                        <div style="margin-top:12px;"><a class="read-more" href="#/post/${post.id}">阅读全文 <i class="fas fa-arrow-right"></i></a></div>
                     </div>
                 `;
-                postListContainer.appendChild(postCard);
+                container.appendChild(card);
+                postRenderImagePostprocess(card);
             });
         };
 
+        // Render single post page
         const renderPostPage = (postId) => {
-            const post = blogPosts.find(p => p.id === postId);
+            const post = blogPosts.find(p=>p.id===postId);
             if (!post) {
-                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 文章未找到！</div>`;
+                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 文章未找到</div>`;
                 gitalkContainerEl.style.display = 'none';
                 return;
             }
-
-            // Standardize all image URLs within the post content for display
-            let processedContent = post.content.replace(/![(.*?)]\((.+?)\)/g, (match, alt, url) => {
-                 const resolved = resolveMarkdownImageUrl(url, owner, repo);
+            // Replace markdown image urls to resolved raw then proxied
+            let processedContent = post.content.replace(/!\[(.*?)\]\((.+?)\)/g, (m, alt, url) => {
+                const resolved = resolveMarkdownImageUrl(url, owner, repo);
                 const proxied = getProxiedImageUrl(resolved);
-                // Add onerror to markdown images as well
-                return `![${alt}](${proxied})" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.style.opacity='0.5'; this.title='图片加载失败';"`;
+                // safe: return standard markdown syntax with proxied url; postRenderImagePostprocess will set onerror
+                return `![${alt}](${proxied})`;
             });
-
             blogContentDiv.innerHTML = `
                 <article class="post-full">
                     <h1>${post.title}</h1>
-                    <div class="meta">
-                        <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
-                        <span><i class="fas fa-edit"></i> ${new Date(post.updatedAt).toLocaleDateString()}</span>
-                        <span><i class="fas fa-tag"></i> ${post.category || '未分类'}</span>
-                        ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.join(', ')}</span>` : ''}
-                    </div>
+                    <div class="meta">${new Date(post.createdAt).toLocaleDateString()} • ${post.category || '未分类'}</div>
                     <div class="post-content">${md.render(processedContent)}</div>
                 </article>
             `;
-            blogContentDiv.style.display = 'block';
-            hljs.highlightAll(); 
+            postRenderImagePostprocess(blogContentDiv);
+            hljs.highlightAll();
 
+            // Gitalk
             if (siteConfig && siteConfig.gitalk && siteConfig.gitalk.enabled) {
-                gitalkContainerEl.innerHTML = '';
                 gitalkContainerEl.style.display = 'block';
-
-                const safePostId = slugify(post.id).slice(0, 20); 
-                const safeTitleSlug = slugify(post.title).slice(0, 30); 
-                const gitalkId = `${safeTitleSlug}-${safePostId}`; 
-
+                gitalkContainerEl.innerHTML = '';
+                const safePostId = slugify(post.id).slice(0,20);
+                const safeTitle = slugify(post.title).slice(0,30);
+                const gitalkId = `${safeTitle}-${safePostId}`;
                 try {
                     const gitalk = new Gitalk({
                         clientID: siteConfig.gitalk.clientID,
@@ -806,17 +259,16 @@
                         owner: siteConfig.gitalk.owner,
                         admin: siteConfig.gitalk.admin,
                         id: gitalkId,
-                        distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
                         title: post.title,
-                        labels: [...new Set([...(siteConfig.gitalk.labels || []), post.category || '未分类'])], 
-                        body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
-                        createIssueManually: false,
-                        perPage: siteConfig.gitalk.perPage || 10,
+                        body: `文章链接：${window.location.href}\n\n${post.title}\n\n${(post.content||'').slice(0,300)}`,
+                        labels: [...new Set([...(siteConfig.gitalk.labels||[]), post.category || '未分类'])],
+                        distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
+                        perPage: siteConfig.gitalk.perPage || 10
                     });
                     gitalk.render('gitalk-container');
                 } catch (e) {
-                     console.error("Gitalk initialization failed:", e);
-                     gitalkContainerEl.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> Gitalk 评论加载失败: ${e.message}。请检查管理后台的评论设置。</div>`;
+                    console.error('gitalk init fail', e);
+                    gitalkContainerEl.innerHTML = `<div class="error">Gitalk 初始化失败：${e.message}</div>`;
                 }
             } else {
                 gitalkContainerEl.style.display = 'none';
@@ -824,177 +276,99 @@
         };
 
         const renderAboutPage = () => {
-             blogContentDiv.innerHTML = `
-                <div class="about-page">
-                    <h1>关于我</h1>
-                    <div class="about-content">${siteConfig && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : `<p>暂无内容。请前往<a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank">管理后台</a>的“网站设置”编辑“关于我”页面。</p>`}</div>
-                </div>
-            `;
-            blogContentDiv.style.display = 'block';
-            gitalkContainerEl.style.display = 'none';
+            blogContentDiv.innerHTML = `<div class="post-full"><h1>关于我</h1><div class="post-content">${siteConfig && siteConfig.site && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : '<p>暂无关于内容</p>'}</div></div>`;
+            postRenderImagePostprocess(blogContentDiv);
         };
 
         const render404Page = () => {
-            blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 页面未找到 (404)</div>`;
-            blogContentDiv.style.display = 'block';
-            gitalkContainerEl.style.display = 'none';
+            blogContentDiv.innerHTML = `<div class="error">页面未找到 (404)</div>`;
         };
 
-        // ==================== Router Handling ====================
         const handleRoute = () => {
-            const path = window.location.hash.slice(1);
-            const navLinks = document.querySelectorAll('#main-nav .nav-link');
-            navLinks.forEach(link => link.classList.remove('active'));
-
-            if (path.startsWith('/post/')) {
-                const postId = path.replace('/post/', '');
+            const route = window.location.hash.slice(1);
+            document.querySelectorAll('#main-nav .nav-link').forEach(a=>a.classList.remove('active'));
+            if (route.startsWith('/post/')) {
+                const postId = route.replace('/post/','');
                 renderPostPage(postId);
-                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
-                if (homeNavLink) homeNavLink.classList.add('active'); 
-            } else if (path === '/about') {
+                document.querySelector('#main-nav a[data-route="home"]').classList.add('active');
+            } else if (route==='/about') {
                 renderAboutPage();
-                const aboutNavLink = document.querySelector('#main-nav a[data-route="about"]');
-                if (aboutNavLink) aboutNavLink.classList.add('active');
-            } else { // Home page
+                document.querySelector('#main-nav a[data-route="about"]').classList.add('active');
+            } else {
                 renderHomePage();
-                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
-                if (homeNavLink) homeNavLink.classList.add('active');
+                document.querySelector('#main-nav a[data-route="home"]').classList.add('active');
             }
         };
 
-        // ==================== Blog Initialization ====================
         const initializeBlog = async () => {
-             loadingDiv.style.display = 'block';
-
+            loadingDiv.style.display = 'block';
             try {
-                let tempUsernameFromHost = window.location.hostname.split('.')[0];
-                if (tempUsernameFromHost.toLowerCase() === 'localhost' || tempUsernameFromHost.toLowerCase() === '127.0.0.1' || !tempUsernameFromHost) {
-                    tempUsernameFromHost = "pkq66882"; // Default fallback
-                    console.warn(`[index.html] Running locally or on custom domain. Defaulting GitHub username for repo detection to "${tempUsernameFromHost}".`);
-                }
-                const resolvedOwner = tempUsernameFromHost; 
-                
-                const parsedPath = parseGitHubRepoAndBasePath(resolvedOwner);
-                owner = parsedPath.owner; 
-                repo = parsedPath.repo;   
-                publicUrlBase = parsedPath.publicUrlBase; 
+                let tempUsername = window.location.hostname.split('.')[0];
+                if (!tempUsername || tempUsername.toLowerCase()==='localhost' || tempUsername==='127') tempUsername = 'pkq66882';
+                const parsed = parseGitHubRepoAndBasePath(tempUsername);
+                owner = parsed.owner; repo = parsed.repo; publicUrlBase = parsed.publicUrlBase;
+                adminLinkEl.href = `${window.location.origin}${publicUrlBase}/admin.html`;
 
-                console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, PublicUrlBase: "${publicUrlBase}"`);
-
-                const configRawFilepath = 'config.json';
-                const postsRawFilepath = 'posts.json';
-
-                console.log(`[index.html] Attempting to fetch config.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${configRawFilepath}`);
-                console.log(`[index.html] Attempting to fetch posts.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${postsRawFilepath}`);
-
-                const fetchConfig = GitHubAPI_Frontend.getRawFile(owner, repo, configRawFilepath);
-                const fetchPosts = GitHubAPI_Frontend.getRawFile(owner, repo, postsRawFilepath);
-
-                const [configJson, postsJson] = await Promise.all([fetchConfig, fetchPosts]);
-
-                if (!configJson || Object.keys(configJson).length === 0) {
-                    throw new Error("config.json 文件未找到或为空，请先前往管理后台初始化。");
-                }
-                if (!postsJson || !Array.isArray(postsJson)) { 
-                    throw new Error("posts.json 文件未找到、为空或内容无效，请先前往管理后台初始化。");
-                }
-
-                siteConfig = configJson;
-                // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
-                blogPosts = postsJson.map(post => {
-                    let newContent = post.content.replace(/![(.*?)]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
-                        let originalUrl = url;
-                        if (originalUrl.startsWith('https://gh-proxy.com/')) {
-                            try {
-                                originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
-                            } catch (e) {
-                                console.warn("Error decoding URL part during post content normalization for storage:", e, originalUrl);
-                            }
+                // fetch config & posts
+                const [cfg, posts] = await Promise.all([
+                    GitHubAPI_Frontend.getRawFile(owner, repo, 'config.json'),
+                    GitHubAPI_Frontend.getRawFile(owner, repo, 'posts.json')
+                ]);
+                if (!cfg || Object.keys(cfg).length===0) throw new Error('config.json 未找到或为空，请先到管理后台初始化');
+                if (!posts || !Array.isArray(posts)) throw new Error('posts.json 未找到或内容无效，请先到管理后台初始化');
+                siteConfig = cfg;
+                blogPosts = posts.map(p => {
+                    // normalize: if content includes gh-proxy, decode to raw
+                    const content = (p.content || '').replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (m, alt, url) => {
+                        let original = url;
+                        if (original.startsWith('https://gh-proxy.com/')) {
+                            try { original = decodeURIComponent(original.substring('https://gh-proxy.com/'.length)); } catch (e) {}
                         }
-                        return `![${alt}](${originalUrl})`; 
+                        return `![${alt}](${original})`;
                     });
-                    return { ...post, content: newContent };
+                    return { ...p, content };
                 });
 
-                const styleElement = document.createElement('style');
-                let dynamicCss = `
-                    body {
-                        background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
-                        color: ${siteConfig.styling.textColor || '#212529'};
-                    }
-                    :root {
-                        --accent-color: ${siteConfig.styling.accentColor || '#0d6efd'};
-                        --accent-hover: ${siteConfig.styling.accentHover || '#2980b9'}; 
-                        --header-bg-color: ${siteConfig.styling.headerBgColor || '#fff'};
-                        --header-text-color: ${siteConfig.styling.headerTitleColor || '#2c3e50'}; 
-                        --header-description-color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
-                        --header-link-color: ${siteConfig.styling.headerLinkColor || 'var(--accent-color)'};
-                        --header-link-hover-color: ${siteConfig.styling.headerLinkHoverColor || 'var(--accent-hover)'};
-                        --footer-bg-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
-                        --footer-text-color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
-                        --footer-link-color: ${siteConfig.styling.footerLinkColor || '#3498db'};
-                    }
-                    header nav a.active {
-                        color: var(--header-link-hover-color); 
-                        text-decoration: underline;
-                    }
+                // dynamic styling from config
+                document.title = siteConfig.site.title || `${owner} 的博客`;
+                siteTitleEl.textContent = siteConfig.site.title || `${owner} 的博客`;
+                siteDescriptionEl.textContent = siteConfig.site.description || '';
+                mainFooterEl.innerHTML = `&copy; ${new Date().getFullYear()} ${siteConfig.site.title || owner}. Powered by 期望ai`;
+
+                // inject dynamic CSS
+                const style = document.createElement('style');
+                style.textContent = `
+                    body{background-color:${siteConfig.styling.backgroundColor || '#f8f9fa'}; color:${siteConfig.styling.textColor || '#212529'}}
+                    :root{--accent:${siteConfig.styling.accentColor || '#0d6efd';} --accent-hover:${siteConfig.styling.accentHover || '#2980b9';}}
                 `;
-                // Only add background-image if URL is valid and looks good.
+                document.head.appendChild(style);
+
+                // background image if valid
                 if (siteConfig.styling.backgroundImageUrl && /^https?:\/\//i.test(siteConfig.styling.backgroundImageUrl)) {
-                    dynamicCss += `
-                        body {
-                            background-image: url("${getProxiedImageUrl(siteConfig.styling.backgroundImageUrl)}");
-                            background-size: cover;
-                            background-attachment: fixed;
-                            background-position: center;
-                        }
-                    `;
+                    const bgUrl = getProxiedImageUrl(siteConfig.styling.backgroundImageUrl);
+                    document.body.style.backgroundImage = `url("${bgUrl}")`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
+                    document.body.style.backgroundAttachment = 'fixed';
                 }
 
-                styleElement.textContent = dynamicCss;
-                document.head.appendChild(styleElement);
-
-                siteTitleEl.textContent = siteConfig.site.title || `${owner}的博客`;
-                siteDescriptionEl.textContent = siteConfig.site.description || "一个由GitHub Pages驱动的现代化博客。";
-                
-                if (adminLinkEl) {
-                    adminLinkEl.href = `${window.location.origin}${publicUrlBase}/admin.html`;
-                }
-
-                mainFooterEl.innerHTML = `
-                    <p>&copy; ${new Date().getFullYear()} ${siteConfig.site.title || `${owner}的博客`}. All rights reserved. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a></p>
-                `;
-
-                handleRoute();
-
-            } catch (error) {
-                console.error("博客初始化失败:", error);
-                document.title = "错误 - 博客";
-                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
-                blogContentDiv.style.display = 'block';
-            } finally {
+                // ready: render
                 loadingDiv.style.display = 'none';
+                blogContentDiv.style.display = 'block';
+                handleRoute();
+            } catch (e) {
+                console.error('初始化失败', e);
+                loadingDiv.style.display = 'none';
+                blogContentDiv.style.display = 'block';
+                blogContentDiv.innerHTML = `<div class="error">博客初始化失败：${e.message}。请先在管理后台完成初始化。</div>`;
             }
         };
 
-        // Events
         window.addEventListener('hashchange', handleRoute);
         document.addEventListener('DOMContentLoaded', () => {
-            initializeBlog(); 
-            // Fix for home navigation to truly remove hash
-            document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
-                e.preventDefault();
-                const cleanUrl = `${window.location.origin}${publicUrlBase}/index.html`;
-                if (window.location.href !== cleanUrl) {
-                    window.location.replace(cleanUrl); 
-                } else {
-                    handleRoute(); 
-                }
-            });
-            document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.hash = '/about';
-            });
+            initializeBlog();
+            document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => { e.preventDefault(); const cleanUrl = `${window.location.origin}${publicUrlBase}/index.html`; if (window.location.href !== cleanUrl) window.location.replace(cleanUrl); else handleRoute(); });
+            document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => { e.preventDefault(); window.location.hash = '/about'; });
         });
     </script>
 </body>
