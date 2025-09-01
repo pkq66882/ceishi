@@ -3,999 +3,692 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>加载中...</title>
+    <title>我的博客</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' font-size='90' text-anchor='middle' dominant-baseline='central'%3E✍️%3C/text%3E%3C/svg%3E" type="image/svg+xml">
-
-    <!-- Gitalk CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
-    <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
-        /* Modern CSS Reset (simplified) */
-        *, *::before, *::after {
-            box-sizing: border-box;
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --accent-color: #0d6efd;
+            --header-bg: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --link-hover: #0a58ca;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
         }
-        body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, figure, figcaption, blockquote, dl, dd {
+
+        body.dark-mode {
+            --bg-color: #282c36;
+            --text-color: #abb2bf;
+            --accent-color: #61afef;
+            --header-bg: #21252b;
+            --card-bg: #21252b;
+            --border-color: #3e4451;
+            --link-hover: #52a0e0;
+        }
+
+        body {
+            font-family: var(--font-family);
             margin: 0;
             padding: 0;
-        }
-        html {
-            scroll-behavior: smooth;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
             line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            background-color: #f8f9fa; /* Default background */
-            color: #212529; /* Default text color */
-        }
-        a {
-            color: #0d6efd; /* Default accent color for links */
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        ul, ol {
-            list-style: none; /* Remove default list styles */
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-        pre {
-            overflow-x: auto;
-        }
-        code {
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-        }
-
-        /* Layout and General Styling */
-        #app {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            flex-grow: 1; /* Allow container to grow */
         }
 
         header {
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            padding: 20px 0;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        header h1 {
-            font-size: 2.5rem;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        header p {
-            font-size: 1.1rem;
-            color: #7f8c8d;
-        }
-        nav {
-            margin-top: 15px;
-        }
-        nav a {
-            margin: 0 15px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #3498db;
-            transition: color 0.2s ease;
-        }
-        nav a:hover {
-            color: #2980b9;
+            background-color: var(--header-bg);
+            padding: 1.5rem 0;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        footer {
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 40px;
-            background-color: #f0f2f5;
-            color: #7f8c8d;
-            font-size: 0.9rem;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.03);
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 15px;
         }
-        footer a { color: #3498db; }
 
-        /* Blog Post List */
-        .post-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+        h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            color: var(--text-color);
         }
-        .post-card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
-            overflow: hidden;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-            position: relative; /* Used for badge positioning */
-        }
-        .post-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
-        }
-        .post-card-image {
-            width: 100%;
-            height: 200px; 
-            overflow: hidden;
-            background-color: #e9ecef;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .post-card-image img {
-            width: 100%;
-            height: auto; /* Maintain aspect ratio */
-            object-fit: cover; /* Crop to fill, maintain ratio */
-            min-height: 100%; /* Ensure height fills */
-            max-height: 100%; /* Ensure max height */
-        }
-        .post-card-content {
-            padding: 25px;
-            flex-grow: 1;
-        }
-        .post-card h2 {
-            font-size: 1.8rem;
-            color: #2c3e50;
-            margin-bottom: 12px;
-            line-height: 1.3;
-        }
-        .post-card h2 a {
-            color: inherit; /* Title link color inherits */
-        }
-        .post-card h2 a:hover {
-            text-decoration: underline;
-        }
-        .post-card .meta {
-            font-size: 0.85rem;
-            color: #7f8c8d;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap; 
-        }
-        .post-card .meta span {
-            display: inline-flex;
-            align-items: center;
-        }
-        .post-card .meta i {
-            margin-right: 5px;
-            color: #95a5a6;
-        }
-        .post-card .excerpt {
-            font-size: 1rem;
-            color: #5d6d7e;
-            margin-bottom: 20px;
-            line-height: 1.7;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .post-card .read-more {
-            display: inline-block;
-            background-color: #3498db;
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 5px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: background-color 0.2s ease;
-        }
-        .post-card .read-more:hover {
-            background-color: #2980b9;
+
+        h1 a {
+            color: inherit;
             text-decoration: none;
         }
-        /* New badge for post-card */
-        .post-card .new-badge {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background-color: var(--accent-color);
-            color: white;
-            padding: 5px 10px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border-bottom-left-radius: 8px;
-            z-index: 10;
+        h2, h3, h4, h5, h6 { color: var(--text-color); }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
 
-        /* Single Post View */
-        .post-full {
-            background-color: #fff;
-            padding: 40px;
+        nav ul li {
+            display: inline-block;
+            margin-left: 20px;
+        }
+
+        nav a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--link-hover);
+        }
+
+        main {
+            flex-grow: 1;
+            padding-bottom: 3rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            text-align: left;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
+            word-wrap: break-word; /* 确保长单词不溢出 */
         }
-        .post-full h1 {
-            font-size: 2.8rem;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            line-height: 1.2;
+
+        .post-list .card h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
         }
-        .post-full .meta {
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 20px;
+        .post-list .card h2 a {
+            color: var(--text-color);
+            text-decoration: none;
+            transition: color 0.2s;
         }
-        .post-full .meta span {
-            display: inline-flex;
-            align-items: center;
+        .post-list .card h2 a:hover {
+            color: var(--accent-color);
         }
-        .post-full .meta i {
-            margin-right: 8px;
-            color: #95a5a6;
-        }
-        .post-content {
-            font-size: 1.05rem;
-            color: #34495e;
-            line-height: 1.8;
-            word-wrap: break-word; /* Ensure long words wrap */
-        }
-        .post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6 {
-            color: #2c3e50;
-            margin-top: 30px;
+
+        .post-meta {
+            font-size: 0.9em;
+            color: #6c757d;
             margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #f0f0f0;
         }
-        .post-content h1 { font-size: 2.5rem; }
-        .post-content h2 { font-size: 2rem; }
-        .post-content h3 { font-size: 1.7rem; }
-        .post-content p {
-            margin-bottom: 1em;
+
+        .post-meta span {
+            margin-right: 15px;
         }
+
+        .post-meta a {
+            color: #6c757d;
+            text-decoration: none;
+        }
+
+        .post-meta a:hover {
+            text-decoration: underline;
+        }
+
         .post-content img {
             max-width: 100%;
             height: auto;
-            border-radius: 8px;
-            margin: 1.5rem auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .post-content blockquote {
-            padding: 10px 20px;
-            margin: 20px 0;
-            border-left: 4px solid #3498db;
-            color: #5d6d7e;
-            background-color: #f5fafd;
-            border-radius: 5px;
-        }
-        .post-content pre {
-            background-color: #2d2d2d;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            margin: 20px 0;
-        }
-        /* Highlight.js code color variables needed for dark theme */
-        .hljs {
-            background: #282c34 !important; 
-            color: #abb2bf !important;
-        }
-        .post-content code {
-            background-color: #e0e0e0;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            word-break: break-all;
-        }
-        .post-content pre code {
-            background-color: transparent;
-            padding: 0;
-            font-size: 1em;
-            word-break: normal; 
-        }
-        .post-content ul, .post-content ol {
-            margin-left: 25px;
-            margin-bottom: 1em;
-            list-style-type: disc; 
-        }
-        .post-content ol {
-            list-style-type: decimal;
-        }
-        .post-content li {
-            margin-bottom: 0.5em;
-        }
-        .post-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            overflow-x: auto;
             display: block;
+            margin: 1.5rem auto;
+            border-radius: 8px;
         }
-        .post-content th, .post-content td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        .post-content th {
-            background-color: #f2f2f2;
+        .post-content iframe {
+            max-width: 100%;
+            display: block;
+            margin: 1.5rem auto;
         }
 
-        /* About Page */
-        .about-page {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            text-align: left;
+        .read-more {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 15px;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.2s;
         }
-        .about-page h1 {
-            font-size: 2.5rem;
-            color: #2c3e50;
+
+        .read-more:hover {
+            background-color: var(--link-hover);
+        }
+
+        #site-description {
+            font-size: 1.1em;
+            color: #6c757d;
+            margin-top: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        #about-page h2 {
+            margin-top: 0;
             margin-bottom: 20px;
         }
-        .about-content {
-             font-size: 1.05rem;
-            color: #34495e;
-            line-height: 1.8;
-            word-wrap: break-word; /* Ensure long words wrap */
+
+        .markdown-body pre {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin-bottom: 1rem;
         }
-        .about-content h2, .about-content h3 {
-             color: #2c3e50;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #f0f0f0;
+        .markdown-body code {
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: rgba(175, 184, 193, 0.2);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
         }
-        .about-content p { margin-bottom: 1em; }
-        .about-content ul, .about-content ol {
-            margin-left: 25px;
-            margin-bottom: 1em;
-            list-style-type: disc;
+        .markdown-body pre code {
+            background: none;
+            padding: 0;
+        }
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid #dfe2e5;
+            margin: 0;
+            background-color: var(--bg-color);
+        }
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .markdown-body thead {
+            background-color: #f6f8fa;
+        }
+        body.dark-mode .markdown-body thead {
+            background-color: #3e4451;
         }
 
-        /* Error/Loading state */
-        .loading, .error {
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
             text-align: center;
-            padding: 50px;
-            font-size: 1.2rem;
-            color: #7f8c8d;
+            font-size: 0.9em;
+            color: #6c757d;
+            background-color: var(--header-bg); /* Use header-bg for footer too for consistency */
+            box-shadow: 0 -0.125rem 0.25rem rgba(0,0,0,.025);
         }
-        .error {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        .loading i {
-            margin-right: 10px;
-            animation: spin 1.5s linear infinite;
-        }
-         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        footer a { color: var(--accent-color); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
 
-        /* Gitalk Styling Adjustments */
+        /* Gitalk specific styles */
         #gitalk-container {
-            margin-top: 40px;
-            padding: 20px;
-            background-color: #fdfdfd;
+            padding: 25px;
+            background-color: var(--card-bg);
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .gt-container {
-            font-family: inherit; 
-        }
-        .gt-hd-text strong {
-            color: inherit; 
-        }
-        .gt-hdr-btn {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        .gt-hdr-btn:hover {
-            background-color: var(--accent-hover);
-            border-color: var(--accent-hover);
-        }
-        .gt-btn-public, .gt-btn-preview {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        .gt-btn-public:hover, .gt-btn-preview:hover {
-            background-color: var(--accent-hover);
-            border-color: var(--accent-hover);
-        }
-        .gt-link, .gt-comment-username {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-        .gt-link:hover, .gt-comment-username:hover {
-            text-decoration: underline;
-        }
-        /* Markdown-it generated list styles */
-        .post-content ul, .post-content ol, .about-content ul, .about-content ol {
-            padding-left: 20px;
-            margin-left: 0;
-            list-style-position: inside; 
-        }
-        .post-content ul li, .about-content ul li {
-            list-style-type: disc;
-        }
-        .post-content ol li, .about-content ol li {
-            list-style-type: decimal;
-        }
-        /* Custom styles from config variables */
-        header a {
-            color: var(--header-link-color, var(--accent-color));
-        }
-        header a:hover {
-            color: var(--header-link-hover-color, var(--accent-hover));
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
         }
 
-
-        /* Responsiveness */
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            header h1 {
-                font-size: 2rem;
+            header .container {
+                text-align: center;
             }
-            header p {
-                font-size: 1rem;
+            nav ul {
+                margin-top: 1rem;
             }
-            nav a {
+            nav ul li {
                 margin: 0 10px;
-                font-size: 1rem;
             }
-            .container {
-                padding: 15px;
+            h1 {
+                font-size: 1.8rem;
             }
-            .post-list {
-                grid-template-columns: 1fr;
-            }
-            .post-full, .about-page {
-                padding: 25px;
-            }
-            .post-full h1 {
-                font-size: 2rem;
-            }
-            .post-content, .about-content {
-                font-size: 1rem;
-            }
-             .post-full .meta {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            .post-card-image {
-                height: 180px; 
+             #site-description {
+                font-size: 1em;
             }
         }
     </style>
 </head>
 <body>
-    <div id="app">
-        <header>
-            <div class="container">
-                <h1 id="site-title"></h1>
-                <p id="site-description"></p>
-                <nav id="main-nav">
-                    <!-- Nav links use javascript:void(0) and are controlled by JS for routing -->
-                    <a href="javascript:void(0);" class="nav-link active" data-route="home">首页</a>
-                    <a href="javascript:void(0);" class="nav-link" data-route="about">关于我</a>
-                    <!-- adminLinkEl's href will be set dynamically in initializeBlog -->
-                    <a id="admin-link" target="_blank" class="nav-link admin-link">管理后台</a>
-                </nav>
-            </div>
-        </header>
+    <header>
+        <div class="container">
+            <h1 id="site-title"><a href="#/">我的博客</a></h1>
+            <p id="site-description">由GitHub驱动的现代化半静态博客</p>
+            <nav>
+                <ul>
+                    <li><a href="#/" id="nav-home">首页</a></li>
+                    <li><a href="#/about" id="nav-about">关于</a></li>
+                    <li><a href="admin.html" target="_blank">后台管理</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
-        <main class="container">
-            <div id="loading" class="loading">
-                <i class="fas fa-spinner fa-spin"></i> 博客初始化中...
-            </div>
-            <div id="blog-content">
-                <!-- Blog content will be loaded here -->
-            </div>
-            <div id="gitalk-container" style="display: none;"></div>
-        </main>
+    <main class="container">
+        <div id="loading" style="text-align: center; padding: 50px; display: none;">
+            <p><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%236c757d' d='M73 50c0-12.7-10.3-23-23-23S27 37.3 27 50s10.3 23 23 23 23-10.3 23-23zm-23 20c-9.4 0-17-7.6-17-17s7.6-17 17-17 17 7.6 17 17-7.6 17-17 17z'%3E%3CanimateTransform attributeName='transform' type='rotate' calcMode='linear' values='0 50 50;360 50 50' keyTimes='0;1' dur='1.5s' repeatCount='indefinite'%3E%3C/animateTransform%3E%3C/path%3E%3C/svg%3E" alt="加载中..." style="width: 50px; height: 50px;"></p>
+            <p>正在加载博客内容...</p>
+        </div>
 
-        <footer id="main-footer"></footer>
-    </div>
+        <div id="posts-list-view" class="blog-view">
+            <!-- 文章列表将渲染在这里 -->
+        </div>
 
-    <!-- Markdown It and Highlight.js -->
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/languages/json.min.js"></script>
-    <!-- Font Awesome Icons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- Gitalk JS -->
+        <div id="post-detail-view" class="blog-view" style="display: none;">
+            <article class="card">
+                <h2 id="post-detail-title"></h2>
+                <div class="post-meta">
+                    <span id="post-detail-date"></span>
+                    <span id="post-detail-category"></span>
+                    <span id="post-detail-tags"></span>
+                </div>
+                <div id="post-detail-content" class="markdown-body"></div>
+            </article>
+            <div id="gitalk-container" style="margin-top: 30px;"></div>
+        </div>
+
+        <div id="about-page" class="blog-view card" style="display: none;">
+            <h2>关于我</h2>
+            <div id="about-content" class="markdown-body"></div>
+        </div>
+
+        <div id="not-found-page" class="blog-view card" style="display: none;">
+            <h2>页面未找到 (404)</h2>
+            <p>抱歉，您访问的页面不存在。</p>
+            <p><a href="#/">返回首页</a></p>
+        </div>
+    </main>
+
+    <footer id="blog-footer">
+        <div class="container">
+            <p>&copy; <span id="current-year"></span> <a href="#/">我的博客</a>. All rights reserved.</p>
+            <p>Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a></p>
+        </div>
+    </footer>
+
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Code Highlight -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <!-- Gitalk -->
     <script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
 
     <script>
-        // A simple slugify function for generating URL-friendly strings
-        const slugify = (text) => {
-            if (!text) return '';
-            return text.toString().toLowerCase()
-                .trim()
-                .replace(/\s+/g, '-')         // Replace spaces with -
-                .replace(/[^\p{L}\p{N}_\-.]/gu, '')     // Remove all non-alphanumeric, non-dash, non-dot, non-underscore (Unicode-aware)
-                .replace(/--+/g, '-')         // Replace multiple - with single -
-                .substring(0, 60)             // Limit length for safer IDs
-                .replace(/^[_\-.]+|[_\-.]+$/g, ''); // Remove leading/trailing non-alphanumeric
+        // ==================== 全局变量和工具函数 ====================
+        const utf8_to_b64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        const b64_to_utf8 = (str) => {
+            try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch (e) { return atob(str); }
         };
 
-        const md = new markdownit({
-            html: true,
-            linkify: true,
-            typographer: true,
-            highlight: function (str, lang) {
-                // Ensure the string passed to highlight.js is HTML-escaped to prevent XSS and warnings.
-                const escapedStr = md.utils.escapeHtml(str); 
-                if (lang && hljs.getLanguage(lang)) {
-                    try {
-                        return '<pre><code class="hljs">' +
-                               hljs.highlight(escapedStr, { language: lang, ignoreIllegals: true }).value + 
-                               '</code></pre>';
-                    } catch (__) {
-                        console.warn('Highlight.js failed, falling back to basic escape.');
-                    }
+        const GitHubAPI = {
+            BASE_URL: 'https://api.github.com',
+            async request(token, endpoint, options = {}) {
+                const url = `${this.BASE_URL}${endpoint}`;
+                const headers = { 'Authorization': token ? `token ${token}` : undefined, 'Accept': 'application/vnd.github.v3+json', ...options.headers };
+                if (!token) delete headers.Authorization; // Do not send Authorization header if token is not provided
+                
+                const response = await fetch(url, { ...options, headers });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, documentation_url: response.url || endpoint }));
+                    const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}`;
+                    console.error('GitHub API Error for frontend:', errorMessage, errorData);
+                    throw new Error(`${errorMessage} (Path: ${endpoint})`);
                 }
-                return '<pre><code class="hljs">' + escapedStr + '</code></pre>'; // Fallback also uses escaped string
-            }
-        });
+                if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
+                return response.json();
+            },
+            async getFile(token, owner, repo, path) {
+                try {
+                    const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
+                    if (!result || typeof result.content !== 'string' || b64_to_utf8(result.content).trim().length === 0) {
+                        console.warn(`File content for ${path} is empty, invalid, or file not found.`);
+                        return null; 
+                    }
+                    return { content: b64_to_utf8(result.content), sha: result.sha };
+                } catch (error) {
+                    if (error.message.toLowerCase().includes('not found') || error.message.includes('file not found')) {
+                        console.info(`File not found: ${path}. This is expected during initial setup or for non-existent files.`);
+                        return null;
+                    }
+                    console.error(`Error fetching file ${path}:`, error);
+                    throw error;
+                }
+            },
+        };
 
+        // GitHub Owner and global data (determined during initialization)
+        let blogOwner = '';
+        let blogRepo = '';
+        let blogBasePath = ''; // Base path within the repo, e.g., 'blog' if hosted at user.github.io/blog/
         let siteConfig = null;
-        let blogPosts = [];
-        let owner = ''; 
-        let repo = '';    
-        let publicUrlBase = ''; 
+        let allPosts = [];
 
-        const appDiv = document.getElementById('app');
-        const blogContentDiv = document.getElementById('blog-content');
-        const loadingDiv = document.getElementById('loading');
-        const siteTitleEl = document.getElementById('site-title');
-        const siteDescriptionEl = document.getElementById('site-description');
-        const mainFooterEl = document.getElementById('main-footer');
-        const gitalkContainerEl = document.getElementById('gitalk-container');
-        const adminLinkEl = document.getElementById('admin-link');
+        // Utility function to detect GitHub repo and base path - REUSED from admin.html
+        // 此函数不再依赖于`userLogin`，而是直接从`GitHubAPI.getUser`获取`user.login`
+        async function detectRepoAndBasePath(userLoginFromApi) {
+            const hostname = window.location.hostname; // e.g., pkq66882.github.io, custom.domain.com
+            let pathSegments = window.location.pathname.split('/').filter(p => p); // e.g., ["ceishi", "admin.html"] or ["admin.html"]
 
+            let detectedRepo = '';
+            let detectedBasePath = '';
 
-        // Unified path parsing function (consistent with admin.html)
-        const parseGitHubRepoAndBasePath = (githubUsername) => {
-            const hostname = window.location.hostname; 
-            let pathSegments = window.location.pathname.split('/').filter(p => p); 
-
-            // Remove current HTML file (admin.html or index.html) if it's the last segment
+            // Remove admin.html or index.html from pathSegments for base path calculation
             if (pathSegments.length > 0 && 
-                (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
-                 pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
+                (['admin.html', 'index.html'].includes(pathSegments[pathSegments.length - 1].toLowerCase()))
+            ) {
                 pathSegments.pop();
             }
 
-            const usernameLow = githubUsername.toLowerCase();
-            const hostnameLow = hostname.toLowerCase();
-
-            let finalOwner = githubUsername; 
-            let finalRepo = '';
-            let finalPublicUrlBase = ''; 
-
-            // Scenario 1: User/Organization site (e.g., user.github.io) or local environment
-            if (hostnameLow === `${usernameLow}.github.io` || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
-                if (pathSegments.length > 0) {
-                    finalRepo = pathSegments[0];
-                    finalPublicUrlBase = `/${pathSegments[0]}`;
+            if (hostname.endsWith('.github.io')) {
+                const hostnamePrefix = hostname.replace('.github.io', ''); // e.g., "pkq66882"
+                if (hostnamePrefix.toLowerCase() === userLoginFromApi.toLowerCase()) {
+                    // User or Organization Page: username.github.io -> repo is hostname
+                    detectedRepo = hostname; // e.g., "pkq66882.github.io"
+                    detectedBasePath = pathSegments.join('/'); // e.g., "" (for root) or "blog" (for pkq66882.github.io/blog/)
+                } else if (pathSegments.length > 0) {
+                    // Project Page: username.github.io/reponame/ -> repo is pathSegments[0]
+                    // e.g. https://pkq66882.github.io/ceishi/ -> repo='ceishi', basePath=''
+                    detectedRepo = pathSegments[0];
+                    detectedBasePath = pathSegments.slice(1).join('/'); // basePath is empty if index.html is directly in 'ceishi'
                 } else {
-                    finalRepo = `${usernameLow}.github.io`; 
-                    finalPublicUrlBase = '';
+                    // This case is unlikely for a github.io domain with content. Fallback.
+                    detectedRepo = userLoginFromApi + '.github.io'; // Default to user page repo naming convention
+                    detectedBasePath = '';
                 }
-            } 
-            // Scenario 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
-            else if (pathSegments.length > 0) {
-                finalRepo = pathSegments[0];
-                finalPublicUrlBase = `/${pathSegments[0]}`;
             } else {
-                finalRepo = `${usernameLow}.github.io`; 
-                finalPublicUrlBase = '';
+                // Custom domain or local development.
+                if (pathSegments.length > 0) {
+                    detectedRepo = pathSegments[0]; // e.g., "ceishi" if URL is http://local/ceishi/index.html
+                    detectedBasePath = pathSegments.slice(1).join('/');
+                } else {
+                    // Fallback if no path segments (e.g., http://localhost/index.html)
+                    detectedRepo = userLoginFromApi + '.github.io'; 
+                    detectedBasePath = '';
+                }
             }
+            
+            console.log(`Detected GitHub Info: Owner=${userLoginFromApi}, Repo=${detectedRepo}, BasePath="${detectedBasePath}"`);
+            return { detectedRepo, detectedBasePath };
+        }
 
-            // Safety net: if repo is still empty (shouldn't happen with the above logic, but for robustness)
-            if (!finalRepo || finalRepo.trim() === '') {
-                finalRepo = `${usernameLow}.github.io`;
-                finalPublicUrlBase = '';
-            }
-
-            console.log(`[parseGitHubRepoAndBasePath Final] Owner: ${finalOwner}, Repo: "${finalRepo}", PublicUrlBase: "${finalPublicUrlBase}"`);
-            return { owner: finalOwner, repo: finalRepo, publicUrlBase: finalPublicUrlBase };
+        // ==================== UI 渲染函数 ====================
+        const showLoading = (show) => {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
         };
 
-
-        // GitHubAPI_Frontend: Used for fetching public JSON files from raw.githubusercontent.com
-        const GitHubAPI_Frontend = {
-            async getRawFile(owner, repo, path) {
-                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-                console.log(`[GitHubAPI_Frontend] Fetching raw file from: ${rawUrl}`);
-                const response = await fetch(rawUrl);
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        console.info(`File not found: ${rawUrl}. This is expected for initial setup.`);
-                        return path === 'posts.json' ? [] : {}; 
-                    }
-                    throw new Error(`无法加载文件 (${response.status} ${response.statusText} from ${rawUrl})`);
-                }
-                const textContent = await response.text();
-                // Handle empty or whitespace-only files
-                if (!textContent.trim()) {
-                    console.warn(`File ${rawUrl} is empty or contains only whitespace. Returning empty JSON interpretation.`);
-                    return path === 'posts.json' ? [] : {}; 
-                }
-                try {
-                    return JSON.parse(textContent);
-                } catch (e) {
-                    console.error(`Error parsing JSON from ${rawUrl}: ${e.message}. Content: ${textContent.substring(0, 100)}...`);
-                    throw new Error(`文件 ${rawUrl} 内容不是有效的JSON格式: ${e.message}`);
-                }
-            }
+        const showView = (viewId) => {
+            document.querySelectorAll('.blog-view').forEach(view => view.style.display = 'none');
+            document.getElementById(viewId).style.display = 'block';
+            resetGitalk(); // Hide Gitalk on view change, will be re-initialized for post-detail
         };
 
-        // Unified function to process image URLs for display (always return proxied URL)
-        const getProxiedImageUrl = (inputUrl) => {
-            if (!inputUrl) return '';
+        const renderPostsList = () => {
+            showView('posts-list-view');
+            const postsListDiv = document.getElementById('posts-list-view');
+            postsListDiv.innerHTML = ''; // 清空现有内容
 
-            let urlToProcess = inputUrl;
-
-            if (urlToProcess.startsWith('https://gh-proxy.com/')) {
-                try {
-                    const decodedPart = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
-                    if (decodedPart.startsWith('https://raw.githubusercontent.com/') || decodedPart.startsWith('http')) {
-                        urlToProcess = decodedPart;
-                    } else {
-                        console.warn('URL was gh-proxy but decoded target seems invalid, keeping original for re-encoding:', urlToProcess);
-                        urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
-                    }
-                } catch (e) {
-                    console.warn('Failed to decode existing gh-proxy URL, processing the encoded part directly:', e, urlToProcess);
-                    urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
-                }
-            }
-
-            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
-                try {
-                    const urlObj = new URL(urlToProcess);
-                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
-                    urlObj.search = decodeURIComponent(urlObj.search);
-                    urlToProcess = urlObj.toString();
-                } catch (e) {
-                    console.warn("URL parsing/decoding for path normalization failed, falling back to direct encoding:", e, urlToProcess);
-                }
-                return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
-            }
-
-            console.warn("getProxiedImageUrl received a URL that wasn't absolute HTTP/S or gh-proxy link, returning as is.", inputUrl, "It might be a relative path or a data URI.");
-            return inputUrl; 
-        };
-
-        // Function to resolve relative image paths to full raw GitHub URLs
-        const resolveMarkdownImageUrl = (url, currentOwner, currentRepo) => {
-            if (!url) return ''; // Explicitly return empty string if URL is falsy
-
-            // If it's already an absolute HTTP/HTTPS URL, return it as is (for getProxiedImageUrl to process)
-            if (url.startsWith('http://') || url.startsWith('https://')) {
-                return url;
-            }
-            // If it's a relative path (e.g., 'images/image.png' or '/images/image.png')
-            // Construct the raw.githubusercontent.com URL
-            let cleanPath = url.startsWith('/') ? url.substring(1) : url; // Remove leading "/"
-            return `https://raw.githubusercontent.com/${currentOwner}/${currentRepo}/main/${cleanPath}`;
-        };
-
-
-        // ==================== Render Functions ====================
-        const renderHomePage = () => {
-             // Clear existing content fully before inserting new content
-            blogContentDiv.innerHTML = `<div class="post-list"></div>`;
-            const postListContainer = blogContentDiv.querySelector('.post-list');
-
-            if (blogPosts.length === 0) {
-                postListContainer.innerHTML = `<div class="loading" style="grid-column: 1 / -1;"><i class="fas fa-info-circle"></i> 暂无文章。去<a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank" style="margin-left: 5px;">管理后台</a>发布您的第一篇文章吧！</div>`;
+            if (!allPosts || allPosts.length === 0) {
+                postsListDiv.innerHTML = '<div class="card"><p style="text-align:center;">暂无文章。</p></div>';
                 return;
             }
 
-            blogContentDiv.style.display = 'block';
-            gitalkContainerEl.style.display = 'none';
-
-            blogPosts.forEach(post => {
-                const excerpt = post.content.split('<!--more-->')[0].trim();
-                const postCard = document.createElement('div');
-                postCard.className = 'post-card';
-                
-                // Extract first image from markdown (now also handles relative paths better)
-                // Broader regex to capture any non-empty URL-like path
-                const firstImageMatch = post.content.match(/!\[(.*?)\]\((.+?)\)/); 
-                let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
-                let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
-
-                const resolvedImageUrl = resolveMarkdownImageUrl(imageUrl, owner, repo);
-                const proxiedImageUrl = getProxiedImageUrl(resolvedImageUrl);
-
-                // Add onerror handler for image tags
-                const imageOnError = `this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.style.opacity='0.5'; this.title='图片加载失败';`;
-                const imagePreviewHtml = proxiedImageUrl ? 
-                                         `<div class="post-card-image"><img src="${proxiedImageUrl}" alt="${imageAlt}" loading="lazy" onerror="${imageOnError}"></div>` : 
-                                         '';
-
-                postCard.innerHTML = `
-                    ${imagePreviewHtml}
-                    <div class="post-card-content">
-                        <h2><a href="#/post/${post.id}">${post.title}</a></h2>
-                        <div class="meta">
-                            <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
-                            <span><i class="fas fa-tag"></i> ${post.category || '未分类'}</span>
-                            ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.join(', ')}</span>` : ''}
-                        </div>
-                        <div class="excerpt">${md.render(excerpt)}</div>
-                        <a href="#/post/${post.id}" class="read-more">阅读全文 <i class="fas fa-arrow-right"></i></a>
+            allPosts.forEach(post => {
+                const excerpt = post.content.split('<!--more-->')[0];
+                const postElement = document.createElement('div');
+                postElement.className = 'card';
+                postElement.innerHTML = `
+                    <h2><a href="#/post/${post.id}">${post.title}</a></h2>
+                    <div class="post-meta">
+                        <span>发布于 ${new Date(post.createdAt).toLocaleDateString()}</span>
+                        <span>分类: ${post.category || '未分类'}</span>
+                        <span>标签: ${post.tags && post.tags.length > 0 ? post.tags.join(', ') : '无'}</span>
                     </div>
+                    <div class="markdown-body">${marked.parse(excerpt)}</div>
+                    ${post.content.includes('<!--more-->') ? `<a href="#/post/${post.id}" class="read-more">阅读全文 &rarr;</a>` : ''}
                 `;
-                postListContainer.appendChild(postCard);
+                postsListDiv.appendChild(postElement);
             });
+            hljs.highlightAll(); // 渲染代码高亮
         };
 
-        const renderPostPage = (postId) => {
-            const post = blogPosts.find(p => p.id === postId);
+        const renderPostDetail = (postId) => {
+            showView('post-detail-view');
+            const post = allPosts.find(p => p.id === postId);
+
             if (!post) {
-                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 文章未找到！</div>`;
-                gitalkContainerEl.style.display = 'none';
+                showView('not-found-page');
                 return;
             }
 
-            // Standardize all image URLs within the post content for display
-            let processedContent = post.content.replace(/!\[(.*?)\]\((.+?)\)/g, (match, alt, url) => {
-                 const resolved = resolveMarkdownImageUrl(url, owner, repo);
-                const proxied = getProxiedImageUrl(resolved);
-                // Add onerror to markdown images as well
-                const imageOnError = `this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.style.opacity='0.5'; this.title='图片加载失败';"`;
-                return `![${alt}](${proxied})" onerror="${imageOnError}"`;
-            });
+            document.getElementById('post-detail-title').textContent = post.title;
+            document.getElementById('post-detail-date').textContent = `发布于 ${new Date(post.createdAt).toLocaleDateString()}`;
+            document.getElementById('post-detail-category').textContent = `分类: ${post.category || '未分类'}`;
+            document.getElementById('post-detail-tags').textContent = `标签: ${post.tags && post.tags.length > 0 ? post.tags.join(', ') : '无'}`;
+            document.getElementById('post-detail-content').innerHTML = marked.parse(post.content);
 
-            blogContentDiv.innerHTML = `
-                <article class="post-full">
-                    <h1>${post.title}</h1>
-                    <div class="meta">
-                        <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
-                        <span><i class="fas fa-edit"></i> ${new Date(post.updatedAt).toLocaleDateString()}</span>
-                        <span><i class="fas fa-tag"></i> ${post.category || '未分类'}</span>
-                        ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.join(', ')}</span>` : ''}
-                    </div>
-                    <div class="post-content">${md.render(processedContent)}</div>
-                </article>
-            `;
-            blogContentDiv.style.display = 'block';
-            hljs.highlightAll(); 
+            hljs.highlightAll(); // 渲染代码高亮
 
+            // Gitalk comments
             if (siteConfig && siteConfig.gitalk && siteConfig.gitalk.enabled) {
-                gitalkContainerEl.innerHTML = '';
-                gitalkContainerEl.style.display = 'block';
-
-                const safePostId = slugify(post.id).substring(0, 50); 
-                const safeTitleSlug = slugify(post.title).substring(0, 50); 
-                const gitalkId = `${safeTitleSlug}-${safePostId}`; 
-
-                try {
-                    const gitalk = new Gitalk({
-                        clientID: siteConfig.gitalk.clientID,
-                        clientSecret: siteConfig.gitalk.clientSecret,
-                        repo: siteConfig.gitalk.repo,
-                        owner: siteConfig.gitalk.owner,
-                        admin: siteConfig.gitalk.admin,
-                        id: gitalkId,
-                        distractionFreeMode: siteConfig.gitalk.distractionFreeMode || false,
-                        title: post.title,
-                        labels: [...new Set([...(siteConfig.gitalk.labels || ['Gitalk', '评论']), post.category || '未分类'])], // Ensure labels are an array and deduplicate
-                        body: `文章链接: ${window.location.href}\n\n${post.title}\n\n${post.content.split('<!--more-->')[0].trim().substring(0, 500)}...`,
-                        createIssueManually: false,
-                        perPage: siteConfig.gitalk.perPage || 10,
-                    });
-                    gitalk.render('gitalk-container');
-                } catch (e) {
-                     console.error("Gitalk initialization failed:", e);
-                     gitalkContainerEl.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> Gitalk 评论加载失败: ${e.message}。请检查管理后台的评论设置。</div>`;
-                }
+                initializeGitalk(post);
             } else {
-                gitalkContainerEl.style.display = 'none';
+                document.getElementById('gitalk-container').style.display = 'none';
             }
         };
 
         const renderAboutPage = () => {
-             blogContentDiv.innerHTML = `
-                <div class="about-page">
-                    <h1>关于我</h1>
-                    <div class="about-content">${siteConfig && siteConfig.site.aboutContent ? md.render(siteConfig.site.aboutContent) : `<p>暂无内容。请前往<a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank">管理后台</a>的“网站设置”编辑“关于我”页面。</p>`}</div>
-                </div>
-            `;
-            blogContentDiv.style.display = 'block';
-            gitalkContainerEl.style.display = 'none';
+            showView('about-page');
+            const aboutContentDiv = document.getElementById('about-content');
+            const content = siteConfig?.site?.aboutContent || '# 关于我\n\n您可以使用后台管理系统来编辑此页面内容。';
+            aboutContentDiv.innerHTML = marked.parse(content);
+            hljs.highlightAll();
         };
 
-        const render404Page = () => {
-            blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 页面未找到 (404)</div>`;
-            blogContentDiv.style.display = 'block';
-            gitalkContainerEl.style.display = 'none';
-        };
-
-        // ==================== Router Handling ====================
-        const handleRoute = () => {
-            const path = window.location.hash.slice(1);
-            const navLinks = document.querySelectorAll('#main-nav .nav-link');
-            navLinks.forEach(link => link.classList.remove('active'));
-
-            if (path.startsWith('/post/')) {
-                const postId = path.replace('/post/', '');
-                renderPostPage(postId);
-                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
-                if (homeNavLink) homeNavLink.classList.add('active'); 
-            } else if (path === '/about') {
-                renderAboutPage();
-                const aboutNavLink = document.querySelector('#main-nav a[data-route="about"]');
-                if (aboutNavLink) aboutNavLink.classList.add('active');
-            } else { // Home page
-                renderHomePage();
-                const homeNavLink = document.querySelector('#main-nav a[data-route="home"]');
-                if (homeNavLink) homeNavLink.classList.add('active');
+        // ==================== Gitalk 评论初始化 ====================
+        let gitalkInstance = null;
+        const initializeGitalk = (post) => {
+            const gitalkConfig = siteConfig.gitalk;
+            if (!gitalkConfig || !gitalkConfig.enabled) {
+                document.getElementById('gitalk-container').style.display = 'none';
+                return;
             }
+            document.getElementById('gitalk-container').style.display = 'block';
+
+            // Gitalk requires a unique ID for each post as part of the GitHub Issue title/label
+            // Max length for id is 50. Hash the post ID to ensure uniqueness and fit
+            const getGitalkId = (str) => {
+                let hash = 0;
+                if (str.length === 0) return hash;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash |= 0; // Convert to 32bit integer
+                }
+                return `post-${Math.abs(hash)}`; // Using a hash based ID
+            };
+            const gitalkId = getGitalkId(post.id); 
+
+            if (gitalkInstance) {
+                // To properly handle hash changes and different posts, it's safer to destroy and re-create Gitalk.
+                // Simply calling render might not update context fully for new 'id'.
+                gitalkInstance = null; // Mark for recreation
+                document.getElementById('gitalk-container').innerHTML = ''; // Clear container
+            }
+
+            // Always create a new instance for the specific post
+            gitalkInstance = new Gitalk({
+                clientID: gitalkConfig.clientID,
+                clientSecret: gitalkConfig.clientSecret,
+                repo: gitalkConfig.repo,
+                owner: gitalkConfig.owner,
+                admin: gitalkConfig.admin,
+                id: gitalkId, // Unique ID for each post
+                title: post.title, // Use post title as issue title
+                labels: ['Gitalk', post.category || '未分类'],
+                distractionFreeMode: false, // Facebook-like distraction free mode
+                // You might need to set it for custom domains if the issue's URL is incorrect.
+                // url: window.location.href, // This defaults to current URL. For gh-pages it works.
+            });
+            gitalkInstance.render('gitalk-container');
         };
 
-        // ==================== Blog Initialization ====================
+        const resetGitalk = () => {
+             if (gitalkInstance) {
+                document.getElementById('gitalk-container').innerHTML = ''; // Clear the container
+                gitalkInstance = null; // Nullify instance
+             }
+             document.getElementById('gitalk-container').style.display = 'none';
+        };
+
+
+        // ==================== 博客初始化 ====================
         const initializeBlog = async () => {
-             loadingDiv.style.display = 'block';
-
+            showLoading(true);
             try {
-                let tempUsernameFromHost = window.location.hostname.split('.')[0];
-                if (tempUsernameFromHost.toLowerCase() === 'localhost' || tempUsernameFromHost.toLowerCase() === '127.0.0.1' || !tempUsernameFromHost) {
-                    tempUsernameFromHost = "pkq66882"; // Default fallback (replace with your GitHub username if different)
-                    console.warn(`[index.html] Running locally or on custom domain. Defaulting GitHub username for repo detection to "${tempUsernameFromHost}".`);
-                }
-                const resolvedOwner = tempUsernameFromHost; 
+                // 1. Get user to determine potential owner, this request doesn't need a token
+                const user = await GitHubAPI.request(null, '/user'); 
+                blogOwner = user.login;
+
+                // 2. Dynamically detect repo and base path
+                const { detectedRepo, detectedBasePath } = await detectRepoAndBasePath(blogOwner);
+                blogRepo = detectedRepo;
+                blogBasePath = detectedBasePath;
                 
-                const parsedPath = parseGitHubRepoAndBasePath(resolvedOwner);
-                owner = parsedPath.owner; 
-                repo = parsedPath.repo;   
-                publicUrlBase = parsedPath.publicUrlBase; 
+                // Helper to get path with determined basePath
+                const getBlobPath = (fileName) => blogBasePath ? `${blogBasePath}/${fileName}` : fileName;
 
-                console.log(`[index.html] Detected Owner: ${owner}, Repo: ${repo}, PublicUrlBase: "${publicUrlBase}"`);
-
-                const configRawFilepath = 'config.json';
-                const postsRawFilepath = 'posts.json';
-
-                console.log(`[index.html] Attempting to fetch config.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${configRawFilepath}`);
-                console.log(`[index.html] Attempting to fetch posts.json from: https://raw.githubusercontent.com/${owner}/${repo}/main/${postsRawFilepath}`);
-
-                const fetchConfig = GitHubAPI_Frontend.getRawFile(owner, repo, configRawFilepath);
-                const fetchPosts = GitHubAPI_Frontend.getRawFile(owner, repo, postsRawFilepath);
-
-                const [configJson, postsJson] = await Promise.all([fetchConfig, fetchPosts]);
-
-                if (!configJson || Object.keys(configJson).length === 0) {
-                    throw new Error("config.json 文件未找到或为空，请先前往管理后台初始化。");
+                // 3. Fetch config.json
+                const configData = await GitHubAPI.getFile(null, blogOwner, blogRepo, getBlobPath('config.json'));
+                if (!configData || !configData.content) {
+                    throw new Error('config.json 文件未找到或为空。');
                 }
-                if (!postsJson || !Array.isArray(postsJson)) { 
-                    throw new Error("posts.json 文件未找到、为空或内容无效，请先前往管理后台初始化。");
-                }
+                siteConfig = JSON.parse(configData.content);
 
-                siteConfig = configJson;
-                // Ensure gitalk properties have defaults if not fully set, especially `labels`
-                if (siteConfig.gitalk) {
-                    siteConfig.gitalk.labels = siteConfig.gitalk.labels && Array.isArray(siteConfig.gitalk.labels) ? siteConfig.gitalk.labels : ['Gitalk', '评论'];
-                    siteConfig.gitalk.distractionFreeMode = siteConfig.gitalk.distractionFreeMode === true; // Ensure boolean
-                    siteConfig.gitalk.perPage = siteConfig.gitalk.perPage > 0 ? siteConfig.gitalk.perPage : 10;
+                // 4. Fetch posts.json
+                const postsData = await GitHubAPI.getFile(null, blogOwner, blogRepo, getBlobPath('posts.json'));
+                if (!postsData) { // posts.json can be empty, but not null
+                    console.warn("posts.json file not found or empty, initializing with empty array.");
+                    allPosts = [];
+                } else if (!postsData.content || postsData.content.trim() === '[]') {
+                    console.warn("posts.json file is empty, initializing with empty array.");
+                    allPosts = [];
                 }
+                 else {
+                    allPosts = JSON.parse(postsData.content);
+                }
+                 allPosts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+
+                // Apply configurations
+                document.title = siteConfig.site.title || '我的博客';
+                document.getElementById('site-title').innerHTML = `<a href="#/">${siteConfig.site.title || '我的博客'}</a>`;
+                document.getElementById('site-description').textContent = siteConfig.site.description || '由GitHub驱动的现代化半静态博客';
                 
-                // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
-                blogPosts = postsJson.map(post => {
-                    // Update content with resolveMarkdownImageUrl & getProxiedImageUrl for consistent local data
-                    let newContent = post.content.replace(/!\[(.*?)\]\((.+?)\)/g, (match, alt, url) => {
-                        return `![${alt}](${resolveMarkdownImageUrl(url, owner, repo)})`; 
-                    });
-                    return { ...post, content: newContent };
+                document.body.style.backgroundColor = siteConfig.styling.backgroundColor || '';
+                document.body.style.color = siteConfig.styling.textColor || '';
+                document.documentElement.style.setProperty('--accent-color', siteConfig.styling.accentColor || '#0d6efd');
+                document.documentElement.style.setProperty('--link-hover', siteConfig.styling.accentColor ? darkenColor(siteConfig.styling.accentColor, -15) : '#0a58ca'); // Auto-derive hover color
+
+                if (siteConfig.styling.backgroundImageUrl) {
+                    document.body.style.backgroundImage = `url(${siteConfig.styling.backgroundImageUrl})`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundAttachment = 'fixed';
+                    document.body.style.backgroundPosition = 'center center';
+                } else {
+                    document.body.style.backgroundImage = 'none';
+                }
+
+                hljs.configure({
+                    ignoreUnescapedHTML: true // markdown output may produce this
                 });
 
-                const styleElement = document.createElement('style');
-                let dynamicCss = `
-                    body {
-                        background-color: ${siteConfig.styling.backgroundColor || '#f8f9fa'};
-                        color: ${siteConfig.styling.textColor || '#212529'};
-                    }
-                    :root {
-                        --accent-color: ${siteConfig.styling.accentColor || '#0d6efd'};
-                        --accent-hover: ${siteConfig.styling.accentHover || '#2980b9'}; 
-                        --header-bg-color: ${siteConfig.styling.headerBgColor || '#fff'};
-                        --header-text-color: ${siteConfig.styling.headerTitleColor || '#2c3e50'}; 
-                        --header-description-color: ${siteConfig.styling.headerDescriptionColor || '#7f8c8d'};
-                        --header-link-color: ${siteConfig.styling.headerLinkColor || 'var(--accent-color)'};
-                        --header-link-hover-color: ${siteConfig.styling.headerLinkHoverColor || 'var(--accent-hover)'};
-                        --footer-bg-color: ${siteConfig.styling.footerBgColor || '#f0f2f5'};
-                        --footer-text-color: ${siteConfig.styling.footerTextColor || '#7f8c8d'};
-                        --footer-link-color: ${siteConfig.styling.footerLinkColor || '#3498db'};
-                    }
-                    header nav a.active {
-                        color: var(--header-link-hover-color); 
-                        text-decoration: underline;
-                    }
-                `;
-                // Only add background-image if URL is valid and looks good.
-                if (siteConfig.styling.backgroundImageUrl && /^https?:\/\//i.test(siteConfig.styling.backgroundImageUrl)) {
-                    dynamicCss += `
-                        body {
-                            background-image: url("${getProxiedImageUrl(siteConfig.styling.backgroundImageUrl)}");
-                            background-size: cover;
-                            background-attachment: fixed;
-                            background-position: center;
-                        }
-                    `;
-                }
-
-                styleElement.textContent = dynamicCss;
-                document.head.appendChild(styleElement);
-
-                siteTitleEl.textContent = siteConfig.site.title || `${owner}的博客`;
-                siteDescriptionEl.textContent = siteConfig.site.description || "一个由GitHub Pages驱动的现代化博客。";
+                // Setup routing
+                window.addEventListener('hashchange', handleRouteChange);
+                handleRouteChange(); // Initial route handling
                 
-                if (adminLinkEl) {
-                    adminLinkEl.href = `${window.location.origin}${publicUrlBase}/admin.html`;
-                }
-
-                mainFooterEl.innerHTML = `
-                    <p>&copy; ${new Date().getFullYear()} ${siteConfig.site.title || `${owner}的博客`}. All rights reserved. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a></p>
-                `;
-
-                handleRoute();
-
             } catch (error) {
                 console.error("博客初始化失败:", error);
-                document.title = "错误 - 博客";
-                blogContentDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle"></i> 博客初始化失败: ${error.message}<br>请确保您的博客已在 <a href="${window.location.origin}${publicUrlBase}/admin.html" target="_blank">管理后台</a> 完成初始化和配置。</div>`;
-                blogContentDiv.style.display = 'block';
+                document.getElementById('posts-list-view').innerHTML = `<div class="card alert-danger" style="color: grey; padding: 20px;">
+                    <h2>博客加载错误</h2>
+                    <p>无法加载博客内容。请检查GitHub Pages配置、仓库名或 ` + (blogBasePath ? `${blogBasePath}/config.json` : `config.json`) + `是否存在且内容正确。具体错误：${error.message}</p>
+                    <p>如果你刚刚设置，请访问 <a href="admin.html" target="_blank">后台管理</a> 页面，填写你的 GitHub Token 登录，系统会自动创建必要文件。</p>
+                </div>`;
+                showView('posts-list-view'); // Show the error on the main view
             } finally {
-                loadingDiv.style.display = 'none';
+                showLoading(false);
             }
         };
 
-        // Events
-        window.addEventListener('hashchange', handleRoute);
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeBlog(); 
-            // Fix for home navigation to truly remove hash
-            document.querySelector('#main-nav a[data-route="home"]').addEventListener('click', (e) => {
-                e.preventDefault();
-                const cleanUrl = `${window.location.origin}${publicUrlBase}/index.html`;
-                if (window.location.href !== cleanUrl) {
-                    window.location.replace(cleanUrl); 
-                } else {
-                    handleRoute(); 
+        // Function to darken or lighten a color (percentage is 0-100)
+        function darkenColor(hex, percent) {
+            let f = parseInt(hex.slice(1), 16),
+                t = percent < 0 ? 0 : 255,
+                p = percent < 0 ? percent * -1 : percent,
+                R = f >> 16,
+                G = (f >> 8) & 0x00ff,
+                B = f & 0x0000ff;
+            return "#" + (
+                0x1000000 + (Math.round((t - R) * p / 100) + R) * 0x10000 +
+                (Math.round((t - G) * p / 100) + G) * 0x100 +
+                (Math.round((t - B) * p / 100) + B)
+            ).toString(16).slice(1);
+        }
+
+        const handleRouteChange = () => {
+            const path = window.location.hash.slice(1) || '/';
+            if (path === '/') {
+                renderPostsList();
+            } else if (path === '/about') {
+                renderAboutPage();
+            } else if (path.startsWith('/post/')) {
+                const postId = path.split('/')[2];
+                renderPostDetail(postId);
+            } else {
+                showView('not-found-page');
+            }
+        };
+
+        // Initial setup for footer year
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+        // Start the blog initialization process
+        document.addEventListener('DOMContentLoaded', initializeBlog);
+
+        // Markdown renderer setup
+        marked.setOptions({
+            langPrefix: 'hljs language-', // highlight.js css expects this
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
                 }
-            });
-            document.querySelector('#main-nav a[data-route="about"]').addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.hash = '/about';
-            });
+                return hljs.highlightAuto(code).value;
+            },
+            gfm: true, // GitHub Flavored Markdown
+            breaks: true, // Enable GFM line breaks
+            // sanitize: true, // Prevent XSS by sanitizing HTML (can be problematic if you need custom HTML)
+            // Removed sanitize: true because it can strip valid HTML often used in markdown, like custom styles or iframes.
+            // If security is a major concern, consider a more robust sanitization library on the server-side,
+            // or carefully review user-generated content before rendering.
         });
     </script>
 </body>
