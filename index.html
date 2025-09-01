@@ -731,7 +731,7 @@
                 
                 // Extract first image from markdown (now also handles relative paths better)
                 // Broader regex to capture any non-empty URL-like path
-                const firstImageMatch = post.content.match(/!\[(.*?)\]\((.+?)\)/); 
+                const firstImageMatch = post.content.match(/![(.*?)]\((.+?)\)/); 
                 let imageUrl = firstImageMatch ? firstImageMatch[2] : ''; 
                 let imageAlt = firstImageMatch ? firstImageMatch[1] : post.title;
 
@@ -768,7 +768,7 @@
             }
 
             // Standardize all image URLs within the post content for display
-            let processedContent = post.content.replace(/!\[(.*?)\]\((.+?)\)/g, (match, alt, url) => {
+            let processedContent = post.content.replace(/![(.*?)]\((.+?)\)/g, (match, alt, url) => {
                  const resolved = resolveMarkdownImageUrl(url, owner, repo);
                 const proxied = getProxiedImageUrl(resolved);
                 // Add onerror to markdown images as well
@@ -902,7 +902,7 @@
                 siteConfig = configJson;
                 // Store raw URLs in blogPosts. getProxiedImageUrl will transform for display.
                 blogPosts = postsJson.map(post => {
-                    let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
+                    let newContent = post.content.replace(/![(.*?)]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
                         let originalUrl = url;
                         if (originalUrl.startsWith('https://gh-proxy.com/')) {
                             try {
