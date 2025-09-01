@@ -1096,7 +1096,7 @@
                     const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}, endpoint: ${endpoint}`;
                     console.error('GitHub API Error:', errorMessage, errorData);
                     const specificError = (errorMessage.toLowerCase().includes('bad credentials') || errorMessage.toLowerCase().includes('requires authentication') || response.status === 401 || response.status === 403)
-                        ? '你的 GitHub Token 可能无效或权限不足。请检查：[Token生成页面](https://github.com/settings/tokens)'
+                        ? '你的 GitHub Token 可能无效或权限不足。请检查：[Token生成页面]'
                         : '';
                     if (response.status === 404 && errorData.documentation_url.includes('create-or-update-file-contents')) {
                         throw new Error(`${errorMessage} (路径：${endpoint})。可能是由于 GitHub API 无法在不存在的父目录下创建文件。`);
@@ -1146,11 +1146,11 @@
                     throw error;
                 }
             },
-            async createFile(token, owner, repo, path, content, message, isBinary = false, onProgress = null, fileName = '文件') { 
+            async createFile(token, owner, repo, path, content, message, isBinary = false, onProgress = null) { 
                 const body = JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content) });
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('PUT', `${this.BASE_URL}/repos/${owner}/${repo}/contents/${path}`, true); 
+                    xhr.open('PUT', `${this.BASE_URL}/repos/${owner}/${repo}/contents/${path}`, true); // Synchronous for XHR, true for async
                     xhr.setRequestHeader('Authorization', `token ${token}`);
                     xhr.setRequestHeader('Accept', this.DEFAULT_HEADERS.Accept);
                     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -1159,7 +1159,7 @@
                         xhr.upload.onprogress = (event) => {
                             if (event.lengthComputable) {
                                 const percentComplete = (event.loaded / event.total) * 100;
-                                onProgress(percentComplete, fileName);
+                                onProgress(percentComplete, file.name || '文件');
                             }
                         };
                     }
@@ -1184,7 +1184,7 @@
                     xhr.send(body);
                 });
             },
-            async updateFile(token, owner, repo, path, content, sha, message, isBinary = false, onProgress = null, fileName = '文件') {
+            async updateFile(token, owner, repo, path, content, sha, message, isBinary = false, onProgress = null) {
                 if (!sha) {
                     throw new Error("SHA is required to update a file.");
                 }
@@ -1200,7 +1200,7 @@
                         xhr.upload.onprogress = (event) => {
                             if (event.lengthComputable) {
                                 const percentComplete = (event.loaded / event.total) * 100;
-                                onProgress(percentComplete, fileName);
+                                onProgress(percentComplete, file.name || '文件');
                             }
                         };
                     }
@@ -1566,7 +1566,7 @@
                     site: {
                         title: `${owner}的博客`,
                         description: "由GitHub驱动的现代化半静态博客",
-                        aboutContent: `# 关于我\n\n你好！我是 ${owner}，一个热爱技术和分享的开发者。欢迎来到我的博客！\n\n在这里，我将分享我的技术心得、学习笔记以及一些生活感悟。希望我的内容能对你有所启发或帮助。\n\n**联系我:**\n\n*   GitHub: [${owner}](https://github.com/${owner})\n*   Email: your_email@example.com\n\n---`,
+                        aboutContent: `# 关于我\n\n你好！我是 ${owner}，一个热爱技术和分享的开发者。欢迎来到我的博客！\n\n在这里，我将分享我的技术心得、学习笔记以及一些生活感悟。希望我的内容能对你有所启发或帮助。\n\n**联系我:**\n\n*   GitHub: [${owner}]\n*   Email: your_email@example.com\n\n---`,
                     },
                     styling: {
                         backgroundColor: "#f8f9fa",
@@ -1664,9 +1664,7 @@
 
                         // Store raw GitHub URLs from content (if any old proxied URLs exist)
                         currentPostsArray = currentPostsArray.map(post => {
-                            // This step ensures any potentially proxied/double-encoded URLs from older saves are normalized to raw URLs.
-                            // Crucially, this regex now ensures it ONLY captures the URL itself, not extra attributes.
-                            let newContent = post.content.replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)(?: ["'].*?["'])?\)/g, (match, alt, url) => {
+                            let newContent = post.content.replace(/![(.*?)]\((https?:\/\/[^\s)]+)\)/g, (match, alt, url) => {
                                 let originalUrl = url;
                                 if (originalUrl.startsWith('https://gh-proxy.com/')) {
                                     try {
@@ -1680,7 +1678,6 @@
                             return { ...post, content: newContent };
                         });
 
-
                         const commitMessage = 'docs: update posts with initial/existing entries';
                         // Use a fresh SHA from getFile if available, or current postsSha
                         const actualPostsSha = existingPostsData ? existingPostsData.sha : postsSha; 
@@ -1693,7 +1690,7 @@
                         currentPostsArray = [initialWelcomePost]; // Fallback to just the welcome post
                         try {
                             const commitMessage = 'docs: attempting to normalize/update posts content';
-                            const actualPostsSha = existingPostsData ? existingPostsData.sha : postsSha; 
+                            const actualPostsSha = existingPostsData ? existingExistingPostsData.sha : postsSha; 
                             const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(currentPostsArray, null, 2), actualPostsSha, commitMessage);
                             postsSha = updateRes.content.sha;
                         } catch (re) {
@@ -1978,8 +1975,7 @@
             const id = document.getElementById('post-id').value;
             const title = document.getElementById('post-title').value.trim();
             const category = document.getElementById('post-category').value.trim() || '未分类';
-            // EasyMDE content should have raw image URLs after upload
-            let content = easyMDE.value().trim(); 
+            const content = easyMDE.value().trim(); 
             if (!title || !content) { showAlert('标题和内容不能为空！', 'danger'); return; }
             
             setButtonsDisabled(true);
@@ -2119,8 +2115,7 @@
             try {
                 await GitHubAPI.deleteFile(token, owner, repo, filePath, fileSha, `feat: delete media file ${filePath.split('/').pop()}`);
                 showAlert('图片删除成功！', 'success');
-                // Ensure media library is rendered from fresh data after a short interval (500ms for faster UI feedback)
-                // This delay helps account for potential GitHub CDN propagation time.
+                // Ensure media library is rendered from fresh data after a short interval
                 setTimeout(() => renderMediaLibrary(), 500); 
             } catch (error) {
                 showAlert(`图片删除失败: ${error.message}`, 'danger');
@@ -2146,8 +2141,7 @@
                                 `feat: upload image "${file.name}"`,
                                 (progress) => {
                                     updateProgressBar(progress, `上传 "${file.name}": ${Math.round(progress)}%`);
-                                },
-                                file.name // Pass fileName for progress update message
+                                }
                             );
                             resolve(rawImageUrl); 
                         } catch (error) {
@@ -2262,11 +2256,10 @@
         const populateGitalkSettings = () => {
             const gitalkConfig = config.gitalk || {};
             document.getElementById('gitalk-enabled').checked = !!gitalkConfig.enabled;
-            // Provide fallback values if config.gitalk is missing or incomplete
             document.getElementById('gitalk-clientID').value = gitalkConfig.clientID || '';
             document.getElementById('gitalk-clientSecret').value = gitalkConfig.clientSecret || '';
-            document.getElementById('gitalk-repo').value = gitalkConfig.repo || repo; // Fallback to detected repo
-            document.getElementById('gitalk-owner').value = gitalkConfig.owner || owner; // Fallback to detected owner
+            document.getElementById('gitalk-repo').value = gitalkConfig.repo || '';
+            document.getElementById('gitalk-owner').value = gitalkConfig.owner || '';
             document.getElementById('gitalk-admin').value = (gitalkConfig.admin && Array.isArray(gitalkConfig.admin) ? gitalkConfig.admin.join(', ') : gitalkConfig.admin || '');
         };
 
@@ -2283,9 +2276,9 @@
                 repo: document.getElementById('gitalk-repo').value.trim(),
                 owner: document.getElementById('gitalk-owner').value.trim(),
                 admin: gitalkAdminArray,
-                distractionFreeMode: newConfig.gitalk.distractionFreeMode || false, // Keep existing or set default
-                labels: newConfig.gitalk.labels || ['Gitalk', '评论'], // Keep existing or set default
-                perPage: newConfig.gitalk.perPage || 10, // Keep existing or set default
+                distractionFreeMode: newConfig.gitalk.distractionFreeMode, 
+                labels: newConfig.gitalk.labels || ['Gitalk', '评论'], 
+                perPage: newConfig.gitalk.perPage || 10,
             };
 
             if (newConfig.gitalk.enabled && (!newConfig.gitalk.clientID || !newConfig.gitalk.clientSecret || !newConfig.gitalk.repo || !newConfig.gitalk.owner)) {
@@ -2297,7 +2290,7 @@
             try {
                 const res = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(newConfig, null, 2), configSha, 'conf: update Gitalk settings');
                 configSha = res.content.sha;
-                config = newConfig; 
+                config = newConfig; // Update local config
                 showAlert('Gitalk 评论设置已保存！', 'success');
             } catch (error) {
                 showAlert(`Gitalk 评论设置保存失败: ${error.message}`, 'danger');
@@ -2307,7 +2300,7 @@
         };
 
         // ==================== File Upload Functions (Generic, for images) ====================
-        const uploadFile = async (file, uploadDirectory, message, onProgress = null, displayFileName = '文件') => {
+        const uploadFile = async (file, uploadDirectory, message, onProgress = null) => {
             if (!file) throw new Error("No file provided for upload.");
             
             return new Promise((resolve, reject) => {
@@ -2329,7 +2322,7 @@
                     const blobPath = `${uploadDirectory}/${finalFileName}`;
                     
                     try {
-                        const uploadResult = await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress, displayFileName);
+                        const uploadResult = await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress);
                         // GitHub's API response directly contains the raw_url
                         const rawGithubUrl = uploadResult.content.download_url || `https://raw.githubusercontent.com/${owner}/${repo}/main/${blobPath}`; // Fallback if download_url is missing
                         resolve(rawGithubUrl); 
@@ -2406,8 +2399,7 @@
                                 file,
                                 'images', 
                                 `feat: upload image "${file.name}" for post`,
-                                (progress) => updateEditorProgressBar(progress, `上传 "${file.name}": ${Math.round(progress)}%`),
-                                file.name // Pass fileName for progress update message
+                                (progress) => updateEditorProgressBar(progress, `上传 "${file.name}": ${Math.round(progress)}%`)
                             );
                             // IMPORTANT: Insert the RAW GitHub URL into markdown content.
                             // The blog's frontend (index.html) will handle proxying for display.
@@ -2475,7 +2467,7 @@
             // Re-render all tags to ensure correct removal visually
             const tagsContainer = document.getElementById('tag-token-container');
             tagsContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
-            currentTags.forEach(tag => addTagToInput(tag, document.getElementById('post-tags-input'))); // Using direct ID to be safe
+            currentTags.forEach(tag => addTagToInput(tag, tagsInput)); // Use the correct tagsInput for re-adding
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2639,7 +2631,7 @@
                 if (file) {
                     try {
                         showAlert(`正在上传背景图片 "${file.name}"...`, 'info');
-                        const rawImageUrl = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`, null, file.name); // Upload to 'images' folder
+                        const rawImageUrl = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`); // Upload to 'images' folder
                         document.getElementById('setting-bg-image-url').value = rawImageUrl; // Stores raw URL
                         settingBgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(rawImageUrl)}" alt="背景图预览" loading="lazy">`; 
                         uploadBgImageBtn.style.display = 'none';
