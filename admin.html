@@ -1,330 +1,1237 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>博客后台管理 - 期望ai</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博客后台管理系统 - 期望ai</title>
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' font-size='90' text-anchor='middle' dominant-baseline='central'%3E⚙️%3C/text%3E%3C/svg%3E" type="image/svg+xml">
 
-    <!-- EasyMDE CSS & Font Awesome -->
+    <!-- EasyMDE Markdown 编辑器 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
+    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
+        /* ==================== CSS Variables & Base Styles ==================== */
         :root {
-            --bg: #f4f6f8;
-            --sidebar: #2c3e50;
-            --accent: #3498db;
+            --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --bg-color: #f4f6f8;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --sidebar-hover-bg: #34495e;
+            --sidebar-active-bg: #1abc9c;
+            --content-bg: #ffffff;
+            --text-color: #34495e;
+            --heading-color: #2c3e50;
+            --accent-color: #3498db;
             --accent-hover: #2980b9;
-            --danger: #e74c3c;
-            --success: #2ecc71;
-            --content-bg: #fff;
-            --text: #34495e;
-            --muted: #7f8c8d;
-            --shadow: 0 1px 3px rgba(0,0,0,.12);
+            --border-color: #e0e0e0;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.24);
+            --focus-glow: 0 0 0 3px rgba(52, 152, 219, 0.25);
         }
-        *{box-sizing:border-box}
-        body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial; margin:0; background:var(--bg); color:var(--text); }
-        a { color:var(--accent); }
-        .login-box { max-width:420px; margin:8vh auto; background:var(--content-bg); padding:32px; border-radius:8px; box-shadow:var(--shadow); text-align:center; }
-        input[type=password], input[type=text], textarea { width:100%; padding:10px 12px; border:1px solid #e6e9ee; border-radius:6px; margin-top:12px; }
-        button { padding:10px 16px; border:none; border-radius:6px; cursor:pointer; }
-        button.btn-primary { background:var(--accent); color:#fff; }
-        button.btn-danger { background:var(--danger); color:#fff; }
-        .admin-wrapper { display:flex; min-height:100vh; }
-        aside#admin-sidebar { width:250px; background:var(--sidebar); color:#ecf0f1; padding:20px; flex-shrink:0; }
-        aside#admin-sidebar .logo { font-weight:700; font-size:1.2rem; margin-bottom:20px; }
-        aside#admin-sidebar .nav { list-style:none; padding:0; margin:0; }
-        aside#admin-sidebar .nav a { display:block; color:inherit; padding:12px 10px; border-radius:6px; margin-bottom:6px; }
-        aside#admin-sidebar .nav a.active, aside#admin-sidebar .nav a:hover { background:rgba(255,255,255,0.06); }
-        main#admin-content { flex:1; padding:24px; background:var(--bg); }
-        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-        .admin-table { width:100%; border-collapse:collapse; background:var(--content-bg); box-shadow:var(--shadow); border-radius:8px; overflow:hidden; }
-        .admin-table th, .admin-table td { padding:12px 16px; border-bottom:1px solid #eee; text-align:left; }
-        .admin-table thead { background:#fafafa; font-weight:700; }
-        .media-upload-area { background:var(--content-bg); padding:20px; border-radius:8px; border:2px dashed #e6e9ee; text-align:center; box-shadow:var(--shadow); }
-        .media-upload-area.drag-over { border-color:var(--accent); }
-        .media-item { background:var(--content-bg); border-radius:8px; overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column; }
-        .media-item-thumbnail { height:150px; display:flex; justify-content:center; align-items:center; background:#f6f7f8; border-bottom:1px solid #eee; }
-        .media-item-thumbnail img { max-width:100%; max-height:100%; object-fit:contain; }
-        .media-item-info { padding:12px; display:flex; flex-direction:column; gap:8px; }
-        .progress-container { width:100%; background:#e9ecef; height:26px; border-radius:6px; overflow:hidden; position:relative; margin-top:12px;}
-        .progress-bar { height:100%; width:0%; background:var(--accent); color:#fff; text-align:center; line-height:26px; font-size:0.9rem; }
-        .alert { padding:12px 16px; border-radius:6px; margin-bottom:12px; display:none; }
-        .alert.info { background:#d1ecf1; color:#0c5460; display:flex; gap:8px; align-items:center; }
-        .editor-toolbar + .progress-container.editor { margin-top:8px; margin-bottom:8px; }
-        @media(max-width:768px){ aside#admin-sidebar{display:none} }
+
+        body {
+            font-family: var(--font-body);
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        a { text-decoration: none; color: var(--accent-color); transition: color .2s; }
+        a:hover { color: var(--accent-hover); }
+
+        input, textarea, button, select {
+            font-family: inherit;
+            font-size: 100%;
+            margin: 0;
+            padding: 0;
+            line-height: normal;
+        }
+
+        input:focus, textarea:focus, button:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: var(--focus-glow);
+        }
+
+        h1, h2, h3, h4, h5, h6 { color: var(--heading-color); margin-top: 0; margin-bottom: 20px; }
+
+        /* ==================== Login Page ==================== */
+        #login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--sidebar-bg);
+            background-image: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+        .login-box {
+            width: 90%;
+            max-width: 400px;
+            padding: 40px;
+            background: var(--content-bg);
+            box-shadow: var(--shadow);
+            border-radius: 8px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .login-box h1 { margin-bottom: 25px; font-size: 2rem; color: var(--heading-color); }
+        .login-box p { margin-bottom: 25px; color: #7f8c8d; line-height: 1.8; }
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+        .login-box input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .remember-token-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-color);
+            color: #fff;
+            border: 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background .2s ease, box-shadow .2s ease;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .login-box button:hover { background: var(--accent-hover); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .login-box button:disabled { background: #cccccc; cursor: not-allowed; }
+        #initial-message { color: var(--danger-color); margin-top: 20px; font-size: 0.9rem; }
+        .generate-token-link {
+            display: block;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--accent-color);
+        }
+        #path-display {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 10px;
+        }
+
+        /* ==================== Admin Layout ==================== */
+        .admin-wrapper {
+            display: flex;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+        }
+
+        #admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 250px;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform .3s ease-in-out;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+        .admin-wrapper.sidebar-visible #admin-sidebar { transform: translateX(0); }
+        #admin-sidebar .logo {
+            padding: 25px 20px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-align: center;
+            background-color: rgba(0,0,0,.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        #admin-sidebar .nav {
+            flex-grow: 1;
+            list-style: none;
+            margin: 0;
+            padding: 20px 0;
+        }
+        #admin-sidebar .nav li { margin-bottom: 5px; }
+        #admin-sidebar .nav a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: var(--sidebar-text);
+            transition: background .2s ease;
+            border-left: 5px solid transparent;
+        }
+        #admin-sidebar .nav a i {
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+        #admin-sidebar .nav a:hover { background: var(--sidebar-hover-bg); }
+        #admin-sidebar .nav a.active {
+            background: var(--sidebar-active-bg);
+            color: white;
+            border-left-color: #fff;
+            font-weight: 600;
+        }
+        #admin-sidebar footer {
+             padding: 20px;
+             font-size: 0.9rem;
+             color: #a0a8b4;
+             border-top: 1px solid rgba(255,255,255,0.1);
+             text-align: center;
+        }
+        #admin-sidebar footer a { color: var(--sidebar-active-bg); }
+
+
+        #admin-content {
+            flex-grow: 1;
+            margin-left: 0;
+            padding: 30px;
+            box-sizing: border-box;
+            transition: margin-left .3s ease-in-out;
+        }
+
+        #mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--content-bg);
+            padding: 15px 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+        .mobile-menu-btn {
+            font-size: 1.8rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        .mobile-logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--heading-color);
+        }
+        #mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,.5);
+            z-index: 999;
+            display: none;
+        }
+        .admin-wrapper.sidebar-visible #mobile-overlay{ display: block; }
+
+        @media(min-width: 768px) {
+            #admin-sidebar {
+                position: static;
+                transform: translateX(0);
+                flex-shrink: 0;
+            }
+            #admin-content {
+                margin-left: 250px;
+                padding: 30px;
+            }
+            #mobile-header { display: none; }
+            #mobile-overlay { display: none !important; }
+        }
+
+        /* ==================== Content Area Common Styles ==================== */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        .page-header h2 {
+            font-size: 1.8rem;
+            margin: 0;
+            line-height: 1;
+        }
+
+        /* Forms, Buttons, Tables */
+        .form-group { margin-bottom: 25px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--heading-color);
+            font-size: 0.95rem;
+        }
+        .form-group input:not([type="checkbox"]), .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+            background-color: var(--content-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 250px;
+        }
+        .form-group .description {
+            font-size: 0.85rem;
+            color: var(--meta-color);
+            margin-top: 5px;
+        }
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .button-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button, .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background .2s ease, box-shadow .2s ease;
+            font-weight: 600;
+        }
+        button i, .btn i { margin-right: 8px; }
+        button:hover:not(:disabled), .btn:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        button:disabled, .btn:disabled { background: #cccccc !important; cursor: not-allowed; opacity: 0.7; }
+
+        .btn-primary { background: var(--accent-color); color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+        .btn-success { background: var(--success-color); color: #fff; }
+        .btn-success:hover:not(:disabled) { background: #218838; }
+        .btn-danger { background: var(--danger-color); color: #fff; }
+        .btn-danger:hover:not(:disabled) { background: #c82333; }
+        .btn-secondary { background: #6c757d; color: #fff; }
+        .btn-secondary:hover:not(:disabled) { background: #5a6268; }
+
+        .admin-table-wrapper { overflow-x: auto; background: var(--content-bg); border-radius: 8px; box-shadow: var(--shadow); }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--content-bg);
+        }
+        .admin-table thead { background: #f8f9fa; }
+        .admin-table th, .admin-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        .admin-table th {
+            font-weight: 700;
+            color: var(--heading-color);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        .admin-table td {
+            font-size: 0.95rem;
+            color: var(--text-color);
+        }
+        .admin-table tr:last-child td { border-bottom: none; }
+        .admin-table .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        .admin-table .actions a.edit { color: var(--accent-color); }
+        .admin-table .actions a.delete { color: var(--danger-color); }
+        .admin-table .actions a.link { color: var(--sidebar-active-bg); }
+        .admin-table td input[type="checkbox"] {
+            margin-right: 0;
+            width: auto;
+        }
+
+        /* EasyMDE Styles */
+        .editor-toolbar {
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            background-color: #f8f9fa !important;
+            border-color: var(--border-color) !important;
+        }
+        .editor-toolbar button { background: none !important; color: var(--text-color) !important; border: none !important; }
+        .editor-toolbar button.active, .editor-toolbar button:hover { background-color: var(--border-color) !important; }
+        .editor-toolbar button.active { border-radius: 4px; }
+        .CodeMirror {
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            border: 1px solid var(--border-color) !important;
+            border-top: none !important;
+            min-height: 400px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .CodeMirror-fullscreen { z-index: 2000; }
+        .editor-preview-active, .editor-preview-active-side {
+            background-color: var(--content-bg) !important;
+            color: var(--text-color) !important;
+            padding: 15px;
+        }
+        .editor-preview h1, .editor-preview h2, .editor-preview h3, .editor-preview h4, .editor-preview h5, .editor-preview h6 {
+            color: var(--heading-color);
+        }
+        .editor-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: block;
+        }
+        .editor-preview blockquote {
+            padding: 0.5em 1em;
+            margin: 1em 0;
+            border-left: 4px solid var(--accent-color);
+            color: var(--meta-color);
+            background-color: rgba(52, 152, 219, 0.05);
+            border-radius: 5px;
+        }
+        .CodeMirror-scroll {
+            background-color: var(--content-bg);
+        }
+
+        /* Image Upload Preview */
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .image-preview {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border: 1px dashed var(--border-color);
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-color: #f9f9f9;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+        .image-preview .remove-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+        }
+        .image-placeholder {
+            color: var(--meta-color);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        #setting-bg-image-preview {
+            width: 200px;
+            height: 120px;
+            border: 1px dashed var(--border-color);
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        #setting-bg-image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+        #setting-bg-image-preview .placeholder {
+            color: var(--meta-color);
+            font-size: 0.9rem;
+        }
+
+        /* Alerts & Progress Bar */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alert i { font-size: 1.2rem; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 10px;
+            height: 25px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent-color);
+            border-radius: 5px;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+            transition: width 0.3s ease;
+            font-size: 0.9em;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 25px;
+            color: var(--text-color);
+            font-size: 0.9em;
+            z-index: 1;
+        }
+        /* Editor specific progress bar */
+        .editor.progress-container {
+            margin-top: 5px;
+            margin-bottom: 10px;
+            height: 20px;
+            width: calc(100% - 2px); /* Account for toolbar border */
+            left: 1px;
+            position: relative;
+        }
+        .editor .progress-bar {
+            line-height: 20px;
+            font-size: 0.8em;
+        }
+        .editor .progress-text {
+            line-height: 20px;
+            font-size: 0.8em;
+        }
+        
+        /* Tag/Category Suggestions */
+        .suggestion-box {
+            position: absolute;
+            background-color: var(--content-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+        }
+        .suggestion-box div {
+            padding: 10px;
+            cursor: pointer;
+            transition: background-color .2s;
+        }
+        .suggestion-box div:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        .form-group.has-suggestions {
+            position: relative;
+        }
+        .tag-token-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 8px 10px;
+            min-height: 40px;
+            align-items: center;
+            background-color: var(--content-bg);
+            cursor: text;
+        }
+        .tag-token {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .tag-token .remove-tag {
+            margin-left: 5px;
+            cursor: pointer;
+            color: rgba(255,255,255,0.7);
+        }
+        .tag-token-input {
+            border: none !important;
+            flex-grow: 1;
+            padding: 0 !important;
+            margin-left: 5px;
+            background: transparent !important;
+            color: var(--text-color) !important;
+            line-height: 1.5 !important;
+        }
+        .tag-token-input:focus {
+            box-shadow: none !important;
+        }
+
+        /* Dashboard Specific Styles */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: var(--content-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card i {
+            font-size: 3rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+        .stat-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--heading-color);
+        }
+        .stat-card p {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 0;
+            line-height: 1;
+        }
+        .recent-activity {
+            background: var(--content-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-top: 30px;
+        }
+        .recent-activity h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--heading-color);
+        }
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .activity-item i {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            margin-right: 15px;
+            background: var(--bg-color);
+            padding: 8px;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 1px var(--border-color);
+        }
+        .activity-item .content {
+            flex-grow: 1;
+        }
+        .activity-item .content p {
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .activity-item .content .time {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        /* Media Library Specific Styles */
+        #media-library-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .media-item {
+            background: var(--content-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease;
+        }
+        .media-item:hover {
+            transform: translateY(-5px);
+        }
+        .media-item-thumbnail {
+            width: 100%;
+            height: 150px;
+            background-color: #e9ecef; /* Placeholder background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .media-item-thumbnail img {
+            width: 100%; /* Make image fill container, may crop */
+            height: 100%;
+            object-fit: contain; /* Don't crop, show full image, may have letterboxing */
+            background-color: #f0f0f0; /* Fallback for broken image display */
+        }
+        .media-item-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .media-item-info .name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--heading-color);
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .media-item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .media-item-actions button {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            flex-grow: 1;
+            min-width: 80px;
+        }
+        .media-upload-area {
+            background: var(--content-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-top: 20px;
+            text-align: center;
+            border: 2px dashed var(--border-color);
+            transition: border-color 0.3s ease;
+        }
+        .media-upload-area.drag-over {
+            border-color: var(--accent-color);
+        }
+        .media-upload-area p {
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+        .media-upload-area label.btn-primary {
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        #media-upload-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <!-- Login -->
+
     <div id="login-wrapper">
-        <div class="login-box" id="login-box">
-            <h1><i class="fas fa-lock"></i> 管理后台</h1>
-            <p>请输入 GitHub Personal Access Token（需要 repo 权限）</p>
-            <input id="token-input" type="password" placeholder="ghp_xxx 或 Bearer xxx" />
-            <div style="margin-top:10px;text-align:left;">
-                <input id="remember-token" type="checkbox" /> <label for="remember-token">记住 Token（仅在个人设备）</label>
+        <div id="login-box" class="login-box">
+            <h1><i class="fas fa-lock"></i> 博客管理</h1>
+            <p>请输入您的GitHub Personal Access Token以开始。该Token需具备 <code style="background-color: #f0f0f0; padding: 2px 5px; border-radius: 3px;">repo</code> 权限。</p>
+            <input type="password" id="token-input" placeholder="ghp_xxx 或 Bearer xxx">
+            <div class="remember-token-group">
+                <input type="checkbox" id="remember-token">
+                <label for="remember-token">记住Token (高风险，仅限个人安全设备)</label>
             </div>
-            <button id="start-btn" class="btn-primary" style="margin-top:14px;"><i class="fas fa-sign-in-alt"></i> 登录</button>
-            <div id="initial-message" style="margin-top:12px;color:var(--muted)"></div>
-            <div id="path-display" style="margin-top:8px;color:#888;display:none"></div>
-            <p style="margin-top:12px; font-size:0.9rem;">如何生成 Token？<a href="https://github.com/settings/tokens" target="_blank">点此</a></p>
+            <button id="start-btn"><i class="fas fa-sign-in-alt"></i> 登录</button>
+            <p id="initial-message"></p>
+            <p id="path-display" style="display:none;"></p>
+            <a href="https://github.com/settings/tokens" target="_blank" class="generate-token-link">如何生成 Personal Access Token?</a>
         </div>
     </div>
 
-    <!-- Admin -->
-    <div id="admin-wrapper" class="admin-wrapper" style="display:none;">
+    <div id="admin-wrapper" class="admin-wrapper" style="display: none;">
+        <div id="mobile-overlay"></div>
         <aside id="admin-sidebar">
             <div class="logo">博客管理系统</div>
             <ul class="nav">
-                <li><a href="#" id="nav-dashboard" data-view="dashboard" class="active"><i class="fas fa-chart-line"></i> 仪表盘</a></li>
+                <li><a href="#" id="nav-dashboard" data-view="dashboard"><i class="fas fa-chart-line"></i> 仪表盘</a></li>
                 <li><a href="#" id="nav-posts" data-view="posts"><i class="fas fa-newspaper"></i> 文章管理</a></li>
-                <li><a href="#" id="nav-media-library" data-view="mediaLibrary"><i class="fas fa-images"></i> 媒体库</a></li>
+                <li><a href="#" id="nav-media-library" data-view="media-library"><i class="fas fa-images"></i> 媒体库</a></li>
                 <li><a href="#" id="nav-settings" data-view="settings"><i class="fas fa-cog"></i> 网站设置</a></li>
-                <li><a href="#" id="nav-gitalk-settings" data-view="gitalkSettings"><i class="fas fa-comments"></i> 评论设置</a></li>
-                <li><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> 退出</a></li>
-                <li style="margin-top:12px;"><a id="view-site-link" href="#" target="_blank"><i class="fas fa-desktop"></i> 查看站点</a></li>
+                <li><a href="#" id="nav-gitalk-settings" data-view="gitalk-settings"><i class="fas fa-comments"></i> 评论设置</a></li>
+                <li><a id="view-site-link" href="#" target="_blank"><i class="fas fa-desktop"></i> 查看站点</a></li>
+                <li><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> 安全退出</a></li>
             </ul>
-            <footer style="color:#a0a8b4; font-size:0.9rem; margin-top:18px;">Powered by 期望ai</footer>
+            <footer>
+                <p>Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a></p>
+            </footer>
         </aside>
 
         <main id="admin-content">
-            <!-- Dashboard -->
-            <div id="dashboard-view" class="admin-view" style="display:block;">
+            <header id="mobile-header">
+                <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                <div class="mobile-logo">管理后台</div>
+            </header>
+
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="admin-view" style="display:none;">
                 <div class="page-header">
                     <h2><i class="fas fa-chart-line"></i> 仪表盘</h2>
-                    <div><button id="open-posts" class="btn-primary"><i class="fas fa-list"></i> 管理文章</button></div>
                 </div>
-                <div id="dashboard-stats" style="display:flex;gap:16px;flex-wrap:wrap;">
-                    <div style="background:var(--content-bg);padding:18px;border-radius:8px;box-shadow:var(--shadow);min-width:180px;">
-                        <div style="font-size:0.9rem;color:var(--muted)">文章总数</div>
-                        <div id="total-posts" style="font-size:1.6rem;font-weight:700">0</div>
+                <div class="grid-container">
+                    <div class="stat-card">
+                        <i class="fas fa-newspaper"></i>
+                        <h3>文章总数</h3>
+                        <p id="total-posts">0</p>
                     </div>
-                    <div style="background:var(--content-bg);padding:18px;border-radius:8px;box-shadow:var(--shadow);min-width:180px;">
-                        <div style="font-size:0.9rem;color:var(--muted)">分类数</div>
-                        <div id="total-categories" style="font-size:1.6rem;font-weight:700">0</div>
+                    <div class="stat-card">
+                        <i class="fas fa-layer-group"></i>
+                        <h3>文章分类</h3>
+                        <p id="total-categories">0</p>
                     </div>
-                    <div style="background:var(--content-bg);padding:18px;border-radius:8px;box-shadow:var(--shadow);min-width:180px;">
-                        <div style="font-size:0.9rem;color:var(--muted)">标签数</div>
-                        <div id="total-tags" style="font-size:1.6rem;font-weight:700">0</div>
+                    <div class="stat-card">
+                        <i class="fas fa-tags"></i>
+                        <h3>文章标签</h3>
+                        <p id="total-tags">0</p>
+                    </div>
+                </div>
+                <div class="recent-activity">
+                    <h3><i class="fas fa-history"></i> 最新活动</h3>
+                    <div id="activity-list">
+                        <div class="activity-item">
+                            <i class="fas fa-info-circle"></i>
+                            <div class="content">
+                                <p>博客后台管理系统已成功加载，正在收集数据...</p>
+                                <span class="time">刚刚</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Posts -->
+            <!-- Posts Management View -->
             <div id="posts-view" class="admin-view" style="display:none;">
                 <div class="page-header">
-                    <h2><i class="fas fa-newspaper"></i> 文章管理</h2>
+                    <h2><i class="fas fa-list-alt"></i> 文章管理</h2>
                     <div>
-                        <button id="new-post-btn" class="btn-primary"><i class="fas fa-plus-circle"></i> 新建</button>
-                        <button id="delete-selected-posts-btn" class="btn-danger" style="display:none;">删除选中</button>
+                        <button id="new-post-btn" class="btn-primary"><i class="fas fa-plus-circle"></i> 撰写新文章</button>
+                        <button id="delete-selected-posts-btn" class="btn-danger" style="display:none; margin-left: 10px;"><i class="fas fa-trash-alt"></i> 删除选中文章</button>
                     </div>
                 </div>
                 <div class="admin-table-wrapper">
-                    <table class="admin-table" id="posts-table">
-                        <thead><tr><th style="width:36px"><input id="select-all-posts" type="checkbox" /></th><th>标题</th><th>分类</th><th>标签</th><th>创建</th><th>更新</th><th>操作</th></tr></thead>
-                        <tbody id="post-list"><tr><td colspan="7" style="text-align:center;">加载中...</td></tr></tbody>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all-posts"></th>
+                                <th>标题</th>
+                                <th>分类</th>
+                                <th>标签</th>
+                                <th>发布日期</th>
+                                <th>更新日期</th>
+                                <th class="actions">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="post-list">
+                            <!-- Posts list will be generated here dynamically -->
+                            <tr><td colspan="7" style="text-align: center;">加载中...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
-
-            <!-- Editor -->
-            <div id="editor-container" class="admin-view" style="display:none;">
-                <h2 id="editor-title"><i class="fas fa-edit"></i> 写文章</h2>
-                <input type="hidden" id="post-id" />
-                <div style="margin-top:12px;">
-                    <label>标题</label>
-                    <input id="post-title" type="text" placeholder="文章标题" />
+            
+            <!-- Post Editor/Creation View -->
+            <div id="editor-container" class="admin-view" style="display: none;">
+                <h2 id="editor-title"><i class="fas fa-edit"></i> 撰写新文章</h2>
+                 <input type="hidden" id="post-id">
+                <div class="form-group">
+                    <label for="post-title">文章标题 <span style="color:red;">*</span></label>
+                    <input type="text" id="post-title" placeholder="请输入文章标题">
                 </div>
-                <div style="margin-top:12px;">
-                    <label>分类</label>
-                    <input id="post-category" type="text" placeholder="分类，例如：技术" />
+                 <div class="form-group">
+                    <label for="post-category">文章分类</label>
+                    <input type="text" id="post-category" placeholder="请输入文章分类，例如：技术，生活">
                 </div>
-                <div style="margin-top:12px;">
-                    <label>标签（按 Enter 添加）</label>
-                    <div id="tag-token-container" style="display:flex;gap:8px;flex-wrap:wrap;padding:8px;border:1px solid #e9ecef;border-radius:6px;background:#fff;">
-                        <input id="post-tags-input" type="text" placeholder="输入标签并回车" style="border:none;outline:none;flex:1" />
+                 <div class="form-group has-suggestions">
+                    <label for="post-tags-input">文章标签 (按 Enter 键添加，点击标签删除)</label>
+                    <div id="tag-token-container" class="tag-token-container">
+                        <input type="text" id="post-tags-input" placeholder="输入标签并按回车">
                     </div>
-                    <input id="post-tags" type="hidden" value="[]" />
+                    <div id="tag-suggestions" class="suggestion-box" style="display: none;"></div>
+                    <input type="hidden" id="post-tags">
+                    <p class="description">输入标签后按回车键添加。点击现有标签可删除。从建议列表中选择。</p>
                 </div>
-                <div style="margin-top:12px;">
-                    <label>内容 (Markdown)</label>
+
+                <div class="form-group">
+                    <label for="post-content">文章内容 (支持 Markdown)</label>
                     <textarea id="post-content"></textarea>
+                    <p class="description">请使用 Markdown 格式编写文章。使用 `&lt;!--more--&gt;` 可定义文章摘要。</p>
                 </div>
-                <div style="margin-top:12px;display:flex;gap:8px;">
-                    <button id="save-post-btn" class="btn-primary"><i class="fas fa-upload"></i> 保存</button>
-                    <button id="cancel-edit-btn" class="btn" style="background:#f1f1f1">取消</button>
-                    <button id="delete-post-btn" class="btn-danger" style="display:none">删除</button>
+                <div class="button-group">
+                    <button id="save-post-btn" class="btn-success"><i class="fas fa-upload"></i> 发布/更新文章</button>
+                    <button id="cancel-edit-btn" class="btn-secondary"><i class="fas fa-times-circle"></i> 取消</button>
+                    <button id="delete-post-btn" class="btn-danger" style="display:none;"><i class="fas fa-trash-alt"></i> 删除文章</button>
                 </div>
             </div>
 
-            <!-- Media Library -->
+            <!-- Media Library View -->
             <div id="media-library-view" class="admin-view" style="display:none;">
                 <div class="page-header">
                     <h2><i class="fas fa-images"></i> 媒体库</h2>
-                    <div>
-                        <label for="media-upload-input" class="btn-primary" style="cursor:pointer;"><i class="fas fa-plus-circle"></i> 上传图片</label>
-                        <input id="media-upload-input" type="file" accept="image/*" multiple style="display:none" />
-                    </div>
+                    <label for="media-upload-input" class="btn btn-primary"><i class="fas fa-plus-circle"></i> 上传新图片</label>
+                    <input type="file" id="media-upload-input" accept="image/*" multiple style="display:none;">
                 </div>
-
                 <div id="media-upload-droparea" class="media-upload-area">
-                    <p><i class="fas fa-cloud-upload-alt"></i> 将图片拖拽到此处或点击“上传图片”</p>
+                    <p><i class="fas fa-cloud-upload-alt"></i> 将图片拖拽到这里上传</p>
                     <div id="upload-progress-container" class="progress-container" style="display:none;">
-                        <div id="upload-progress-bar" class="progress-bar">0%</div>
+                        <div id="upload-progress-bar" class="progress-bar"></div>
+                        <div id="upload-progress-text" class="progress-text">0%</div>
                     </div>
                 </div>
-
-                <div id="media-library-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:16px;">
-                    <div style="grid-column:1/-1;text-align:center;color:var(--muted)"><i class="fas fa-info-circle"></i> 媒体库为空或加载中</div>
+                <div id="media-library-grid">
+                    <!-- Image list will be generated here dynamically -->
+                    <p style="grid-column: 1 / -1; text-align: center;"><i class="fas fa-info-circle"></i> 媒体库为空或加载中。</p>
                 </div>
             </div>
 
-            <!-- Settings -->
-            <div id="settings-view" class="admin-view" style="display:none;">
+            <!-- Website Settings View -->
+            <div id="settings-view" class="admin-view" style="display: none;">
                 <div class="page-header">
-                    <h2><i class="fas fa-cog"></i> 网站设置</h2>
-                    <div><button id="save-settings-btn" class="btn-primary"><i class="fas fa-save"></i> 保存设置</button></div>
+                    <h2><i class="fas fa-cogs"></i> 网站设置</h2>
+                    <button id="save-settings-btn" class="btn-success"><i class="fas fa-save"></i> 保存设置</button>
                 </div>
-
-                <div style="background:var(--content-bg);padding:16px;border-radius:8px;box-shadow:var(--shadow);">
-                    <div style="margin-bottom:12px;"><label>网站标题</label><input id="setting-title" type="text" /></div>
-                    <div style="margin-bottom:12px;"><label>网站描述</label><input id="setting-description" type="text" /></div>
-                    <div style="margin-bottom:12px;"><label>关于我 (Markdown)</label><textarea id="setting-about-content" rows="6"></textarea></div>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap">
-                        <div><label>背景颜色</label><input id="setting-bg-color" type="color" /></div>
-                        <div><label>文字颜色</label><input id="setting-text-color" type="color" /></div>
-                        <div><label>强调色</label><input id="setting-accent-color" type="color" /></div>
+                 <div class="form-group">
+                    <label for="setting-title">网站标题 <span style="color:red;">*</span></label>
+                    <input type="text" id="setting-title" placeholder="例如：我的个人博客">
+                </div>
+                <div class="form-group">
+                    <label for="setting-description">网站描述</label>
+                    <input type="text" id="setting-description" placeholder="一句话描述你的博客">
+                </div>
+                <div class="form-group">
+                    <label for="setting-about-content">“关于我”页面内容 (支持 Markdown)</label>
+                    <textarea id="setting-about-content" rows="10" placeholder="请在这里填写关于你的介绍，支持 Markdown 格式。"></textarea>
+                    <p class="description">此内容将显示在网站的“关于我”页面。留空时会显示默认提示。</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="setting-bg-color">背景颜色</label>
+                        <input type="color" id="setting-bg-color">
+                        <p class="description">网站的整体背景色。</p>
                     </div>
-
-                    <div style="margin-top:12px;">
-                        <label>网站背景图 (可上传或填写 URL)</label>
-                        <input id="setting-bg-image" type="file" accept="image/*" />
-                        <div id="setting-bg-image-preview" style="margin-top:8px;width:200px;height:120px;border:1px dashed #e9ecef;display:flex;align-items:center;justify-content:center;">
-                            <span class="placeholder">无背景图</span>
-                        </div>
-                        <input id="setting-bg-image-url" readonly style="margin-top:8px;width:100%;padding:8px;border:1px solid #eee;border-radius:6px" placeholder="背景图 URL" />
-                        <div style="margin-top:8px;display:flex;gap:8px;">
-                            <button id="upload-bg-image-btn" class="btn-primary" style="display:none">上传并设置</button>
-                            <button id="clear-bg-image-btn" class="btn" style="background:#f1f1f1">清除背景图</button>
-                        </div>
+                    <div class="form-group">
+                        <label for="setting-text-color">文字颜色</label>
+                        <input type="color" id="setting-text-color">
+                        <p class="description">网站内容的默认文字颜色。</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="setting-accent-color">链接/强调色</label>
+                        <input type="color" id="setting-accent-color">
+                        <p class="description">链接、按钮等强调元素的颜色。</p>
                     </div>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label for="setting-bg-image">网站背景图</label>
+                    <input type="file" id="setting-bg-image" accept="image/*">
+                    <div id="setting-bg-image-preview" style="margin-top:10px;">
+                        <span class="placeholder">无背景图</span>
+                    </div>
+                    <input type="text" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" value="" readonly style="margin-top: 10px;">
+                    <div class="button-group" style="margin-top: 10px; justify-content: flex-start;">
+                        <button id="upload-bg-image-btn" class="btn-primary" style="display:none;"><i class="fas fa-upload"></i> 上传并设置</button>
+                        <button id="clear-bg-image-btn" class="btn-danger"><i class="fas fa-trash-alt"></i> 清除背景图</button>
+                    </div>
+                    <p class="description">可上传图片作为网站背景，或直接粘帖图像的原始 URL (如 raw.githubusercontent.com)。</p>
+                </div>
+             </div>
 
-            <!-- Gitalk Settings -->
-            <div id="gitalk-settings-view" class="admin-view" style="display:none;">
+            <!-- Gitalk Settings View -->
+            <div id="gitalk-settings-view" class="admin-view" style="display: none;">
                 <div class="page-header">
-                    <h2><i class="fas fa-comments"></i> Gitalk 设置</h2>
-                    <div><button id="save-gitalk-settings-btn" class="btn-primary">保存评论设置</button></div>
+                    <h2><i class="fas fa-comments"></i> Gitalk 评论设置</h2>
+                    <button id="save-gitalk-settings-btn" class="btn-success"><i class="fas fa-save"></i> 保存评论设置</button>
                 </div>
-                <div style="background:var(--content-bg);padding:16px;border-radius:8px;box-shadow:var(--shadow);">
-                    <p style="color:var(--muted)">Gitalk 需要 OAuth App 的 Client ID / Secret，并在管理后台启用后生效。</p>
-                    <div style="margin-bottom:8px;"><label>Client ID</label><input id="gitalk-clientID" type="text" /></div>
-                    <div style="margin-bottom:8px;"><label>Client Secret</label><input id="gitalk-clientSecret" type="password" /></div>
-                    <div style="margin-bottom:8px;"><label>Repo</label><input id="gitalk-repo" type="text" /></div>
-                    <div style="margin-bottom:8px;"><label>Owner</label><input id="gitalk-owner" type="text" /></div>
-                    <div style="margin-bottom:8px;"><label>管理员 (逗号分隔)</label><input id="gitalk-admin" type="text" /></div>
-                    <div style="margin-top:8px;"><input id="gitalk-enabled" type="checkbox" /> <label for="gitalk-enabled">启用 Gitalk 评论</label></div>
+                <p class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Gitalk 在您的博客文章下添加评论功能，它基于 GitHub Issues。请确保您创建的 GitHub Personal Access Token 拥有 `public_repo` (或 `repo` 用于私有库) 权限，且 `owner` 和 `repo` 字段填写正确。
+                </p>
+                <div class="form-group">
+                    <label for="gitalk-clientID">GitHub Application Client ID <span style="color:red;">*</span></label>
+                    <input type="text" id="gitalk-clientID" placeholder="GitHub OAuth Application Client ID">
+                    <p class="description">在 GitHub 创建 OAuth Application 获取。回调 URL 填写您的博客网址。</p>
+                </div>
+                <div class="form-group">
+                    <label for="gitalk-clientSecret">GitHub Application Client Secret <span style="color:red;">*</span></label>
+                    <input type="password" id="gitalk-clientSecret" placeholder="GitHub OAuth Application Client Secret">
+                    <p class="description">在 GitHub 创建 OAuth Application 获取。请妥善保管此Secret，但由于在前端使用，仍存在被获取的风险。</p>
+                </div>
+                <div class="form-group">
+                    <label for="gitalk-repo">GitHub 仓库名 (用于存储评论 Issue) <span style="color:red;">*</span></label>
+                    <input type="text" id="gitalk-repo" placeholder="例如：your-github-username.github.io">
+                    <p class="description">存储博客评论的 GitHub 仓库名称，通常与您的博客仓库相同。</p>
+                </div>
+                <div class="form-group">
+                    <label for="gitalk-owner">GitHub 仓库所有者 <span style="color:red;">*</span></label>
+                    <input type="text" id="gitalk-owner" placeholder="例如：your-github-username">
+                    <p class="description">GitHub 仓库所有者的用户名。</p>
+                </div>
+                <div class="form-group">
+                    <label for="gitalk-admin">管理员 GitHub 用户名 (用英文逗号分隔，可多个)</label>
+                    <input type="text" id="gitalk-admin" placeholder="例如：your-github-username">
+                    <p class="description">拥有 Gitalk 评论管理权限的 GitHub 用户名，例如可以删除评论。</p>
+                </div>
+                 <div class="form-group">
+                    <input type="checkbox" id="gitalk-enabled">
+                    <label for="gitalk-enabled" style="display: inline-block; margin-left: 5px; margin-bottom: 0;">启用 Gitalk 评论</label>
                 </div>
             </div>
-
         </main>
     </div>
 
+    <!-- EasyMDE Markdown 编辑器 JS -->
     <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
-    <script>
-        // ============== Utilities ==============
-        const utf8_to_b64 = str => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,(m,p)=>String.fromCharCode('0x'+p)));
-        const b64_to_utf8 = b64 => decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
 
-        // GitHub API helper (uses token)
+    <script>
+        // ==================== Global Variables & Utility Functions ====================
+        const utf8_to_b64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        const b64_to_utf8 = (b64String) => {
+            try { 
+                const binaryString = atob(b64String);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder('utf-8').decode(bytes);
+            } catch (e) { 
+                console.error("Base64 decoding to UTF-8 failed:", e);
+                return atob(b64String); 
+            }
+        };
+
         const GitHubAPI = {
-            BASE: 'https://api.github.com',
-            DEFAULT_HEADERS: { 'Accept': 'application/vnd.github.v3+json' },
+            BASE_URL: 'https://api.github.com',
+            DEFAULT_HEADERS: { 'Accept': 'application/vnd.github.v3+json' }, 
+
             async request(token, endpoint, options = {}) {
-                const url = `${this.BASE}${endpoint}`;
-                const headers = { ...this.DEFAULT_HEADERS, ...(options.headers || {}) };
-                if (token) headers['Authorization'] = `token ${token}`;
-                if (options.method && ['POST','PUT','DELETE'].includes(options.method.toUpperCase())) {
+                const url = `${this.BASE_URL}${endpoint}`;
+                const headers = { 
+                    'Authorization': `token ${token}`, 
+                    ...this.DEFAULT_HEADERS, 
+                    ...options.headers 
+                };
+                if (options.method && ['POST', 'PUT', 'DELETE'].includes(options.method.toUpperCase())) {
                     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
                 }
-                const res = await fetch(url, { ...options, headers });
-                if (!res.ok) {
-                    let body = null;
-                    try { body = await res.json(); } catch (e) { body = { message: res.statusText }; }
-                    const msg = body && body.message ? body.message : `HTTP ${res.status}`;
-                    const extra = (res.status === 401 || res.status === 403) ? '（可能是 Token 无效或权限不足）' : '';
-                    throw new Error(`${msg} ${extra}`);
+
+                const response = await fetch(url, { ...options, headers });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, documentation_url: response.url || endpoint }));
+                    const errorMessage = errorData.message || `GitHub API request failed with status ${response.status}, endpoint: ${endpoint}`;
+                    console.error('GitHub API Error:', errorMessage, errorData);
+                    const specificError = (errorMessage.toLowerCase().includes('bad credentials') || errorMessage.toLowerCase().includes('requires authentication') || response.status === 401 || response.status === 403)
+                        ? '你的 GitHub Token 可能无效或权限不足。请检查：[Token生成页面](https://github.com/settings/tokens)'
+                        : '';
+                    if (response.status === 404 && errorData.documentation_url.includes('create-or-update-file-contents')) {
+                        throw new Error(`${errorMessage} (路径：${endpoint})。可能是由于 GitHub API 无法在不存在的父目录下创建文件。`);
+                    }
+                    throw new Error(`${errorMessage} ${specificError}`);
                 }
-                if (res.status === 204) return null;
-                return res.json();
+                if (response.status === 204 || response.headers.get("Content-Length") === "0") return null;
+                return response.json();
             },
             async getUser(token) { return this.request(token, '/user'); },
             async getDirectoryContents(token, owner, repo, path) {
                 try {
-                    const res = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                    if (!Array.isArray(res)) return [];
-                    return res;
-                } catch (e) {
-                    if (String(e).includes('Not Found') || String(e).includes('404')) return [];
-                    throw e;
+                    const contents = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
+                    if (!Array.isArray(contents)) {
+                        console.warn(`Path ${path} is not a directory or empty. Response:`, contents);
+                        return [];
+                    }
+                    return contents;
+                } catch (error) {
+                    if (error.message && error.message.toLowerCase().includes('not found')) {
+                         console.info(`Directory not found: ${path}. This is expected if the directory does not exist.`);
+                         return [];
+                    }
+                    console.error(`Error fetching directory contents for ${path}:`, error);
+                    throw error;
                 }
             },
             async getFile(token, owner, repo, path) {
                 try {
-                    return await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
-                } catch (e) {
-                    if (String(e).includes('Not Found') || String(e).includes('404')) return null;
-                    throw e;
+                    const result = await this.request(token, `/repos/${owner}/${repo}/contents/${path}`);
+                    if (!result || typeof result.content === 'undefined' || result.encoding !== 'base64') { 
+                        if (result && result.sha && result.content === '' && result.encoding === 'base64') {
+                            return { content: '', sha: result.sha }; 
+                        }
+                        console.warn(`File data for ${path} is invalid or file not found. Response details:`, result);
+                        return null; 
+                    }
+                    const content = result.content ? b64_to_utf8(result.content) : ''; 
+                    return { content: content, sha: result.sha };
+                } catch (error) {
+                    if (error.message.toLowerCase().includes('not found') || String(error).toLowerCase().includes('no content') || error.message.toLowerCase().includes('no data found')) {
+                        console.info(`File not found: ${path}. This is expected during initial setup.`);
+                        return null;
+                    }
+                    console.error(`Error fetching file ${path}:`, error);
+                    throw error;
                 }
             },
-            // createFile / updateFile use PUT to contents endpoint. Provide binary (base64) content if isBinary true.
-            async createFile(token, owner, repo, path, contentBase64, message) {
-                const body = JSON.stringify({ message, content: contentBase64 });
+            async createFile(token, owner, repo, path, content, message, isBinary = false, onProgress = null) { 
+                const body = JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content) });
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('PUT', `${this.BASE}/repos/${owner}/${repo}/contents/${path}`, true);
+                    xhr.open('PUT', `${this.BASE_URL}/repos/${owner}/${repo}/contents/${path}`, true); 
                     xhr.setRequestHeader('Authorization', `token ${token}`);
                     xhr.setRequestHeader('Accept', this.DEFAULT_HEADERS.Accept);
                     xhr.setRequestHeader('Content-Type', 'application/json');
+
+                    if (onProgress && xhr.upload) {
+                        xhr.upload.onprogress = (event) => {
+                            if (event.lengthComputable) {
+                                const percentComplete = (event.loaded / event.total) * 100;
+                                onProgress(percentComplete, file.name || '文件');
+                            }
+                        };
+                    }
+
                     xhr.onload = () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
-                            try { resolve(JSON.parse(xhr.responseText)); } catch (e) { resolve(null); }
+                            try {
+                                resolve(JSON.parse(xhr.responseText));
+                            } catch (e) {
+                                resolve(null); 
+                            }
                         } else {
-                            try { const err = JSON.parse(xhr.responseText); reject(new Error(err.message || xhr.statusText)); } catch (e) { reject(new Error(xhr.statusText)); }
+                            try {
+                                const errorData = JSON.parse(xhr.responseText);
+                                reject(new Error(errorData.message || `HTTP Error: ${xhr.status} ${xhr.statusText}`));
+                            } catch (e) {
+                                reject(new Error(`HTTP Error: ${xhr.status} ${xhr.statusText}`));
+                            }
                         }
                     };
-                    xhr.onerror = () => reject(new Error('Network error during createFile'));
+                    xhr.onerror = () => reject(new Error('Network error or request failed.'));
                     xhr.send(body);
                 });
             },
-            async updateFile(token, owner, repo, path, contentBase64, sha, message) {
-                const body = JSON.stringify({ message, content: contentBase64, sha });
-                return new Promise((resolve, reject) => {
+            async updateFile(token, owner, repo, path, content, sha, message, isBinary = false, onProgress = null) {
+                if (!sha) {
+                    throw new Error("SHA is required to update a file.");
+                }
+                const body = JSON.stringify({ message, content: isBinary ? content : utf8_to_b64(content), sha });
+                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('PUT', `${this.BASE}/repos/${owner}/${repo}/contents/${path}`, true);
+                    xhr.open('PUT', `${this.BASE_URL}/repos/${owner}/${repo}/contents/${path}`, true);
                     xhr.setRequestHeader('Authorization', `token ${token}`);
                     xhr.setRequestHeader('Accept', this.DEFAULT_HEADERS.Accept);
                     xhr.setRequestHeader('Content-Type', 'application/json');
+
+                    if (onProgress && xhr.upload) {
+                        xhr.upload.onprogress = (event) => {
+                            if (event.lengthComputable) {
+                                const percentComplete = (event.loaded / event.total) * 100;
+                                onProgress(percentComplete, file.name || '文件');
+                            }
+                        };
+                    }
+
                     xhr.onload = () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
-                            try { resolve(JSON.parse(xhr.responseText)); } catch (e) { resolve(null); }
+                            try {
+                                resolve(JSON.parse(xhr.responseText));
+                            } catch (e) {
+                                resolve(null); 
+                            }
                         } else {
-                            try { const err = JSON.parse(xhr.responseText); reject(new Error(err.message || xhr.statusText)); } catch (e) { reject(new Error(xhr.statusText)); }
+                             try {
+                                const errorData = JSON.parse(xhr.responseText);
+                                reject(new Error(errorData.message || `HTTP Error: ${xhr.status} ${xhr.statusText}`));
+                            } catch (e) {
+                                reject(new Error(`HTTP Error: ${xhr.status} ${xhr.statusText}`));
+                            }
                         }
                     };
-                    xhr.onerror = () => reject(new Error('Network error during updateFile'));
+                    xhr.onerror = () => reject(new Error('Network error or request failed.'));
                     xhr.send(body);
                 });
             },
-            async deleteFile(token, owner, repo, path, sha, message) {
-                return this.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method:'DELETE', body: JSON.stringify({ message, sha }) });
-            }
+            async deleteFile(token, owner, repo, path, sha, message) { 
+                if (!sha) {
+                    throw new Error("SHA is required to delete a file.");
+                }
+                return this.request(token, `/repos/${owner}/${repo}/contents/${path}`, { method: 'DELETE', body: JSON.stringify({ message, sha }) });
+            },
         };
 
-        // ============== DOM & State ==============
+        // ==================== DOM Element Caching ====================
         const loginWrapper = document.getElementById('login-wrapper');
         const adminWrapper = document.getElementById('admin-wrapper');
         const tokenInput = document.getElementById('token-input');
@@ -332,7 +1239,7 @@
         const startBtn = document.getElementById('start-btn');
         const initialMessageEl = document.getElementById('initial-message');
         const pathDisplayEl = document.getElementById('path-display');
-        const viewSiteLink = document.getElementById('view-site-link');
+
 
         const adminViews = {
             dashboard: document.getElementById('dashboard-view'),
@@ -342,454 +1249,725 @@
             settings: document.getElementById('settings-view'),
             gitalkSettings: document.getElementById('gitalk-settings-view'),
         };
-
+        
         const postListBody = document.getElementById('post-list');
         const mediaLibraryGrid = document.getElementById('media-library-grid');
-        const uploadProgressContainer = document.getElementById('upload-progress-container');
         const uploadProgressBar = document.getElementById('upload-progress-bar');
+        const uploadProgressText = document.getElementById('upload-progress-text');
+        const uploadProgressContainer = document.getElementById('upload-progress-container');
 
-        let token = null, owner = '', repo = '', publicUrlBase = '';
+        let token = null, owner = '', repo = '', publicUrlBase = ''; 
         let posts = [], postsSha = '';
         let config = {}, configSha = '';
-        let easyMDE = null;
-        let allUniqueTags = new Set();
-        let selectedPostIds = [];
+        let easyMDE; 
 
-        // Path parsing (same logic as frontend index)
+        const viewSiteLink = document.getElementById('view-site-link');
+        let selectedPostIds = []; // For bulk delete
+
+        // Unified path parsing function (consistent with index.html)
         const parseGitHubRepoAndBasePath = (githubUsername) => {
-            const hostname = window.location.hostname;
-            let pathSegments = window.location.pathname.split('/').filter(p => p);
-            if (pathSegments.length > 0 && (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
+            const hostname = window.location.hostname; 
+            let pathSegments = window.location.pathname.split('/').filter(p => p); 
+
+            // Remove current HTML file (admin.html or index.html) if it's the last segment
+            if (pathSegments.length > 0 && 
+                (pathSegments[pathSegments.length - 1].toLowerCase() === 'admin.html' || 
+                 pathSegments[pathSegments.length - 1].toLowerCase() === 'index.html')) {
                 pathSegments.pop();
             }
+
             const usernameLow = githubUsername.toLowerCase();
             const hostnameLow = hostname.toLowerCase();
-            let finalOwner = githubUsername;
-            let finalRepo = '';
-            let finalPublicUrlBase = '';
 
+            let finalOwner = githubUsername; // Use original casing for owner
+            let finalRepo = '';
+            let finalPublicUrlBase = ''; // e.g., '/ceishi' for pkq66882.github.io/ceishi
+
+            // Scenario 1: User/Organization site (e.g., user.github.io) or local environment
             if (hostnameLow === `${usernameLow}.github.io` || /^localhost$|^127\.0\.0\.1$/.test(hostnameLow)) {
                 if (pathSegments.length > 0) {
+                    // Project site: e.g., pkq66882.github.io/ceishi/ -> repo="ceishi", publicUrlBase="/ceishi"
                     finalRepo = pathSegments[0];
                     finalPublicUrlBase = `/${pathSegments[0]}`;
                 } else {
-                    finalRepo = `${usernameLow}.github.io`;
+                    // User/Org site root: e.g., pkq66882.github.io/ -> repo="pkq66882.github.io", publicUrlBase=""
+                    finalRepo = `${usernameLow}.github.io`; // Repo name is the hostname
                     finalPublicUrlBase = '';
                 }
-            } else if (pathSegments.length > 0) {
+            } 
+            // Scenario 2: Custom domain or other .github.io (e.g., another-org.github.io/someproject)
+            else if (pathSegments.length > 0) {
+                // Assume the first path segment is the repository name for a project-like setup
                 finalRepo = pathSegments[0];
                 finalPublicUrlBase = `/${pathSegments[0]}`;
             } else {
-                finalRepo = `${usernameLow}.github.io`;
+                // Custom domain pointing to user/org repo root without path segment
+                finalRepo = `${usernameLow}.github.io`; 
                 finalPublicUrlBase = '';
             }
 
-            if (!finalRepo) {
-                finalRepo = `${usernameLow}.github.io`;
+            // Safety net: if repo is still empty (shouldn't happen with the above logic, but for robustness)
+            if (!finalRepo || finalRepo.trim() === '') {
+                finalRepo = `${usernameLow}.github.id`; // Fallback to user.github.io if no repo detected
                 finalPublicUrlBase = '';
             }
-            console.log(`[parseGitHubRepoAndBasePath] owner=${finalOwner}, repo=${finalRepo}, base=${finalPublicUrlBase}`);
+
+            console.log(`[parseGitHubRepoAndBasePath Final] Owner: ${finalOwner}, Repo: "${finalRepo}", PublicUrlBase: "${finalPublicUrlBase}"`);
             return { owner: finalOwner, repo: finalRepo, publicUrlBase: finalPublicUrlBase };
         };
 
-        // sanitize filenames for GitHub raw
-        const sanitizeFileName = (filename) => {
-            if (!filename) return '';
-            const ext = filename.includes('.') ? filename.substring(filename.lastIndexOf('.') + 1) : '';
-            const base = filename.includes('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
-            // Keep letters, numbers, underscore, dash, dot. Replace others with underscore.
-            const sanitizedBase = base.replace(/[^\p{L}\p{N}_\-.]/gu, '_').replace(/_+/g,'_').replace(/^[_\-.]+|[_\-.]+$/g, '').slice(0,100);
-            return `${sanitizedBase}${ext ? '.' + ext : ''}`;
-        };
 
-        // getProxiedImageUrl: normalize path segments, decode then re-encode for gh-proxy
+        // Function to create/update directories with .gitkeep
+        async function createGitHubDirectory(apiToken, apiOwner, apiRepo, directoryPath) {
+            const gitkeepPath = `${directoryPath}/.gitkeep`; 
+            console.log(`Checking/Creating directory: ${apiOwner}/${apiRepo}/${gitkeepPath}`);
+            try {
+                let fileData = null;
+                try {
+                    fileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
+                } catch (fetchError) {
+                    console.warn(`Error fetching .gitkeep initially, assuming not found or transient error: ${fetchError.message}`);
+                    fileData = null; // Mark as not found if there's an error
+                }
+                
+                if (fileData === null) { 
+                    console.log(`Attempting to create new .gitkeep for directory ${directoryPath}`);
+                    await GitHubAPI.createFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', `feat: create directory ${directoryPath}/`);
+                    console.log(`Directory ${directoryPath} created successfully.`);
+                } else { 
+                    console.log(`Attempting to update existing .gitkeep for directory ${directoryPath}`);
+                    await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', fileData.sha, `ci: update .gitkeep content for directory ${directoryPath}/`);
+                    console.log(`Directory ${directoryPath} updated successfully.`);
+                }
+                return true;
+            } catch (error) {
+                console.error(`Failed to create/update directory ${directoryPath}:`, error);
+                
+                // If it's a SHA-related 422 error, retry by getting latest SHA and updating
+                if (String(error.message).includes('sha wasn\'t supplied') || (String(error.message).includes('Invalid request') && String(error.message).includes('422'))) {
+                    console.warn(`GitHub API reported 'sha wasn\'t supplied' or 'Invalid request' for .gitkeep. Attempting to recover by re-fetching and updating.`);
+                    try {
+                        const latestFileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
+                        if (latestFileData) {
+                            await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', latestFileData.sha, `ci: retry update .gitkeep after previous failure`);
+                            console.log(`Directory ${directoryPath} recovered by update with new sha.`);
+                            return true;
+                        } else {
+                            throw new Error(`Failed to recover .gitkeep: still no file data after direct retry.`);
+                        }
+                    } catch (recoveryError) {
+                        console.error("Failed to recover .gitkeep file after initial error:", recoveryError);
+                        throw new Error(`Failed to manage .gitkeep directory at ${directoryPath}: ${error.message} (Recovery attempt also failed: ${recoveryError.message})`);
+                    }
+                }
+                throw error; 
+            }
+        }
+
+        // Unified function to process image URLs for display (always return proxied URL)
         const getProxiedImageUrl = (inputUrl) => {
-            if (!inputUrl) return '';
+            if (!inputUrl) return ''; // Return empty string if inputUrl is falsy
+
             let urlToProcess = inputUrl;
+
+            // Step 1: If inputUrl is already a gh-proxy URL, decode it to get the original raw GitHub URL.
             if (urlToProcess.startsWith('https://gh-proxy.com/')) {
                 try {
-                    const decoded = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
-                    urlToProcess = decoded.startsWith('http') ? decoded : decoded;
+                    const decodedPart = decodeURIComponent(urlToProcess.substring('https://gh-proxy.com/'.length));
+                    if (decodedPart.startsWith('https://raw.githubusercontent.com/') || decodedPart.startsWith('http')) {
+                        urlToProcess = decodedPart;
+                    } else {
+                        console.warn('URL was gh-proxy but decoded target seems invalid, keeping original for re-encoding:', urlToProcess);
+                        urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
+                    }
                 } catch (e) {
-                    console.warn('decode gh-proxy failed', e);
-                    urlToProcess = urlToProcess.substring('https://gh-proxy.com/'.length);
+                    console.warn('Failed to decode existing gh-proxy URL, processing the encoded part directly:', e, urlToProcess);
+                    urlToProcess = inputUrl.substring('https://gh-proxy.com/'.length); 
                 }
             }
-            if (/^https?:\/\//.test(urlToProcess)) {
+
+            // Step 2: If the URL is a standard HTTP(S) link (e.g., raw.githubusercontent.com)
+            if (urlToProcess.startsWith('https://raw.githubusercontent.com/') || /^https?:\/\//.test(urlToProcess)) {
                 try {
-                    const u = new URL(urlToProcess);
-                    u.pathname = u.pathname.split('/').map(seg => decodeURIComponent(seg || '')).join('/');
-                    u.search = decodeURIComponent(u.search || '');
-                    urlToProcess = u.toString();
+                    const urlObj = new URL(urlToProcess);
+                    urlObj.pathname = urlObj.pathname.split('/').map(segment => decodeURIComponent(segment || '')).join('/');
+                    urlObj.search = decodeURIComponent(urlObj.search);
+                    urlToProcess = urlObj.toString();
                 } catch (e) {
-                    console.warn('URL parse error in getProxiedImageUrl', e);
+                    // Fallback: If URL parsing fails, assume the original string is the target and directly encode it.
+                    console.warn("URL parsing/decoding for path normalization failed, falling back to direct encoding:", e, urlToProcess);
                 }
+                // Step 3: Now, apply the proxy with a *single, fresh* encodeURIComponent on the (now fully decoded/normalized or original) URL.
                 return `https://gh-proxy.com/${encodeURIComponent(urlToProcess)}`;
             }
-            return inputUrl;
+
+            console.warn("getProxiedImageUrl received a URL that wasn't an absolute HTTP/S or gh-proxy link, returning as is.", inputUrl);
+            return inputUrl; 
         };
 
-        // UI helpers
+
+        // ==================== UI Helper Functions ====================
         const showAdminView = (viewName) => {
-            Object.values(adminViews).forEach(v => v.style.display = 'none');
-            const navLinks = document.querySelectorAll('#admin-sidebar .nav a');
-            navLinks.forEach(a => a.classList.remove('active'));
-            const link = document.querySelector(`#admin-sidebar .nav a[data-view="${viewName}"]`);
-            if (link) link.classList.add('active');
+            Object.values(adminViews).forEach(v => v ? v.style.display = 'none' : null); 
+
+            document.querySelectorAll('#admin-sidebar .nav a').forEach(a => {
+                 a.classList.remove('active');
+            });
+            const currentNavLink = document.querySelector(`#admin-sidebar .nav a[data-view="${viewName}"]`);
+            if (currentNavLink) {
+                 currentNavLink.classList.add('active');
+            } else if (viewName === 'editor') {
+                const postsNavLink = document.getElementById('nav-posts');
+                if (postsNavLink) postsNavLink.classList.add('active');
+            }
+            
             if (adminViews[viewName]) adminViews[viewName].style.display = 'block';
-            if (viewName === 'editor' && !easyMDE) initializeEasyMDE();
-            if (viewName === 'mediaLibrary') renderMediaLibrary();
-            if (viewName === 'dashboard') renderDashboard();
-        };
-
-        const setButtonsDisabled = (disabled) => {
-            document.querySelectorAll('button').forEach(b => b.disabled = disabled);
-        };
-
-        const showAlert = (message, type='info', duration=4500) => {
-            // small transient alert at top of main
-            let id = 'global-alert';
-            let el = document.getElementById(id);
-            if (!el) {
-                el = document.createElement('div');
-                el.id = id;
-                document.body.prepend(el);
+            
+            if (viewName === 'editor' && !easyMDE) {
+                initializeEasyMDE();
             }
-            el.className = `alert ${type}`;
-            el.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
-            el.style.display = 'flex';
-            setTimeout(() => el.style.display = 'none', duration);
+            if (viewName === 'mediaLibrary') {
+                if (mediaLibraryGrid) renderMediaLibrary();
+            }
+            if (viewName === 'dashboard') {
+                renderDashboard();
+            }
+
+            document.querySelector('.admin-wrapper').classList.remove('sidebar-visible');
         };
 
-        // createGitHubDirectory ensures images/ folder exists by writing .gitkeep
-        const createGitHubDirectory = async (apiToken, apiOwner, apiRepo, directoryPath) => {
-            const gitkeepPath = `${directoryPath}/.gitkeep`;
+        const setButtonsDisabled = (disabled) => document.querySelectorAll('button').forEach(b => b.disabled = disabled);
+
+        const showAlert = (message, type = 'info', id = 'global-alert') => {
+            let existingAlert = document.getElementById(id);
+            if (!existingAlert) {
+                existingAlert = document.createElement('div');
+                existingAlert.id = id;
+                adminWrapper.querySelector('main').prepend(existingAlert);
+            }
+            existingAlert.className = `alert alert-${type}`;
+            const icon = {
+                'info': 'fas fa-info-circle',
+                'success': 'fas fa-check-circle',
+                'danger': 'fas fa-exclamation-circle',
+                'warning': 'fas fa-exclamation-triangle'
+            }[type];
+            existingAlert.innerHTML = `<i class="${icon}"></i> ${message}`;
+            existingAlert.style.display = 'flex';
+            existingAlert.style.marginTop = '0';
+            setTimeout(() => {
+                existingAlert.style.display = 'none';
+            }, 5000);
+        };
+
+        // ==================== Upload Progress Functions ====================
+        const updateProgressBar = (percentage, fileName = '文件') => {
+            uploadProgressContainer.style.display = 'block';
+            uploadProgressBar.style.width = `${percentage}%`;
+            uploadProgressBar.textContent = `${Math.round(percentage)}%`;
+            // Only update text content if progress is not yet 100% to show specific file
+            if (percentage < 100) {
+                 uploadProgressText.textContent = `上传中 "${fileName}": ${Math.round(percentage)}%`;
+            }
+            if (percentage >= 100) {
+                uploadProgressText.textContent = '全部上传完成！'; 
+                setTimeout(() => {
+                    uploadProgressContainer.style.display = 'none';
+                    uploadProgressBar.style.width = '0%';
+                    uploadProgressBar.textContent = '0%';
+                    uploadProgressText.textContent = '0%'; 
+                }, 1000); 
+            }
+        };
+
+
+        // ==================== Login / Initialization ====================
+        const checkTokenAndStart = async () => {
+             const storedToken = localStorage.getItem('github_token');
+             if (storedToken) {
+                 tokenInput.value = storedToken;
+                 rememberTokenCheckbox.checked = true;
+                startAdmin();
+             }
+        };
+
+        const startAdmin = async () => {
+            const userToken = tokenInput.value.trim();
+            if (!userToken) { initialMessageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Token 不能为空。'; return; }
+            token = userToken;
+            setButtonsDisabled(true);
+            initialMessageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在验证并加载...';
+            initialMessageEl.style.color = 'var(--text-color)';
+
             try {
-                const existing = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
-                if (!existing) {
-                    const res = await GitHubAPI.createFile(apiToken, apiOwner, apiRepo, gitkeepPath, utf8_to_b64(''), `feat: create directory ${directoryPath}`);
-                    return !!res;
-                } else {
-                    // update with same empty content to ensure SHA freshness
-                    const res = await GitHubAPI.updateFile(apiToken, apiOwner, apiRepo, gitkeepPath, utf8_to_b64(''), existing.sha, `ci: update .gitkeep for ${directoryPath}`);
-                    return !!res;
-                }
-            } catch (e) {
-                console.error('createGitHubDirectory error', e);
-                throw e;
-            }
-        };
+                const githubUser = await GitHubAPI.getUser(token);
+                initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 已验证GitHub用户: ${githubUser.login}, 正在解析仓库路径...`;
 
-        // Upload helper: reads file and calls GitHubAPI.createFile. Provide onProgress callback signature: (percentage, filename)
-        const uploadFile = async (file, uploadDirectory, commitMessage, onProgress = null) => {
-            if (!file) throw new Error('No file provided');
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    try {
-                        // e.target.result is data:[mime];base64,xxxx
-                        const base64data = e.target.result.split(',')[1];
-                        const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '');
-                        const sanitized = sanitizeFileName(file.name);
-                        const finalName = `${timestamp}_${sanitized}`;
-                        const path = `${uploadDirectory}/${finalName}`;
-                        // Use GitHubAPI.createFile (XHR) to upload base64 content
-                        // We pass base64 content directly: createFile expects base64 string content
-                        const res = await GitHubAPI.createFile(token, owner, repo, path, base64data, commitMessage);
-                        // commit callback (no progress support for base64 push via XHR body), so call onProgress 100
-                        if (onProgress && typeof onProgress === 'function') {
-                            try { onProgress(100, file.name); } catch (e) { console.warn('onProgress callback error', e); }
-                        }
-                        const rawUrl = (res && res.content && res.content.download_url) ? res.content.download_url : `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-                        resolve(rawUrl);
-                    } catch (err) {
-                        reject(err);
+                const { owner: resolvedOwner, repo: resolvedRepo, publicUrlBase: resolvedPublicUrlBase } = parseGitHubRepoAndBasePath(githubUser.login);
+                owner = resolvedOwner; 
+                repo = resolvedRepo;   
+                publicUrlBase = resolvedPublicUrlBase; 
+                
+                console.log(`[admin.html] Detected Owner: ${owner}, Repo: ${repo}, PublicUrlBase: "${publicUrlBase}"`);
+                pathDisplayEl.textContent = `检测到仓库: Owner: ${owner}, Repo: ${repo}, Public URL Base: "${publicUrlBase || '/'}"`;
+                pathDisplayEl.style.display = 'block';
+
+                if (viewSiteLink) {
+                    viewSiteLink.href = `${window.location.origin}${publicUrlBase}/index.html`;
+                }
+
+                initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在检查并创建所需文件目录...`;
+                try {
+                    await createGitHubDirectory(token, owner, repo, 'images'); 
+
+                } catch (e) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法创建必要的目录。错误: ${e.message}<br>请检查您的 GitHub Token 权限是否包含 ` + `repo` + ` 权限。 (公共URL基础路径: ${publicUrlBase || '/'})`;
+                    throw e;
+                }
+
+                let existingConfigData = null;
+                let existingPostsData = null;
+                initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在获取核心配置文件...`;
+
+                try {
+                    existingConfigData = await GitHubAPI.getFile(token, owner, repo, 'config.json');
+                } catch (e) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 获取 config.json 失败: ${e.message}`;
+                    throw e;
+                }
+                
+                try {
+                    existingPostsData = await GitHubAPI.getFile(token, owner, repo, 'posts.json');
+                } catch (e) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 获取 posts.json 失败: ${e.message}`;
+                    throw e;
+                }
+
+                const hasExistingConfig = !!existingConfigData && existingConfigData.content !== null; 
+                const hasExistingPosts = !!existingPostsData && existingPostsData.content !== null;
+
+
+                const initialConfig = {
+                    site: {
+                        title: `${owner}的博客`,
+                        description: "由GitHub驱动的现代化半静态博客",
+                        aboutContent: `# 关于我\n\n你好！我是 ${owner}，一个热爱技术和分享的开发者。欢迎来到我的博客！\n\n在这里，我将分享我的技术心得、学习笔记以及一些生活感悟。希望我的内容能对你有所启发或帮助。\n\n**联系我:**\n\n*   GitHub: [${owner}](https://github.com/${owner})\n*   Email: your_email@example.com\n\n---`,
+                    },
+                    styling: {
+                        backgroundColor: "#f8f9fa",
+                        textColor: "#212529",
+                        accentColor: "#0d6efd",
+                        backgroundImageUrl: "" 
+                    },
+                    gitalk: {
+                        enabled: false,
+                        clientID: '',
+                        clientSecret: '',
+                        repo: repo, 
+                        owner: owner,
+                        admin: [owner],
+                        distractionFreeMode: false,
+                        labels: ['Gitalk', '评论'],
+                        perPage: 10,
                     }
                 };
-                reader.onerror = (err) => reject(err);
-                reader.readAsDataURL(file);
+                const uniqueIdSuffix = () => Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+                const initialWelcomePost = {
+                    id: `welcome_post_${uniqueIdSuffix()}`, 
+                    title: "欢迎来到我的博客！",
+                    content: "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](/admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
+                    category: "公告",
+                    tags: ["欢迎", "教程"],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                let currentConfig = initialConfig;
+                if (hasExistingConfig) {
+                    try {
+                        let parsedConfig = JSON.parse(existingConfigData.content);
+                        currentConfig = {
+                            ...initialConfig,
+                            ...parsedConfig,
+                            site: {...initialConfig.site, ...(parsedConfig.site || {})},
+                            styling: {...initialConfig.styling, ...(parsedConfig.styling || {})},
+                            gitalk: {...initialConfig.gitalk, ...(parsedConfig.gitalk || {})},
+                        };
+
+                        currentConfig.gitalk.repo = currentConfig.gitalk.repo || repo; 
+                        currentConfig.gitalk.owner = currentConfig.gitalk.owner || owner;
+                        // Ensure owner is always in admin list and deduplicate
+                        if (currentConfig.gitalk.admin) {
+                            currentConfig.gitalk.admin = [...new Set([...(Array.isArray(currentConfig.gitalk.admin) ? currentConfig.gitalk.admin : [currentConfig.gitalk.admin.toString()]), owner])];
+                        } else {
+                            currentConfig.gitalk.admin = [owner];
+                        }
+                        // Ensure labels is an array
+                        if (currentConfig.gitalk.labels && !Array.isArray(currentConfig.gitalk.labels)) {
+                            currentConfig.gitalk.labels = currentConfig.gitalk.labels.split(',').map(l => l.trim()).filter(Boolean);
+                        } else if (!currentConfig.gitalk.labels) {
+                            currentConfig.gitalk.labels = initialConfig.gitalk.labels;
+                        }
+                        
+                        // Ensure backgroundImageUrl is a valid URL, otherwise clear it
+                        if (currentConfig.styling.backgroundImageUrl && !/^https?:\/\//i.test(currentConfig.styling.backgroundImageUrl)) {
+                            console.warn("Invalid backgroundImageUrl found in config.json, clearing it.");
+                            currentConfig.styling.backgroundImageUrl = "";
+                        }
+
+                        const commitMessage = 'conf: update config with default/existing values';
+                        const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(currentConfig, null, 2), existingConfigData.sha, commitMessage);
+                        configSha = updateRes.content.sha;
+
+                    } catch (e) {
+                        console.warn(`Invalid config.json content, attempting to use default config and update. Error: ${e}`);
+                        showAlert('config.json ' + (existingConfigData.content ? '内容无效' : '文件不存在或为空') + '，已使用默认配置覆盖，请点击“保存设置”以写入。', 'warning');
+                         try {
+                            const commitMessage = 'conf: attempting to normalize/update config content';
+                            const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(currentConfig, null, 2), existingConfigData.sha, commitMessage);
+                            configSha = updateRes.content.sha;
+                        } catch (re) {
+                           console.error(`Error during recovery update of config.json: ${re.message}`);
+                           initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法更新 config.json: ${re.message}`;
+                           throw re;
+                        }
+                    }
+                } else {
+                    try {
+                        const commitMessage = 'feat: initialize config';
+                        const createRes = await GitHubAPI.createFile(token, owner, repo, 'config.json', JSON.stringify(initialConfig, null, 2), commitMessage);
+                        configSha = createRes.content.sha;
+                        currentConfig = initialConfig;
+                    } catch (e) {
+                        console.error(`Error creating config.json: ${e.message}`);
+                        initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 创建 config.json 失败: ${e.message}`;
+                        throw e;
+                    }
+                }
+                config = currentConfig;
+
+                let currentPostsArray = [];
+                if (hasExistingPosts) {
+                    try {
+                        currentPostsArray = JSON.parse(existingPostsData.content);
+                        if (currentPostsArray.length === 0 || !currentPostsArray.some(p => p.title === initialWelcomePost.title)) { 
+                            currentPostsArray.push(initialWelcomePost);
+                            showAlert('posts.json 文件之前为空或缺少欢迎文章，已补充。', 'info');
+                        }
+                        currentPostsArray.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                        // Store raw GitHub URLs from content (if any old proxied URLs exist)
+                        currentPostsArray = currentPostsArray.map(post => {
+                            let newContent = post.content.replace(/!\[(.*?)\]\((.+?)\)/g, (match, alt, url) => {
+                                let originalUrl = url;
+                                if (originalUrl.startsWith('https://gh-proxy.com/')) {
+                                    try {
+                                        originalUrl = decodeURIComponent(originalUrl.substring('https://gh-proxy.com/'.length));
+                                    } catch (e) {
+                                        console.warn("Error decoding URL part during post content normalization:", e, originalUrl);
+                                    }
+                                }
+                                return `![${alt}](${originalUrl})`; 
+                            });
+                             // If post.id doesn't exist, generate one (for very old or malformed posts)
+                            if (!post.id) {
+                                post.id = `post_${uniqueIdSuffix()}`;
+                                post.createdAt = post.createdAt || now;
+                                post.updatedAt = post.updatedAt || now;
+                                console.warn(`Post found without an ID, assigned a new one: ${post.id}`);
+                            }
+                            return { ...post, content: newContent };
+                        });
+
+                        const commitMessage = 'docs: update posts with initial/existing entries';
+                        const actualPostsSha = existingPostsData ? existingPostsData.sha : postsSha; 
+                        const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(currentPostsArray, null, 2), actualPostsSha, commitMessage);
+                        postsSha = updateRes.content.sha;
+
+                    } catch (e) {
+                        console.warn(`Invalid posts.json content, attempting to use default post and update. Error: ${e}`);
+                        showAlert('posts.json ' + (existingPostsData.content ? '内容无效' : '文件不存在或为空') + '，已添加默认文章，请点击“更新文章”以写入。', 'warning');
+                        currentPostsArray = [initialWelcomePost]; 
+                        try {
+                            const commitMessage = 'docs: attempting to normalize/update posts content';
+                            const actualPostsSha = existingPostsData ? existingPostsData.sha : postsSha; 
+                            const updateRes = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(currentPostsArray, null, 2), actualPostsSha, commitMessage);
+                            postsSha = updateRes.content.sha;
+                        } catch (re) {
+                           console.error(`Error during recovery update of posts.json: ${re.message}`);
+                           initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 无法更新 posts.json: ${re.message}`;
+                           throw re;
+                        }
+                    }
+                } else {
+                    try {
+                        const commitMessage = 'feat: initialize first post';
+                        const createRes = await GitHubAPI.createFile(token, owner, repo, 'posts.json', JSON.stringify([initialWelcomePost], null, 2), commitMessage);
+                        postsSha = createRes.content.sha;
+                        currentPostsArray = [initialWelcomePost];
+                    } catch (e) {
+                        console.error(`Error creating posts.json: ${e.message}`);
+                        initialMessageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 创建 posts.json 失败: ${e.message}`;
+                        throw e;
+                    }
+                }
+                posts = currentPostsArray;
+
+                loginWrapper.style.display = 'none';
+                adminWrapper.style.display = 'flex';
+                showAdminView('dashboard');
+                populateSettings();
+                populateGitalkSettings();
+                updateUniqueTags();
+                renderPostList(); 
+
+                if (rememberTokenCheckbox.checked) {
+                    localStorage.setItem('github_token', token);
+                } else {
+                    localStorage.removeItem('github_token');
+                }
+
+                initialMessageEl.innerHTML = ``;
+                showAlert('博客后台管理系统已成功加载！', 'success');
+
+            } catch (error) {
+                console.error("Critical initialization failure:", error);
+                if (!initialMessageEl.innerHTML.includes('Token') && !initialMessageEl.innerHTML.includes('权限')) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}<br>通用建议：请仔细检查您的Token权限、GitHub Pages配置和网络连接。`;
+                } else if (initialMessageEl.innerHTML.includes('无法创建目录')) {
+                    initialMessageEl.innerHTML += `<br>请注意：Token可能已失效或权限不足，导致无法创建目录。`;
+                }
+                initialMessageEl.style.color = 'var(--danger-color)';
+                token = null;
+                localStorage.removeItem('github_token');
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        // ==================== Dashboard Functions ====================
+        const renderDashboard = () => {
+             if (!posts || posts.length === 0) {
+                 document.getElementById('total-posts').textContent = '0';
+                 document.getElementById('total-categories').textContent = '0';
+                 document.getElementById('total-tags').textContent = '0';
+                 document.getElementById('activity-list').innerHTML = `
+                    <div class="activity-item">
+                        <i class="fas fa-info-circle"></i>
+                        <div class="content">
+                            <p>数据加载中或暂无文章。</p>
+                            <span class="time"></span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('total-posts').textContent = posts.length.toString();
+            
+            const categories = new Set(posts.map(p => p.category).filter(Boolean));
+            document.getElementById('total-categories').textContent = categories.size.toString();
+
+            const tags = new Set();
+            posts.forEach(p => p.tags && p.tags.forEach(tag => tags.add(tag)));
+            document.getElementById('total-tags').textContent = tags.size.toString();
+
+            const activityListEl = document.getElementById('activity-list');
+            activityListEl.innerHTML = '';
+            
+            const sortedPostsByUpdate = [...posts].sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            if (sortedPostsByUpdate.length > 0) {
+                const latestUpdatedPost = sortedPostsByUpdate[0];
+                const activityItem = document.createElement('div');
+                activityItem.className = 'activity-item';
+                activityItem.innerHTML = `
+                    <i class="fas fa-pen-nib"></i>
+                    <div class="content">
+                        <p>最近更新文章: <a href="#" class="edit" data-id="${latestUpdatedPost.id}">${latestUpdatedPost.title}</a></p>
+                        <span class="time">${timeAgo(new Date(latestUpdatedPost.updatedAt))}</span>
+                    </div>
+                `;
+                activityListEl.appendChild(activityItem);
+            }
+
+            const sortedPostsByCreate = [...posts].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            if (sortedPostsByCreate.length > 0 && 
+                (sortedPostsByUpdate.length === 0 || sortedPostsByCreate[0].id !== sortedPostsByUpdate[0].id)) {
+                const latestCreatedPost = sortedPostsByCreate[0];
+                const createdActivity = document.createElement('div');
+                createdActivity.className = 'activity-item';
+                createdActivity.innerHTML = `
+                     <i class="fas fa-plus"></i>
+                    <div class="content">
+                        <p>最近发布文章: <a href="#" class="edit" data-id="${latestCreatedPost.id}">${latestCreatedPost.title}</a></p>
+                        <span class="time">${timeAgo(new Date(latestCreatedPost.createdAt))}</span>
+                    </div>
+                `;
+                activityListEl.appendChild(createdActivity);
+            }
+            
+            if (activityListEl.children.length === 0) {
+                 activityListEl.innerHTML = `
+                    <div class="activity-item">
+                        <i class="fas fa-info-circle"></i>
+                        <div class="content">
+                            <p>暂无活动。发布您的第一篇文章吧！</p>
+                            <span class="time"></span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            activityListEl.querySelectorAll('.edit').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openEditor(e.target.dataset.id);
+                });
             });
         };
 
-        // Delete file
-        const deleteMediaFile = async (filePath, fileSha) => {
-            setButtonsDisabled(true);
-            try {
-                await GitHubAPI.deleteFile(token, owner, repo, filePath, fileSha, `feat: delete media ${filePath.split('/').pop()}`);
-                showAlert('删除成功', 'success');
-                setTimeout(() => renderMediaLibrary(), 500);
-            } catch (e) {
-                console.error(e);
-                showAlert('删除失败：' + e.message, 'danger');
-            } finally {
-                setButtonsDisabled(false);
-            }
+        const timeAgo = (date) => {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " 年前";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " 月前";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " 天前";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " 小时前";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " 分钟前";
+            if (seconds < 10) return "刚刚";
+            return Math.floor(seconds) + " 秒前";
         };
 
-        // Render media library (reads images/ contents)
-        const renderMediaLibrary = async () => {
-            mediaLibraryGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted)"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>`;
-            setButtonsDisabled(true);
-            try {
-                const contents = await GitHubAPI.getDirectoryContents(token, owner, repo, 'images');
-                mediaLibraryGrid.innerHTML = '';
-                let found = false;
-                for (const item of contents) {
-                    if (item.type === 'file' && item.name !== '.gitkeep') {
-                        found = true;
-                        const div = document.createElement('div');
-                        div.className = 'media-item';
-                        div.innerHTML = `
-                            <div class="media-item-thumbnail">
-                                <img src="${getProxiedImageUrl(item.download_url)}" alt="${item.name}" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.title='图片加载失败';" />
-                            </div>
-                            <div class="media-item-info">
-                                <div style="font-weight:600" title="${item.name}">${item.name}</div>
-                                <div style="display:flex;gap:8px;">
-                                    <button class="btn" data-raw-url="${item.download_url}" style="background:#f1f1f1;padding:6px;border-radius:6px">复制 URL</button>
-                                    <button class="btn" data-md="${item.name}" data-raw-url="${item.download_url}" style="background:#f1f1f1;padding:6px;border-radius:6px">复制 Markdown</button>
-                                    <button class="btn btn-danger" data-path="${item.path}" data-sha="${item.sha}" title="删除" style="margin-left:auto">删除</button>
-                                </div>
-                            </div>
-                        `;
-                        mediaLibraryGrid.appendChild(div);
-                    }
-                }
-                if (!found) {
-                    mediaLibraryGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted)"><i class="fas fa-info-circle"></i> 媒体库为空。</div>`;
-                } else {
-                    // bind buttons
-                    mediaLibraryGrid.querySelectorAll('button[data-raw-url]').forEach(b => {
-                        b.addEventListener('click', async (e) => {
-                            const rawUrl = e.currentTarget.dataset.rawUrl;
-                            const proxied = getProxiedImageUrl(rawUrl);
-                            try {
-                                await navigator.clipboard.writeText(proxied);
-                                showAlert('图片 URL 已复制', 'success');
-                            } catch (err) {
-                                showAlert('复制失败', 'danger');
-                            }
-                        });
-                    });
-                    mediaLibraryGrid.querySelectorAll('button[data-md]').forEach(b => {
-                        b.addEventListener('click', async (e) => {
-                            const rawUrl = e.currentTarget.dataset.rawUrl;
-                            const filename = e.currentTarget.dataset.md;
-                            const proxied = getProxiedImageUrl(rawUrl);
-                            const md = `![${filename.split('.')[0]}](${proxied})`;
-                            try {
-                                await navigator.clipboard.writeText(md);
-                                showAlert('Markdown 已复制', 'success');
-                            } catch (err) {
-                                showAlert('复制失败', 'danger');
-                            }
-                        });
-                    });
-                    mediaLibraryGrid.querySelectorAll('button[data-path]').forEach(b => {
-                        b.addEventListener('click', (e) => {
-                            const path = e.currentTarget.dataset.path;
-                            const sha = e.currentTarget.dataset.sha;
-                            if (confirm(`确定删除 ${path.split('/').pop()} 吗？`)) {
-                                deleteMediaFile(path, sha);
-                            }
-                        });
-                    });
-                }
-            } catch (e) {
-                console.error(e);
-                mediaLibraryGrid.innerHTML = `<div style="grid-column:1/-1;color:var(--danger);text-align:center">加载失败：${e.message}</div>`;
-                showAlert('加载媒体库失败：' + e.message, 'danger');
-            } finally {
-                setButtonsDisabled(false);
-            }
-        };
 
-        // Handle file uploads (from input or drop)
-        const handleMediaFileUpload = async (files) => {
-            if (!files || files.length === 0) return;
-            setButtonsDisabled(true);
-            uploadProgressContainer.style.display = 'block';
-            uploadProgressBar.style.width = '0%';
-            uploadProgressBar.textContent = '0%';
-            try {
-                const arr = Array.from(files);
-                let success = 0, fail = 0;
-                for (let i = 0; i < arr.length; i++) {
-                    const f = arr[i];
-                    try {
-                        // call uploadFile with onProgress signature (percentage, filename)
-                        await uploadFile(f, 'images', `feat: upload image "${f.name}"`, (percentage, filename) => {
-                            uploadProgressBar.style.width = `${Math.round(percentage)}%`;
-                            uploadProgressBar.textContent = `${Math.round(percentage)}%`;
-                        });
-                        success++;
-                    } catch (err) {
-                        console.error('upload error', err);
-                        fail++;
-                    }
-                }
-                uploadProgressBar.style.width = `100%`;
-                uploadProgressBar.textContent = `完成`;
-                if (success) showAlert(`${success} 张图片上传成功`, 'success');
-                if (fail) showAlert(`${fail} 张上传失败（查看控制台）`, 'danger');
-                setTimeout(() => {
-                    uploadProgressContainer.style.display = 'none';
-                    renderMediaLibrary();
-                }, 900);
-            } catch (e) {
-                console.error(e);
-                showAlert('上传失败：' + e.message, 'danger');
-                uploadProgressContainer.style.display = 'none';
-            } finally {
-                setButtonsDisabled(false);
-            }
-        };
-
-        // Posts management
+        // ==================== Post Management Functions ====================
         const renderPostList = () => {
             postListBody.innerHTML = '';
             document.getElementById('select-all-posts').checked = false;
             selectedPostIds = [];
             toggleBulkDeleteButton();
+
             if (!posts || posts.length === 0) {
-                postListBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">暂无文章</td></tr>`;
+                postListBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">暂无文章。点击“撰写新文章”开始创作吧！</td></tr>`;
                 return;
             }
-            posts.slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt)).forEach(post => {
+
+            // sort posts by creation date descending
+            [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(post => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><input class="post-checkbox" type="checkbox" data-id="${post.id}" /></td>
-                                <td>${post.title}</td>
-                                <td>${post.category || '未分类'}</td>
-                                <td>${post.tags && post.tags.length ? post.tags.slice(0,3).join(', ') : '无'}</td>
-                                <td>${new Date(post.createdAt).toLocaleDateString()}</td>
-                                <td>${new Date(post.updatedAt).toLocaleDateString()}</td>
-                                <td>
-                                    <a href="#" class="edit" data-id="${post.id}"><i class="fas fa-edit"></i></a>
-                                    <a href="${window.location.origin}${publicUrlBase}/index.html#/post/${post.id}" target="_blank"><i class="fas fa-external-link-alt"></i></a>
-                                    <a href="#" class="delete" data-id="${post.id}"><i class="fas fa-trash-alt"></i></a>
-                                </td>`;
+                tr.dataset.postId = post.id;
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="post-checkbox" data-id="${post.id}"></td>
+                    <td>${post.title}</td>
+                    <td>${post.category || '未分类'}</td>
+                    <td>${post.tags && post.tags.length > 0 ? post.tags.slice(0, 3).join(', ') + (post.tags.length > 3 ? '...' : '') : '无标签'}</td>
+                    <td>${new Date(post.createdAt).toLocaleDateString()}</td>
+                    <td>${new Date(post.updatedAt).toLocaleDateString()}</td>
+                    <td class="actions">
+                        <a href="#" class="edit" data-id="${post.id}" title="编辑"><i class="fas fa-edit"></i></a>
+                        <a href="${window.location.origin}${publicUrlBase}/index.html#/post/${post.id}" target="_blank" class="link" title="预览"><i class="fas fa-external-link-alt"></i></a>
+                        <a href="#" class="delete" data-id="${post.id}" title="删除"><i class="fas fa-trash-alt"></i></a>
+                    </td>
+                `;
                 postListBody.appendChild(tr);
             });
         };
 
         const toggleBulkDeleteButton = () => {
-            document.getElementById('delete-selected-posts-btn').style.display = selectedPostIds.length > 0 ? 'inline-flex' : 'none';
+             const deleteBtn = document.getElementById('delete-selected-posts-btn');
+             deleteBtn.style.display = selectedPostIds.length > 0 ? 'inline-flex' : 'none';
         };
 
-        document.getElementById('post-list').addEventListener('change', (e) => {
+        document.getElementById('select-all-posts').addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('.post-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+                const postId = checkbox.dataset.id;
+                if (isChecked && !selectedPostIds.includes(postId)) {
+                    selectedPostIds.push(postId);
+                } else if (!isChecked && selectedPostIds.includes(postId)) {
+                    selectedPostIds = selectedPostIds.filter(id => id !== postId);
+                }
+            });
+            toggleBulkDeleteButton();
+        });
+
+        // Event listener for individual post checkboxes (delegated to parent tbody)
+        postListBody.addEventListener('change', (e) => {
             if (e.target.classList.contains('post-checkbox')) {
-                const id = e.target.dataset.id;
+                const postId = e.target.dataset.id;
                 if (e.target.checked) {
-                    if (!selectedPostIds.includes(id)) selectedPostIds.push(id);
+                    if (!selectedPostIds.includes(postId)) {
+                        selectedPostIds.push(postId);
+                    }
                 } else {
-                    selectedPostIds = selectedPostIds.filter(x=>x!==id);
-                    document.getElementById('select-all-posts').checked = false;
+                    selectedPostIds = selectedPostIds.filter(id => id !== postId);
+                    document.getElementById('select-all-posts').checked = false; // Uncheck select all if any is unchecked
                 }
                 toggleBulkDeleteButton();
             }
         });
 
-        document.getElementById('select-all-posts').addEventListener('change', (e) => {
-            const checked = e.target.checked;
-            document.querySelectorAll('.post-checkbox').forEach(cb => {
-                cb.checked = checked;
-                const id = cb.dataset.id;
-                if (checked) { if (!selectedPostIds.includes(id)) selectedPostIds.push(id); } else selectedPostIds = [];
-            });
-            toggleBulkDeleteButton();
-        });
-
         const bulkDeletePosts = async () => {
-            if (!selectedPostIds.length) return showAlert('请选择要删除的文章', 'warning');
-            if (!confirm(`确认删除 ${selectedPostIds.length} 篇文章？`)) return;
+            if (selectedPostIds.length === 0) {
+                showAlert('请选择要删除的文章。', 'warning');
+                return;
+            }
+            if (!confirm(`确定要删除选中的 ${selectedPostIds.length} 篇文章吗？此操作不可逆！`)) {
+                return;
+            }
+
             setButtonsDisabled(true);
-            const toDelete = posts.filter(p=>selectedPostIds.includes(p.id)).map(p=>p.title).join(', ');
-            posts = posts.filter(p=>!selectedPostIds.includes(p.id));
+            const postsToDelete = posts.filter(p => selectedPostIds.includes(p.id));
+            const deletedTitles = postsToDelete.map(p => `"${p.title}"`).join(', ');
+
+            posts = posts.filter(p => !selectedPostIds.includes(p.id));
+            
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', utf8_to_b64(JSON.stringify(posts, null, 2)), postsSha, `docs: bulk delete (${selectedPostIds.length})`);
+                const res = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(posts, null, 2), postsSha, `docs: bulk delete posts (${selectedPostIds.length}): ${deletedTitles.substring(0, 100)}...`);
                 postsSha = res.content.sha;
-                showAlert('删除成功', 'success');
-                renderPostList(); renderDashboard();
-            } catch (e) {
-                console.error(e);
-                showAlert('删除失败：' + e.message, 'danger');
+                showAlert(`${selectedPostIds.length} 篇文章删除成功！`, 'success');
+                updateUniqueTags();
+                renderPostList();
+                renderDashboard();
+                selectedPostIds = []; 
+                document.getElementById('select-all-posts').checked = false;
+                toggleBulkDeleteButton();
+            } catch (error) {
+                showAlert(`批量删除文章失败: ${error.message}`, 'danger');
             } finally {
                 setButtonsDisabled(false);
-                selectedPostIds = [];
-                toggleBulkDeleteButton();
             }
         };
 
-        // Editor functions
-        const initializeEasyMDE = () => {
-            if (easyMDE) return;
-            easyMDE = new EasyMDE({
-                element: document.getElementById('post-content'),
-                spellChecker:false,
-                forceSync:true,
-                toolbar:["bold","italic","heading","|","quote","unordered-list","ordered-list","|","link","image","|","upload-image","table","preview","side-by-side","fullscreen","guide"],
-                customIcons: { "upload-image": "<i class='fas fa-image'></i>" }
-            });
-
-            // Custom upload action
-            const uploadBtn = easyMDE.toolbar.find(t => t.name === 'upload-image');
-            if (uploadBtn) {
-                uploadBtn.action = () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.onchange = async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        setButtonsDisabled(true);
-                        const alertId = 'image-upload-alert';
-                        showAlert(`正在上传 ${file.name} ...`, 'info', 5000);
-                        try {
-                            const rawUrl = await uploadFile(file, 'images', `feat: upload image "${file.name}"`, (percentage, filename) => {
-                                // we don't show dedicated editor progress here beyond global alert
-                            });
-                            // Insert raw GitHub URL into markdown; frontend will proxy for display
-                            const cm = easyMDE.codemirror;
-                            const pos = cm.getCursor();
-                            cm.replaceRange(`![${file.name.split('.')[0]}](${rawUrl})`, pos);
-                            showAlert('图片上传并插入成功', 'success');
-                        } catch (err) {
-                            console.error(err);
-                            showAlert('图片上传失败：' + err.message, 'danger');
-                        } finally {
-                            setButtonsDisabled(false);
-                        }
-                    };
-                    input.click();
-                };
-            }
-        };
 
         const openEditor = (postId = null) => {
             showAdminView('editor');
-            const post = posts.find(p=>p.id===postId);
+            const post = posts.find(p => p.id === postId);
             document.getElementById('editor-title').innerHTML = `<i class="fas fa-edit"></i> ${post ? '编辑文章' : '撰写新文章'}`;
-            document.getElementById('post-id').value = post ? post.id : '';
-            document.getElementById('post-title').value = post ? post.title : '';
-            document.getElementById('post-category').value = post ? post.category : '';
-            document.getElementById('post-tags').value = JSON.stringify(post ? post.tags || [] : []);
-            // rebuild tag tokens
-            const tagContainer = document.getElementById('tag-token-container');
-            tagContainer.querySelectorAll('.tag-token').forEach(t=>t.remove());
-            const tags = post && post.tags ? post.tags : [];
-            const inputEl = document.getElementById('post-tags-input');
-            tags.forEach(t => {
-                const span = document.createElement('span'); span.className='tag-token'; span.style.background= 'var(--accent)'; span.style.color='#fff'; span.style.padding='4px 8px'; span.style.borderRadius='4px';
-                span.style.display='inline-flex'; span.style.alignItems='center'; span.style.gap='8px';
-                span.innerHTML = `${t} <i class="fas fa-times remove-tag" style="cursor:pointer"></i>`;
-                span.querySelector('.remove-tag').addEventListener('click', ()=> {
-                    removeTagFromInput(t, inputEl);
-                });
-                tagContainer.insertBefore(span, inputEl);
-            });
-            inputEl.value = '';
-            if (!easyMDE) initializeEasyMDE();
-            easyMDE.value(post ? post.content : '');
+            document.getElementById('save-post-btn').innerHTML = `<i class="fas fa-upload"></i> ${post ? '更新文章' : '发布文章'}`;
+            document.getElementById('post-id').value = post?.id || '';
+            document.getElementById('post-title').value = post?.title || '';
+            document.getElementById('post-category').value = post?.category || '';
+            const tagTokenContainer = document.getElementById('tag-token-container');
+            tagTokenContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
+            const tagsInput = document.getElementById('post-tags-input');
+            if (post && post.tags && Array.isArray(post.tags)) {
+                post.tags.forEach(tag => addTagToInput(tag, tagsInput));
+            }
+            tagsInput.value = '';
+            document.getElementById('post-tags').value = JSON.stringify(post?.tags || []);
+
+            if (easyMDE) {
+                easyMDE.value(post?.content || '');
+            } else {
+                document.getElementById('post-content').value = post?.content || '';
+                initializeEasyMDE();
+            }
+            
             document.getElementById('delete-post-btn').style.display = post ? 'inline-flex' : 'none';
         };
 
@@ -797,374 +1975,697 @@
             const id = document.getElementById('post-id').value;
             const title = document.getElementById('post-title').value.trim();
             const category = document.getElementById('post-category').value.trim() || '未分类';
-            const tags = JSON.parse(document.getElementById('post-tags').value || '[]');
-            const content = easyMDE.value().trim();
-            if (!title || !content) { showAlert('标题和内容不能为空', 'danger'); return; }
+            const content = easyMDE.value().trim(); 
+            if (!title || !content) { showAlert('标题和内容不能为空！', 'danger'); return; }
+            
             setButtonsDisabled(true);
+            const tags = JSON.parse(document.getElementById('post-tags').value || '[]');
+
+            const postIndex = posts.findIndex(p => p.id === id);
             const now = new Date().toISOString();
-            if (id) {
-                const idx = posts.findIndex(p=>p.id===id);
-                if (idx>-1) { posts[idx] = { ...posts[idx], title, category, tags, content, updatedAt: now }; }
+
+            if (postIndex > -1) {
+                Object.assign(posts[postIndex], { title, category, content, tags, updatedAt: now });
             } else {
-                posts.push({ id:`post_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, title, category, tags, content, createdAt: now, updatedAt: now });
+                posts.push({ id: `post_${now.replace(/[-:.]/g, '')}_${Math.random().toString(36).substring(2, 8)}`, title, category, content, tags, createdAt: now, updatedAt: now });
             }
+            posts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', utf8_to_b64(JSON.stringify(posts, null, 2)), postsSha, `docs: ${id ? 'update' : 'create'} post "${title}"`);
+                const res = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(posts, null, 2), postsSha, `docs: ${id ? 'update' : 'create'} post "${title}"`);
                 postsSha = res.content.sha;
-                showAlert('文章保存成功', 'success');
-                renderPostList(); renderDashboard();
+                showAlert('文章保存成功！', 'success');
+                updateUniqueTags();
+                renderPostList();
+                renderDashboard();
                 showAdminView('posts');
-            } catch (e) {
-                console.error(e);
-                showAlert('保存失败：' + e.message, 'danger');
+            } catch (error) {
+                showAlert(`文章保存失败: ${error.message}`, 'danger');
             } finally {
                 setButtonsDisabled(false);
             }
         };
 
         const deletePost = async (postId) => {
-            if (!postId) return;
-            if (!confirm('确定删除该文章？')) return;
+            if (!postId || !confirm('确定要删除这篇文章吗？操作不可逆！')) return;
             setButtonsDisabled(true);
-            const target = posts.find(p=>p.id===postId);
-            posts = posts.filter(p=>p.id!==postId);
+            const postToDelete = posts.find(p => p.id === postId);
+            if (!postToDelete) {
+                 showAlert('文章未找到！', 'danger');
+                 setButtonsDisabled(false);
+                 return;
+            }
+            posts = posts.filter(p => p.id !== postId);
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', utf8_to_b64(JSON.stringify(posts, null, 2)), postsSha, `docs: delete post "${target.title}"`);
+                const res = await GitHubAPI.updateFile(token, owner, repo, 'posts.json', JSON.stringify(posts, null, 2), postsSha, `docs: delete post "${postToDelete.title}"`);
                 postsSha = res.content.sha;
-                showAlert('删除成功', 'success');
-                renderPostList(); renderDashboard();
+                showAlert('文章删除成功！', 'success');
+                updateUniqueTags();
+                renderPostList();
+                renderDashboard();
                 showAdminView('posts');
-            } catch (e) {
-                console.error(e);
-                showAlert('删除失败：' + e.message, 'danger');
+            } catch (error) {
+                showAlert(`文章删除失败: ${error.message}`, 'danger');
             } finally {
                 setButtonsDisabled(false);
             }
         };
 
-        // Tags functions
-        const addTagToInput = (tag, inputEl) => {
-            tag = tag.trim();
-            if (!tag) return;
-            let current = JSON.parse(document.getElementById('post-tags').value || '[]');
-            if (!current.includes(tag)) {
-                current.push(tag);
-                document.getElementById('post-tags').value = JSON.stringify(current);
-                const span = document.createElement('span'); span.className='tag-token'; span.style.background= 'var(--accent)'; span.style.color='#fff'; span.style.padding='4px 8px'; span.style.borderRadius='4px';
-                span.style.display='inline-flex'; span.style.alignItems='center'; span.style.gap='8px';
-                span.innerHTML = `${tag} <i class="fas fa-times remove-tag" style="cursor:pointer"></i>`;
-                span.querySelector('.remove-tag').addEventListener('click', ()=> {
-                    removeTagFromInput(tag, inputEl);
+        // ==================== Media Library Functions ====================
+        const renderMediaLibrary = async () => {
+            mediaLibraryGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;"><i class="fas fa-spinner fa-spin"></i> 加载图像中...</p>';
+            setButtonsDisabled(true);
+            try {
+                const imageContents = await GitHubAPI.getDirectoryContents(token, owner, repo, 'images');
+                mediaLibraryGrid.innerHTML = '';
+                let imagesFound = false;
+                for (const item of imageContents) {
+                    if (item.type === 'file' && item.name !== '.gitkeep') {
+                        imagesFound = true;
+                        const mediaItem = document.createElement('div');
+                        mediaItem.className = 'media-item';
+                        mediaItem.innerHTML = `
+                            <div class="media-item-thumbnail">
+                                <img src="${getProxiedImageUrl(item.download_url)}" alt="${item.name}" loading="lazy" 
+                                     onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23ccc\\' d=\\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\\'%3E%3C/path%3E%3C/svg%3E'; this.style.opacity='0.5'; this.title='图片加载失败';" >
+                            </div>
+                            <div class="media-item-info">
+                                <div class="name" title="${item.name}">${item.name}</div>
+                                <div class="media-item-actions">
+                                    <button class="btn btn-secondary btn-sm copy-url" data-raw-url="${item.download_url}"><i class="fas fa-link"></i> URL</button>
+                                    <button class="btn btn-secondary btn-sm copy-markdown" data-filename="${item.name}" data-raw-url="${item.download_url}"><i class="fas fa-code"></i> MD</button>
+                                    <button class="btn btn-danger btn-sm delete-media" data-path="${item.path}" data-sha="${item.sha}" data-name="${item.name}"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                        `;
+                        mediaLibraryGrid.appendChild(mediaItem);
+                    }
+                }
+                if (!imagesFound) {
+                    mediaLibraryGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;"><i class="fas fa-info-circle"></i> 媒体库为空。点击“上传新图片”或拖拽图片到上方区域。</p>';
+                }
+
+                 mediaLibraryGrid.querySelectorAll('.copy-url').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const rawUrl = e.currentTarget.dataset.rawUrl;
+                        navigator.clipboard.writeText(getProxiedImageUrl(rawUrl)).then(() => {
+                            showAlert('图片 URL 已复制！', 'success');
+                        }).catch(err => {
+                            console.error('Failed to copy URL:', err);
+                            showAlert('复制 URL 失败！', 'danger');
+                        });
+                    });
                 });
-                inputEl.parentNode.insertBefore(span, inputEl);
+                mediaLibraryGrid.querySelectorAll('.copy-markdown').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const filename = e.currentTarget.dataset.filename;
+                        const rawUrl = e.currentTarget.dataset.rawUrl;
+                        const proxiedUrl = getProxiedImageUrl(rawUrl);
+                        const markdown = `![${filename.split('.')[0]}](${proxiedUrl})`;
+                        navigator.clipboard.writeText(markdown).then(() => {
+                            showAlert('图片 Markdown 链接已复制！', 'success');
+                        }).catch(err => {
+                            console.error('Failed to copy Markdown:', err);
+                            showAlert('复制 Markdown 失败！', 'danger');
+                        });
+                    });
+                });
+                mediaLibraryGrid.querySelectorAll('.delete-media').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const pathToDelete = e.currentTarget.dataset.path;
+                        const sha = e.currentTarget.dataset.sha;
+                        const fileName = e.currentTarget.dataset.name; // Get filename for confirmation
+                        if (confirm(`确定要删除图片 "${fileName}" 吗？此操作不可逆！`)) {
+                            deleteMediaFile(pathToDelete, sha);
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error rendering media library:", error);
+                mediaLibraryGrid.innerHTML = `<p style="grid-column: 1 / -1; text-align: center; color: var(--danger-color);">加载媒体库失败: ${error.message}</p>`;
+                showAlert(`加载媒体库失败: ${error.message}`, 'danger');
+            } finally {
+                setButtonsDisabled(false);
             }
         };
-        const removeTagFromInput = (tag, inputEl) => {
-            let current = JSON.parse(document.getElementById('post-tags').value || '[]');
-            current = current.filter(t=>t!==tag);
-            document.getElementById('post-tags').value = JSON.stringify(current);
-            const container = document.getElementById('tag-token-container');
-            container.querySelectorAll('.tag-token').forEach(tEl => {
-                if (tEl.textContent.trim().startsWith(tag)) tEl.remove();
-            });
+
+        const deleteMediaFile = async (filePath, fileSha) => {
+            setButtonsDisabled(true);
+            try {
+                await GitHubAPI.deleteFile(token, owner, repo, filePath, fileSha, `feat: delete media file ${filePath.split('/').pop()}`);
+                showAlert('图片删除成功！', 'success');
+                setTimeout(() => renderMediaLibrary(), 500); // Rerender after short delay
+            } catch (error) {
+                showAlert(`图片删除失败: ${error.message}`, 'danger');
+            } finally {
+                setButtonsDisabled(false);
+            }
         };
 
-        // Settings
+        const handleMediaFileUpload = async (files) => {
+            if (!files || files.length === 0) return;
+            setButtonsDisabled(true);
+            
+            uploadProgressContainer.style.display = 'block';
+            updateProgressBar(0, '准备上传...'); // Initial message for progress bar
+
+            const uploadPromises = Array.from(files).map(file => 
+                uploadFile(file, 'images', `feat: upload image "${file.name}"`, (progress) => updateProgressBar(progress, file.name))
+            );
+
+            try {
+                const results = await Promise.allSettled(uploadPromises); 
+                
+                let successCount = 0;
+                let failureCount = 0;
+                results.forEach(result => {
+                    if (result.status === 'fulfilled') {
+                        successCount++;
+                    } else {
+                        failureCount++;
+                        console.error(`Failed to upload image "${result.reason.file}":`, result.reason.error);
+                    }
+                });
+
+                if (successCount > 0) {
+                    showAlert(`${successCount} 张图片上传成功！`, 'success');
+                }
+                if (failureCount > 0) {
+                    showAlert(`${failureCount} 张图片上传失败，请查看控制台获取详情。`, 'danger');
+                }
+                if (successCount === 0 && failureCount === 0) {
+                     showAlert('没有图片被上传。', 'info');
+                }
+                 // Final update for progress bar and then hide/rerender
+                updateProgressBar(100, '所有文件上传完成！');
+                 setTimeout(() => {
+                    uploadProgressContainer.style.display = 'none';
+                    renderMediaLibrary(); 
+                }, 1500); 
+
+            } catch (error) {
+                 showAlert(`图片上传过程中发生未知错误: ${error.message}`, 'danger');
+                 uploadProgressContainer.style.display = 'none';
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+
+        // ==================== Website Settings Functions ====================
         const populateSettings = () => {
-            document.getElementById('setting-title').value = config.site.title || `${owner}的博客`;
+            document.getElementById('setting-title').value = config.site.title || '';
             document.getElementById('setting-description').value = config.site.description || '';
             document.getElementById('setting-about-content').value = config.site.aboutContent || '';
             document.getElementById('setting-bg-color').value = config.styling.backgroundColor || '#f8f9fa';
             document.getElementById('setting-text-color').value = config.styling.textColor || '#212529';
             document.getElementById('setting-accent-color').value = config.styling.accentColor || '#0d6efd';
-            const bgUrl = config.styling.backgroundImageUrl || '';
-            document.getElementById('setting-bg-image-url').value = bgUrl;
-            const preview = document.getElementById('setting-bg-image-preview');
-            if (bgUrl && /^https?:\/\//i.test(bgUrl)) {
-                preview.innerHTML = `<img src="${getProxiedImageUrl(bgUrl)}" style="max-width:100%;max-height:100%;object-fit:cover" />`;
-                document.getElementById('upload-bg-image-btn').style.display = 'none';
+
+            const bgImageUrl = config.styling.backgroundImageUrl;
+            document.getElementById('setting-bg-image-url').value = bgImageUrl || ''; 
+            const bgImagePreview = document.getElementById('setting-bg-image-preview');
+            const uploadBgImageBtn = document.getElementById('upload-bg-image-btn');
+            
+            if (bgImageUrl && /^https?:\/\//i.test(bgImageUrl)) { 
+                bgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(bgImageUrl)}" alt="背景图预览" loading="lazy">`;
+                uploadBgImageBtn.style.display = 'none';
             } else {
-                preview.innerHTML = `<span class="placeholder">无背景图</span>`;
-                document.getElementById('upload-bg-image-btn').style.display = 'inline-flex';
+                bgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                uploadBgImageBtn.style.display = 'inline-flex';
+                if (bgImageUrl && !/^https?:\/\//i.test(bgImageUrl)) { // Clear invalid value locally if it somehow got past validation
+                    config.styling.backgroundImageUrl = ""; 
+                    showAlert('检测到无效的背景图 URL，已自动清除。请重新上传或输入有效 URL。', 'warning');
+                }
             }
         };
-
+        
         const saveSettings = async () => {
             setButtonsDisabled(true);
             const newConfig = JSON.parse(JSON.stringify(config));
             newConfig.site = {
                 title: document.getElementById('setting-title').value.trim(),
                 description: document.getElementById('setting-description').value.trim(),
-                aboutContent: document.getElementById('setting-about-content').value.trim()
+                aboutContent: document.getElementById('setting-about-content').value.trim(),
             };
-            const bgUrl = document.getElementById('setting-bg-image-url').value.trim();
+            let newBgImageUrl = document.getElementById('setting-bg-image-url').value.trim();
+            if (newBgImageUrl && !/^https?:\/\//i.test(newBgImageUrl)) {
+                showAlert('背景图 URL 无效，请提供一个以 http:// 或 https:// 开头的完整 URL。已清除无效值。', 'danger');
+                newBgImageUrl = ""; 
+                document.getElementById('setting-bg-image-url').value = ""; 
+                document.getElementById('setting-bg-image-preview').innerHTML = `<span class="placeholder">无背景图</span>`;
+                document.getElementById('upload-bg-image-btn').style.display = 'inline-flex';
+            }
             newConfig.styling = {
                 backgroundColor: document.getElementById('setting-bg-color').value,
                 textColor: document.getElementById('setting-text-color').value,
                 accentColor: document.getElementById('setting-accent-color').value,
-                backgroundImageUrl: /^https?:\/\//i.test(bgUrl) ? bgUrl : ''
+                backgroundImageUrl: newBgImageUrl, 
             };
+
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, 'config.json', utf8_to_b64(JSON.stringify(newConfig, null, 2)), configSha, 'conf: update website settings');
+                const res = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(newConfig, null, 2), configSha, 'conf: update website settings');
                 configSha = res.content.sha;
-                config = newConfig;
-                showAlert('设置已保存', 'success');
-            } catch (e) {
-                console.error(e);
-                showAlert('保存失败：' + e.message, 'danger');
+                config = newConfig; 
+                showAlert('网站设置已保存！', 'success');
+            } catch (error) {
+                showAlert(`网站设置保存失败: ${error.message}`, 'danger');
             } finally {
                 setButtonsDisabled(false);
             }
         };
-
-        // Gitalk settings
+        
+        // ==================== Gitalk Settings Functions ====================
         const populateGitalkSettings = () => {
-            const g = config.gitalk || {};
-            document.getElementById('gitalk-enabled').checked = !!g.enabled;
-            document.getElementById('gitalk-clientID').value = g.clientID || '';
-            document.getElementById('gitalk-clientSecret').value = g.clientSecret || '';
-            document.getElementById('gitalk-repo').value = g.repo || '';
-            document.getElementById('gitalk-owner').value = g.owner || '';
-            document.getElementById('gitalk-admin').value = (g.admin && Array.isArray(g.admin)) ? g.admin.join(', ') : (g.admin || '');
+            const gitalkConfig = config.gitalk || {};
+            document.getElementById('gitalk-enabled').checked = !!gitalkConfig.enabled;
+            document.getElementById('gitalk-clientID').value = gitalkConfig.clientID || '';
+            document.getElementById('gitalk-clientSecret').value = gitalkConfig.clientSecret || '';
+            document.getElementById('gitalk-repo').value = gitalkConfig.repo || '';
+            document.getElementById('gitalk-owner').value = gitalkConfig.owner || '';
+            document.getElementById('gitalk-admin').value = (gitalkConfig.admin && Array.isArray(gitalkConfig.admin) ? gitalkConfig.admin.join(', ') : gitalkConfig.admin || '');
         };
 
         const saveGitalkSettings = async () => {
             setButtonsDisabled(true);
             const newConfig = JSON.parse(JSON.stringify(config));
-            const adminRaw = document.getElementById('gitalk-admin').value.trim();
+            const gitalkAdminRaw = document.getElementById('gitalk-admin').value.trim();
+            const gitalkAdminArray = gitalkAdminRaw.split(',').map(name => name.trim()).filter(Boolean);
+
             newConfig.gitalk = {
                 enabled: document.getElementById('gitalk-enabled').checked,
                 clientID: document.getElementById('gitalk-clientID').value.trim(),
                 clientSecret: document.getElementById('gitalk-clientSecret').value.trim(),
                 repo: document.getElementById('gitalk-repo').value.trim(),
                 owner: document.getElementById('gitalk-owner').value.trim(),
-                admin: adminRaw ? adminRaw.split(',').map(s=>s.trim()).filter(Boolean) : []
+                admin: gitalkAdminArray,
+                distractionFreeMode: newConfig.gitalk.distractionFreeMode || false, 
+                labels: newConfig.gitalk.labels || ['Gitalk', '评论'], 
+                perPage: newConfig.gitalk.perPage || 10,
             };
+
             if (newConfig.gitalk.enabled && (!newConfig.gitalk.clientID || !newConfig.gitalk.clientSecret || !newConfig.gitalk.repo || !newConfig.gitalk.owner)) {
-                showAlert('启用 Gitalk 时需填写 Client ID/Secret/Repo/Owner', 'danger');
+                showAlert('启用 Gitalk 评论时，Client ID, Client Secret, Repo, Owner 都是必填项！', 'danger');
                 setButtonsDisabled(false);
                 return;
             }
+
             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, 'config.json', utf8_to_b64(JSON.stringify(newConfig, null, 2)), configSha, 'conf: update gitalk settings');
+                const res = await GitHubAPI.updateFile(token, owner, repo, 'config.json', JSON.stringify(newConfig, null, 2), configSha, 'conf: update Gitalk settings');
                 configSha = res.content.sha;
-                config = newConfig;
-                showAlert('Gitalk 设置保存成功', 'success');
-            } catch (e) {
-                console.error(e);
-                showAlert('保存失败：' + e.message, 'danger');
+                config = newConfig; 
+                showAlert('Gitalk 评论设置已保存！', 'success');
+            } catch (error) {
+                showAlert(`Gitalk 评论设置保存失败: ${error.message}`, 'danger');
             } finally {
                 setButtonsDisabled(false);
             }
         };
 
-        // Dashboard
-        const renderDashboard = () => {
-            document.getElementById('total-posts').textContent = posts.length.toString();
-            const cats = new Set(posts.map(p=>p.category).filter(Boolean));
-            document.getElementById('total-categories').textContent = cats.size.toString();
-            const tags = new Set(); posts.forEach(p=>p.tags && p.tags.forEach(t=>tags.add(t)));
-            document.getElementById('total-tags').textContent = tags.size.toString();
+        // ==================== File Upload Functions (Generic, for images) ====================
+        const uploadFile = async (file, uploadDirectory, message, onProgress = null) => {
+            if (!file) throw new Error("No file provided for upload.");
+            
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader(); 
+                reader.onload = async (e) => {
+                    const contentBase64 = e.target.result.split(',')[1];
+                    
+                    const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    const baseFileName = file.name.substring(0, file.name.lastIndexOf('.'));
+                    const sanitizedBaseFileName = baseFileName
+                        .replace(/[^\p{L}\p{N}_\-.]/gu, '_') 
+                        .replace(/_+/g, '_') 
+                        .replace(/^[_\-.]+|[_\-.]+$/g, '') 
+                        .slice(0, 100); 
+
+                    const finalFileName = `${timestamp}_${sanitizedBaseFileName}.${fileExtension}`;
+                    const blobPath = `${uploadDirectory}/${finalFileName}`;
+                    console.log(`Uploading file ${file.name} to ${blobPath}`);
+
+                    try {
+                        const uploadResult = await GitHubAPI.createFile(token, owner, repo, blobPath, contentBase64, message, true, onProgress);
+                        const rawGithubUrl = uploadResult.content.download_url || `https://raw.githubusercontent.com/${owner}/${repo}/main/${blobPath}`; 
+                        resolve(rawGithubUrl); 
+                    } catch (error) {
+                        reject({ file: file.name, error: error }); // Reject with file name for better error handling in Promise.allSettled
+                    }
+                };
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(file); 
+            });
         };
 
-        // Initialization / start
-        const checkTokenAndStart = async () => {
-            const stored = localStorage.getItem('github_token');
-            if (stored) {
-                tokenInput.value = stored;
-                rememberTokenCheckbox.checked = true;
-                await startAdmin();
+
+        // ==================== EasyMDE Initialization & Image Upload Integration ====================
+        const initializeEasyMDE = () => {
+            if (easyMDE) return;
+
+            easyMDE = new EasyMDE({
+                element: document.getElementById('post-content'),
+                spellChecker: false,
+                forceSync: true,
+                toolbar: [
+                    "bold", "italic", "heading", "|",
+                    "quote", "unordered-list", "ordered-list", "|",
+                    "link", "image", "|",
+                    `upload-image`,
+                    "table", "horizontal-rule", "|",
+                    "preview", "side-by-side", "fullscreen", "|",
+                    "guide"
+                ],
+                customIcons: {
+                    "upload-image": "<i class='fas fa-image fa-fw'></i>"
+                }
+            });
+
+            easyMDE.toolbar.find(item => item.name === 'upload-image').action = async () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        setButtonsDisabled(true); 
+                        
+                        const uploadAlertId = 'image-upload-alert';
+                        showAlert(`正在上传图片 "${file.name}"...`, 'info', uploadAlertId);
+                        
+                        const editorToolbarEl = document.querySelector('.editor-toolbar');
+                        let editorProgressBarContainer = editorToolbarEl.querySelector('.progress-container.editor');
+                        if (!editorProgressBarContainer) {
+                            editorProgressBarContainer = document.createElement('div');
+                            editorProgressBarContainer.className = 'progress-container editor';
+                            editorProgressBarContainer.innerHTML = `
+                                <div class="progress-bar" id="editor-progress-bar"></div>
+                                <div class="progress-text" id="editor-progress-text">0%</div>
+                            `;
+                            editorToolbarEl.parentNode.insertBefore(editorProgressBarContainer, editorToolbarEl.nextSibling);
+                        }
+                        editorProgressBarContainer.style.display = 'block';
+                        const editorProgressBar = editorProgressBarContainer.querySelector('#editor-progress-bar');
+                        const editorProgressText = editorProgressBarContainer.querySelector('#editor-progress-text');
+
+                         const updateEditorProgressBar = (percentage, fileName = '文件') => {
+                            editorProgressBar.style.width = `${percentage}%`;
+                            editorProgressText.textContent = `${Math.round(percentage)}%`;
+                            if (percentage < 100) {
+                                editorProgressText.textContent = `上传中 "${fileName}": ${Math.round(percentage)}%`;
+                            }
+                            if (percentage >= 100) {
+                                editorProgressText.textContent = '上传完成！'; 
+                            }
+                        };
+                        updateEditorProgressBar(0, file.name);
+
+                        try {
+                            const rawImageUrl = await uploadFile(
+                                file,
+                                'images', 
+                                `feat: upload image "${file.name}" for post`,
+                                (progress) => updateEditorProgressBar(progress, file.name)
+                            );
+                            const markdownImage = `![${file.name.split('.')[0]}](${rawImageUrl})`; 
+                            
+                            const cm = easyMDE.codemirror;
+                            const pos = cm.getCursor();
+                            cm.replaceRange(markdownImage, pos);
+                            showAlert(`图片 "${file.name}" 上传成功并已插入文章！`, 'success', uploadAlertId);
+                            updateEditorProgressBar(100, file.name);
+                        } catch (error) {
+                            showAlert(`图片 "${file.name}" 上传失败: ${error.error.message || error.message}`, 'danger', uploadAlertId);
+                        } finally {
+                            setButtonsDisabled(false);
+                            setTimeout(() => {
+                                if (editorProgressBarContainer) editorProgressBarContainer.style.display = 'none';
+                                editorProgressBar.style.width = '0%';
+                                editorProgressBar.textContent = '0%';
+                                editorProgressText.textContent = '0%'; 
+                            }, 1500); 
+                        }
+                    }
+                };
+                input.click();
+            };
+        };
+
+
+        // ==================== Tag Input Management ====================
+        const allUniqueTags = new Set();
+        const updateUniqueTags = () => {
+            allUniqueTags.clear();
+            posts.forEach(post => {
+                if (post.tags && Array.isArray(post.tags)) {
+                    post.tags.forEach(tag => allUniqueTags.add(tag));
+                }
+            });
+        };
+
+        const addTagToInput = (tagText, inputElement) => {
+            tagText = tagText.trim();
+            if (!tagText) return;
+
+            const tagsContainer = document.getElementById('tag-token-container');
+            let currentTags = JSON.parse(document.getElementById('post-tags').value || '[]');
+
+            if (!currentTags.includes(tagText)) {
+                currentTags.push(tagText);
+                document.getElementById('post-tags').value = JSON.stringify(currentTags);
+
+                const tagToken = document.createElement('span');
+                tagToken.className = 'tag-token';
+                tagToken.innerHTML = `${tagText} <i class="fas fa-times remove-tag"></i>`;
+                tagToken.querySelector('.remove-tag').addEventListener('click', () => {
+                    removeTagFromInput(tagText, inputElement);
+                });
+                tagsContainer.insertBefore(tagToken, inputElement);
             }
         };
 
-        const startAdmin = async () => {
-            const t = tokenInput.value.trim();
-            if (!t) { initialMessageEl.textContent = 'Token 不能为空'; return; }
-            token = t;
-            setButtonsDisabled(true);
-            initialMessageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 验证中...';
-            try {
-                const user = await GitHubAPI.getUser(token);
-                initialMessageEl.textContent = `已验证：${user.login}，解析仓库路径...`;
-                const parsed = parseGitHubRepoAndBasePath(user.login);
-                owner = parsed.owner; repo = parsed.repo; publicUrlBase = parsed.publicUrlBase;
-                pathDisplayEl.style.display = 'block';
-                pathDisplayEl.textContent = `Owner:${owner} Repo:${repo} Base:${publicUrlBase || '/'}`;
-                viewSiteLink.href = `${window.location.origin}${publicUrlBase}/index.html`;
-
-                // ensure images/ exists
-                try { await createGitHubDirectory(token, owner, repo, 'images'); } catch (e) { console.warn('create images failed', e); }
-
-                // load config.json & posts.json
-                initialMessageEl.textContent = '正在获取配置与文章数据...';
-                const cfgFile = await GitHubAPI.getFile(token, owner, repo, 'config.json');
-                const postsFile = await GitHubAPI.getFile(token, owner, repo, 'posts.json');
-                if (!cfgFile || !cfgFile.content) {
-                    // create default config
-                    config = {
-                        site: { title: `${owner} 的博客`, description: '由 GitHub 驱动', aboutContent: `# 关于` },
-                        styling: { backgroundColor: '#f8f9fa', textColor: '#212529', accentColor: '#0d6efd', backgroundImageUrl: '' },
-                        gitalk: { enabled:false, clientID:'', clientSecret:'', repo: repo, owner: owner, admin:[owner], labels:['Gitalk'], perPage:10 }
-                    };
-                    const res = await GitHubAPI.createFile(token, owner, repo, 'config.json', utf8_to_b64(JSON.stringify(config, null, 2)), 'feat: init config');
-                    configSha = res.content.sha;
-                } else {
-                    config = JSON.parse(b64_to_utf8(cfgFile.content));
-                    configSha = cfgFile.sha;
-                }
-
-                if (!postsFile || !postsFile.content) {
-                    const initialPost = {
-                        id:`welcome_${Date.now()}`,
-                        title:'欢迎！',
-                        content:'# 欢迎来到博客！\n\n这是第一篇文章。',
-                        category:'公告',
-                        tags:['欢迎'],
-                        createdAt:new Date().toISOString(),
-                        updatedAt:new Date().toISOString()
-                    };
-                    posts = [initialPost];
-                    const res = await GitHubAPI.createFile(token, owner, repo, 'posts.json', utf8_to_b64(JSON.stringify(posts, null, 2)), 'feat: init posts');
-                    postsSha = res.content.sha;
-                } else {
-                    posts = JSON.parse(b64_to_utf8(postsFile.content));
-                    postsSha = postsFile.sha;
-                }
-
-                // ensure posts content raw urls are normal (no gh-proxy)
-                posts = posts.map(p => {
-                    const c = (p.content || '').replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (m, alt, url) => {
-                        let original = url;
-                        if (original.startsWith('https://gh-proxy.com/')) {
-                            try { original = decodeURIComponent(original.substring('https://gh-proxy.com/'.length)); } catch (e) { }
-                        }
-                        return `![${alt}](${original})`;
-                    });
-                    return { ...p, content: c };
-                });
-
-                // UI show
-                loginWrapper.style.display = 'none';
-                adminWrapper.style.display = 'flex';
-                populateSettings();
-                populateGitalkSettings();
-                renderPostList();
-                renderDashboard();
-                showAdminView('dashboard');
-
-                if (rememberTokenCheckbox.checked) localStorage.setItem('github_token', token); else localStorage.removeItem('github_token');
-                initialMessageEl.textContent = '';
-                showAlert('管理后台已就绪', 'success');
-
-            } catch (e) {
-                console.error(e);
-                initialMessageEl.textContent = '初始化失败：' + e.message;
-                token = null;
-                localStorage.removeItem('github_token');
-            } finally { setButtonsDisabled(false); }
+        const removeTagFromInput = (tagText, inputElement) => {
+            let currentTags = JSON.parse(document.getElementById('post-tags').value || '[]');
+            currentTags = currentTags.filter(tag => tag !== tagText);
+            document.getElementById('post-tags').value = JSON.stringify(currentTags);
+            const tagsContainer = document.getElementById('tag-token-container');
+            tagsContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
+            currentTags.forEach(tag => addTagToInput(tag, inputElement)); 
         };
 
-        // Event binding
+        document.addEventListener('DOMContentLoaded', () => {
+            const tagsInput = document.getElementById('post-tags-input');
+            const tagSuggestionsBox = document.getElementById('tag-suggestions');
+            const tagTokenContainer = document.getElementById('tag-token-container');
+
+            if (tagsInput && tagSuggestionsBox && tagTokenContainer) {
+                tagsInput.addEventListener('focus', () => {
+                    if (posts.length > 0) {
+                        showTagSuggestions(tagsInput.value.trim().toLowerCase());
+                    }
+                });
+                tagsInput.addEventListener('blur', (e) => {
+                    setTimeout(() => {
+                        if (!tagSuggestionsBox.contains(document.activeElement)) {
+                            tagSuggestionsBox.style.display = 'none';
+                        }
+                    }, 100);
+                });
+
+                tagsInput.addEventListener('input', () => {
+                    const inputValue = tagsInput.value.toLowerCase().trim();
+                    showTagSuggestions(inputValue);
+                });
+
+                tagsInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const inputValue = tagsInput.value.trim();
+                        if (inputValue) {
+                            addTagToInput(inputValue, tagsInput);
+                            tagsInput.value = '';
+                            tagSuggestionsBox.style.display = 'none';
+                        }
+                    } else if (e.key === 'Backspace' && tagsInput.value === '') {
+                        const lastTagToken = tagTokenContainer.querySelector('.tag-token:last-of-type');
+                        if (lastTagToken) {
+                            const tagText = lastTagToken.textContent.split(' ')[0].trim();
+                            removeTagFromInput(tagText, tagsInput);
+                        }
+                    }
+                });
+
+                tagTokenContainer.addEventListener('click', (e) => {
+                    if (e.target === tagTokenContainer || e.target.classList.contains('tag-token')) {
+                        tagsInput.focus();
+                    }
+                });
+
+                const showTagSuggestions = (query) => {
+                    tagSuggestionsBox.innerHTML = '';
+                    const filteredSuggestions = Array.from(allUniqueTags).filter(tag =>
+                        tag.toLowerCase().includes(query)
+                    ).sort();
+
+                    if (filteredSuggestions.length > 0) {
+                        filteredSuggestions.forEach(tag => {
+                            const div = document.createElement('div');
+                            div.textContent = tag;
+                            div.addEventListener('mousedown', (e) => { 
+                                e.preventDefault(); 
+                                addTagToInput(tag, tagsInput);
+                                tagsInput.value = '';
+                                tagSuggestionsBox.style.display = 'none';
+                            });
+                            tagSuggestionsBox.appendChild(div);
+                        });
+                        const containerRect = tagTokenContainer.getBoundingClientRect();
+                        tagSuggestionsBox.style.top = `${containerRect.height + 5}px`;
+                        tagSuggestionsBox.style.left = `0`;
+                        tagSuggestionsBox.style.width = `${tagTokenContainer.offsetWidth}px`;
+
+                        tagSuggestionsBox.style.display = 'block';
+                    } else {
+                        tagSuggestionsBox.style.display = 'none';
+                    }
+                };
+            }
+        });
+
+
+        // ==================== Event Bindings ====================
         document.addEventListener('DOMContentLoaded', () => {
             startBtn.onclick = startAdmin;
-            tokenInput.addEventListener('keydown', (e)=> { if (e.key==='Enter') startAdmin(); });
-            document.getElementById('nav-dashboard').onclick = (e)=>{ e.preventDefault(); showAdminView('dashboard'); };
-            document.getElementById('nav-posts').onclick = (e)=>{ e.preventDefault(); showAdminView('posts'); };
-            document.getElementById('nav-media-library').onclick = (e)=>{ e.preventDefault(); showAdminView('mediaLibrary'); };
-            document.getElementById('nav-settings').onclick = (e)=>{ e.preventDefault(); showAdminView('settings'); populateSettings(); };
-            document.getElementById('nav-gitalk-settings').onclick = (e)=>{ e.preventDefault(); showAdminView('gitalkSettings'); populateGitalkSettings(); };
-            document.getElementById('nav-logout').onclick = (e)=>{ e.preventDefault(); if (confirm('确定退出？')) { localStorage.removeItem('github_token'); location.reload(); } };
+            tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAdmin(); });
+            
+            document.getElementById('nav-dashboard').onclick = (e) => { e.preventDefault(); showAdminView('dashboard'); };
+            document.getElementById('nav-posts').onclick = (e) => { e.preventDefault(); showAdminView('posts'); };
+            document.getElementById('nav-media-library').onclick = (e) => { e.preventDefault(); showAdminView('mediaLibrary'); };
+            document.getElementById('nav-settings').onclick = (e) => { e.preventDefault(); showAdminView('settings'); populateSettings(); };
+            document.getElementById('nav-gitalk-settings').onclick = (e) => { e.preventDefault(); showAdminView('gitalkSettings'); populateGitalkSettings(); };
+            document.getElementById('nav-logout').onclick = (e) => {
+                e.preventDefault();
+                if (confirm('确定要安全退出吗？')) {
+                    localStorage.removeItem('github_token');
+                    location.reload();
+                }
+            };
 
-            document.getElementById('open-posts').onclick = ()=> showAdminView('posts');
-            document.getElementById('new-post-btn').onclick = ()=> openEditor();
+            document.getElementById('new-post-btn').onclick = () => openEditor();
+            document.getElementById('delete-selected-posts-btn').onclick = bulkDeletePosts; 
+            document.getElementById('cancel-edit-btn').onclick = () => {
+                 showAdminView('posts');
+                 showAlert('已取消文章编辑。', 'info');
+            };
             document.getElementById('save-post-btn').onclick = savePost;
-            document.getElementById('cancel-edit-btn').onclick = ()=> showAdminView('posts');
-            document.getElementById('delete-post-btn').onclick = ()=> deletePost(document.getElementById('post-id').value);
-            document.getElementById('delete-selected-posts-btn').onclick = bulkDeletePosts;
-
-            // posts table delegate
+            document.getElementById('delete-post-btn').onclick = () => deletePost(document.getElementById('post-id').value);
             postListBody.addEventListener('click', (e) => {
-                const ed = e.target.closest('.edit');
-                const del = e.target.closest('.delete');
-                if (ed) { e.preventDefault(); openEditor(ed.dataset.id); }
-                if (del) { e.preventDefault(); deletePost(del.dataset.id); }
+                const editButton = e.target.closest('.edit');
+                const deleteButton = e.target.closest('.delete');
+                if (editButton) { e.preventDefault(); openEditor(editButton.dataset.id); }
+                if (deleteButton) { e.preventDefault(); deletePost(deleteButton.dataset.id); }
             });
 
-            // tags input
-            const tagsInput = document.getElementById('post-tags-input');
-            tagsInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); const v = tagsInput.value.trim(); if (v) { addTagToInput(v, tagsInput); tagsInput.value = ''; } }
-                else if (e.key === 'Backspace' && tagsInput.value === '') {
-                    const last = document.querySelector('#tag-token-container .tag-token:last-of-type');
-                    if (last) {
-                        const t = last.textContent.trim().split(' ')[0];
-                        removeTagFromInput(t, tagsInput);
+            document.getElementById('save-settings-btn').onclick = saveSettings;
+            
+            const settingBgImageInput = document.getElementById('setting-bg-image');
+            const settingBgImageUrlInput = document.getElementById('setting-bg-image-url');
+            const uploadBgImageBtn = document.getElementById('upload-bg-image-btn');
+            const clearBgImageBtn = document.getElementById('clear-bg-image-btn');
+            const settingBgImagePreview = document.getElementById('setting-bg-image-preview');
+
+            settingBgImageInput.onchange = (e) => {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        settingBgImagePreview.innerHTML = `<img src="${e.target.result}" alt="背景图预览" loading="lazy">`;
+                        uploadBgImageBtn.style.display = 'inline-flex'; 
+                        settingBgImageUrlInput.value = ''; 
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                    if (!settingBgImageUrlInput.value.trim()) { 
+                        uploadBgImageBtn.style.display = 'inline-flex'; 
+                    }
+                }
+            };
+            settingBgImageUrlInput.addEventListener('input', () => {
+                const url = settingBgImageUrlInput.value.trim();
+                if (url && /^https?:\/\//i.test(url)) {
+                    settingBgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(url)}" alt="背景图预览" loading="lazy">`;
+                    uploadBgImageBtn.style.display = 'none'; 
+                    if (settingBgImageInput.files) settingBgImageInput.value = ''; 
+                } else {
+                    settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                    if (!settingBgImageInput.files || settingBgImageInput.files.length === 0) {
+                         uploadBgImageBtn.style.display = 'inline-flex'; 
                     }
                 }
             });
 
-            // settings image upload handlers
-            const settingBgImageInput = document.getElementById('setting-bg-image');
-            const settingBgImageUrlInput = document.getElementById('setting-bg-image-url');
-            const settingBgImagePreview = document.getElementById('setting-bg-image-preview');
-            const uploadBgImageBtn = document.getElementById('upload-bg-image-btn');
 
-            settingBgImageInput.onchange = (e) => {
-                if (e.target.files && e.target.files.length) {
-                    const f = e.target.files[0];
-                    const reader = new FileReader();
-                    reader.onload = evt => {
-                        settingBgImagePreview.innerHTML = `<img src="${evt.target.result}" style="max-width:100%;max-height:100%;object-fit:cover" />`;
-                        uploadBgImageBtn.style.display = 'inline-flex';
-                        settingBgImageUrlInput.value = '';
-                    };
-                    reader.readAsDataURL(f);
+            uploadBgImageBtn.onclick = async () => {
+                const file = settingBgImageInput.files && settingBgImageInput.files.length > 0 ? settingBgImageInput.files[0] : null;
+                if (file) {
+                    try {
+                        showAlert(`正在上传背景图片 "${file.name}"...`, 'info');
+                        const rawImageUrl = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`); 
+                        document.getElementById('setting-bg-image-url').value = rawImageUrl; 
+                        settingBgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(rawImageUrl)}" alt="背景图预览" loading="lazy">`; 
+                        uploadBgImageBtn.style.display = 'none';
+                        settingBgImageInput.value = ''; 
+                        showAlert('背景图片上传并设置成功！请点击保存设置！', 'success');
+                    } catch (error) {
+                        showAlert(`背景图片上传失败: ${error.message}`, 'danger');
+                    }
                 } else {
-                    settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                    showAlert('请先选择一个图片文件！', 'warning');
                 }
             };
 
-            uploadBgImageBtn.onclick = async () => {
-                const file = settingBgImageInput.files && settingBgImageInput.files[0];
-                if (!file) { showAlert('请先选择图片', 'warning'); return; }
-                setButtonsDisabled(true);
-                try {
-                    const rawUrl = await uploadFile(file, 'images', `feat: upload background ${file.name}`);
-                    document.getElementById('setting-bg-image-url').value = rawUrl;
-                    settingBgImagePreview.innerHTML = `<img src="${getProxiedImageUrl(rawUrl)}" style="max-width:100%;max-height:100%;object-fit:cover" />`;
-                    showAlert('背景图片上传成功，请点击保存设置', 'success');
-                } catch (e) {
-                    console.error(e);
-                    showAlert('上传失败：' + e.message, 'danger');
-                } finally { setButtonsDisabled(false); }
-            };
-
-            document.getElementById('clear-bg-image-btn').onclick = () => {
+            clearBgImageBtn.onclick = () => {
                 document.getElementById('setting-bg-image-url').value = '';
+                if (settingBgImageInput) settingBgImageInput.value = ''; 
                 settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
-                showAlert('已清除背景图，请保存设置', 'info');
+                uploadBgImageBtn.style.display = 'inline-flex';
+                showAlert('背景图已清除！请点击保存设置！', 'info');
             };
 
-            document.getElementById('save-settings-btn').onclick = saveSettings;
             document.getElementById('save-gitalk-settings-btn').onclick = saveGitalkSettings;
 
-            // media upload input & drag-drop
+            document.getElementById('mobile-menu-btn').onclick = () => document.getElementById('admin-wrapper').classList.toggle('sidebar-visible');
+            document.getElementById('mobile-overlay').onclick = () => document.getElementById('admin-wrapper').classList.remove('sidebar-visible');
+
             const mediaUploadInput = document.getElementById('media-upload-input');
             const mediaUploadDroparea = document.getElementById('media-upload-droparea');
-            mediaUploadInput.onchange = (e) => handleMediaFileUpload(e.target.files);
 
-            ['dragenter','dragover','dragleave','drop'].forEach(ev => mediaUploadDroparea.addEventListener(ev, (e)=>{ e.preventDefault(); e.stopPropagation(); }, false));
-            ['dragenter','dragover'].forEach(ev => mediaUploadDroparea.addEventListener(ev, ()=> mediaUploadDroparea.classList.add('drag-over')));
-            ['dragleave','drop'].forEach(ev => mediaUploadDroparea.addEventListener(ev, ()=> mediaUploadDroparea.classList.remove('drag-over')));
-            mediaUploadDroparea.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleMediaFileUpload(files);
-            });
+            if (mediaUploadInput) mediaUploadInput.onchange = (e) => handleMediaFileUpload(e.target.files);
 
-            // Posts table event delegations are already set
+            if (mediaUploadDroparea) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    mediaUploadDroparea.addEventListener(eventName, preventDefaults, false);
+                });
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    mediaUploadDroparea.addEventListener(eventName, () => mediaUploadDroparea.classList.add('drag-over'), false);
+                });
+                ['dragleave', 'drop'].forEach(eventName => {
+                    mediaUploadDroparea.addEventListener(eventName, () => mediaUploadDroparea.classList.remove('drag-over'), false);
+                });
+
+                mediaUploadDroparea.addEventListener('drop', (e) => {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    handleMediaFileUpload(files);
+                }, false);
+
+                function preventDefaults (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+
             checkTokenAndStart();
-            document.getElementById('delete-selected-posts-btn').addEventListener('click', bulkDeletePosts);
         });
     </script>
 </body>
