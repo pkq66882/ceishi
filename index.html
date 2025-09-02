@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>加载中...</title>
     
-    <!-- Meta tags for SEO and social sharing (dynamic) -->
+    <!-- Meta tags for SEO and social sharing -->
     <meta name="description" content="一个由GitHub驱动的现代化半静态博客">
     <meta property="og:title" content="博客">
     <meta property="og:description" content="一个由GitHub驱动的现代化半静态博客">
@@ -13,60 +13,81 @@
     <meta property="og:image" content=""> <!-- Will be dynamically set -->
     <meta name="twitter:card" content="summary_large_image">
 
-    <!-- Favicon (placeholder) -->
+    <!-- Favicon (placeholder, can be customized) -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
 
-    <!-- Google Fonts - Roboto + Open Sans (Modern, Clean) -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
     <!-- Gitalk CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
 
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
-        /* CSS Variables for theming */
+        /* ==================================================================== */
+        /*                          前端主题样式 - inspired by Typecho/WordPress                     */
+        /* ==================================================================== */
+
         :root {
-            --primary-color: #3f51b5; /* Deep Indigo - Primary Accent */
-            --primary-hover-color: #303f9f;
-            --secondary-color: #ff4081; /* Pink - Secondary Accent */
-            --text-color-dark: #212121;
-            --text-color-light: #424242;
-            --background-body: #f5f7fa; /* Light Grey Blue */
-            --background-card: #ffffff;
-            --border-color: #e0e0e0;
-            --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.12);
-            --font-main: 'Open Sans', 'Roboto', sans-serif;
-            --font-heading: 'Roboto', 'Open Sans', sans-serif;
-            --container-max-width: 960px;
-            --header-height: 70px;
+            --primary-color: #3498db; /* 主要强调色 */
+            --secondary-color: #2ecc71; /* 次要强调色 */
+            --background-color: #f8f9fa; /* 页面背景色 */
+            --surface-color: #ffffff; /* 卡片、内容区背景色 */
+            --text-color-dark: #2c3e50; /* 深色文字 (标题) */
+            --text-color-light: #34495e; /* 浅色文字 (正文) */
+            --text-color-muted: #7f8c8d; /* 静音文字 (日期、描述) */
+            --border-color: #e0e0e0; /* 分隔线、边框色 */
+            --shadow-light: rgba(0, 0, 0, 0.08); /* 轻阴影 */
+            --shadow-medium: rgba(0, 0, 0, 0.15); /* 中等阴影 */
+
+            --font-family-headings: 'Merriweather', serif; /* 标题字体 */
+            --font-family-body: 'Roboto', sans-serif; /* 正文字体 */
+            --font-size-base: 16px;
+            --line-height-base: 1.7;
+
+            --header-height: 60px;
+            --container-max-width: 860px; /* 内容区最大宽度 */
+
+            /* Responsive breakpoints */
+            --breakpoint-mobile: 768px;
         }
 
-        /* Base styles */
+        /* 可通过 config.json 覆盖的样式 */
         body {
+            font-family: var(--font-family-body);
             margin: 0;
-            font-family: var(--font-main);
-            background-color: var(--background-body);
+            background-color: var(--background-color);
             color: var(--text-color-light);
-            line-height: 1.7;
-            font-size: 16px;
+            line-height: var(--line-height-base);
+            font-size: var(--font-size-base);
             transition: background-color 0.3s, color 0.3s;
             background-size: cover;
             background-attachment: fixed;
             background-position: center center;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-family-headings);
+            color: var(--text-color-dark);
+            margin-top: 1.5em;
+            margin-bottom: 0.8em;
+            line-height: 1.3;
+        }
+        h1 { font-size: 2.5em; }
+        h2 { font-size: 2em; }
+        h3 { font-size: 1.5em; }
 
         a {
             color: var(--primary-color);
             text-decoration: none;
-            transition: color 0.2s ease;
+            transition: color 0.2s ease-in-out;
         }
         a:hover {
-            color: var(--primary-hover-color);
+            opacity: 0.8;
+            text-decoration: underline;
         }
 
         /* Layout Container */
@@ -74,351 +95,294 @@
             max-width: var(--container-max-width);
             margin: 0 auto;
             padding: 20px;
-            box-sizing: border-box;
         }
-        
+
         /* Header */
         #app-header {
-            background-color: var(--background-card);
-            box-shadow: var(--shadow-light);
+            background-color: var(--surface-color);
+            box-shadow: 0 2px 8px var(--shadow-light);
             position: sticky;
             top: 0;
             z-index: 1000;
+            /* backdrop-filter: blur(8px); /* 磨砂玻璃效果 */
+            /* -webkit-backdrop-filter: blur(8px); */
         }
-
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: var(--header-height);
             max-width: var(--container-max-width);
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 15px 20px;
         }
-
-        .site-branding {
-            display: flex;
-            align-items: center;
-        }
-
-        .site-logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-right: 10px;
-        }
-
         .site-title {
-            font-size: 1.4rem;
+            font-family: var(--font-family-headings);
+            font-size: 1.8em;
             font-weight: 700;
             color: var(--text-color-dark);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        .site-title:hover {
-            color: var(--primary-color);
-        }
-
-        .main-nav ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: flex;
-        }
-        .main-nav li {
-            margin-left: 30px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .main-nav a {
-            display: block;
-            padding: 5px 0;
-            font-weight: 600;
-            color: var(--text-color-dark);
+            padding: 5px 12px;
+            margin-left: 5px;
+            color: var(--text-color-light);
+            font-weight: 500;
             position: relative;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
         }
-        .main-nav a:after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 0;
-            height: 2px;
+        .main-nav a:hover, .main-nav a.active {
             background-color: var(--primary-color);
-            transition: width 0.3s ease;
-        }
-        .main-nav a:hover:after, .main-nav a.active:after {
-            width: 100%;
+            color: #ffffff;
+            text-decoration: none;
         }
 
         /* Mobile Menu */
-        .mobile-menu-toggle {
+        .mobile-menu-icon {
             display: none;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             cursor: pointer;
             color: var(--text-color-dark);
         }
-        .mobile-menu-panel {
-            display: none;
-            position: fixed;
-            top: var(--header-height);
-            left: 0;
-            width: 100%;
-            height: calc(100vh - var(--header-height));
-            background-color: var(--background-card);
-            box-shadow: var(--shadow-medium);
-            padding: 20px;
-            box-sizing: border-box;
-            z-index: 999;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .mobile-menu-panel.active {
-            display: flex;
-        }
-        .mobile-menu-panel ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            text-align: center;
-        }
-        .mobile-menu-panel li {
-            margin-bottom: 20px;
-        }
-        .mobile-menu-panel a {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-color-dark);
-        }
-        @media (max-width: 768px) {
-            .main-nav { display: none; }
-            .mobile-menu-toggle { display: block; }
+        @media (max-width: var(--breakpoint-mobile)) {
+            .main-nav {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: var(--header-height);
+                left: 0;
+                width: 100%;
+                background-color: var(--surface-color);
+                box-shadow: 0 4px 8px var(--shadow-light);
+                border-top: 1px solid var(--border-color);
+            }
+            .main-nav.active {
+                display: flex;
+            }
+            .main-nav a {
+                margin: 0;
+                padding: 12px 20px;
+                border-bottom: 1px solid var(--border-color);
+                color: var(--text-color-dark);
+            }
+            .main-nav a:last-child {
+                border-bottom: none;
+            }
+            .mobile-menu-icon {
+                display: block;
+            }
+            .header-content {
+                 height: var(--header-height); /* 固定高度 */
+            }
         }
 
-        /* Main Content Area */
+        /* Main Content */
         #app-content {
-            margin-top: 30px;
-            min-height: calc(100vh - var(--header-height) - 100px); /* Adjust for header/footer */
+            padding-top: 30px;
         }
-        
-        /* Post Card (Home/Archive) */
+
+        /* Post Card */
         .post-card {
-            background-color: var(--background-card);
-            border-radius: 10px;
+            background-color: var(--surface-color);
+            border-radius: 8px;
             padding: 30px;
-            margin-bottom: 40px;
-            box-shadow: var(--shadow-medium);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px var(--shadow-light);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         .post-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-medium);
         }
-
-        .post-card h2.post-title a {
+        .post-card-title {
+            margin-top: 0;
+            font-size: 2em;
+        }
+        .post-card-title a {
             color: var(--text-color-dark);
-            font-size: 2.2rem;
-            font-family: var(--font-heading);
-            font-weight: 700;
-            line-height: 1.3;
-            margin-bottom: 15px;
-            display: block;
+            text-decoration: none;
         }
-        .post-card h2.post-title a:hover {
+        .post-card-title a:hover {
             color: var(--primary-color);
+            text-decoration: none;
         }
-
         .post-meta {
-            color: var(--text-color-light);
-            font-size: 0.9em;
+            color: var(--text-color-muted);
+            font-size: 0.85em;
+            margin-top: 10px;
             margin-bottom: 20px;
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
             gap: 15px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 15px;
+            align-items: center;
         }
         .post-meta span {
             display: flex;
             align-items: center;
-            color: #616161;
         }
         .post-meta i {
-            margin-right: 8px;
+            margin-right: 6px;
             color: var(--primary-color);
         }
         .post-meta a {
-            color: #616161;
+            color: var(--text-color-muted);
         }
         .post-meta a:hover {
             color: var(--primary-color);
         }
-
         .post-excerpt {
-            margin-top: 25px;
-            font-size: 1.05rem;
-            line-height: 1.8;
-            color: var(--text-color-light);
+            margin-top: 20px;
         }
-        .post-excerpt p:last-child {
-            margin-bottom: 0;
-        }
-
-        .read-more-btn {
+        .read-more {
             display: inline-block;
             margin-top: 25px;
-            padding: 10px 25px;
-            background-color: var(--primary-color);
-            color: #fff;
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: #ffffff;
             border-radius: 5px;
-            font-weight: 600;
-            transition: background-color 0.2s ease, transform 0.2s ease;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
         }
-        .read-more-btn:hover {
-            background-color: var(--primary-hover-color);
-            transform: translateY(-2px);
+        .read-more:hover {
+            background-color: #27ae60;
+            text-decoration: none;
         }
 
         /* Single Post View */
+        #post-view .post-card {
+            padding: 40px;
+        }
+        #post-title-full {
+             font-size: 2.8em;
+             text-align: center;
+             margin-top: 0;
+             line-height: 1.2;
+        }
+        #post-meta-full {
+             display: flex;
+             justify-content: center;
+             gap: 25px;
+             margin-bottom: 40px;
+        }
         .post-full-content {
-            font-size: 1.15rem;
-            line-height: 1.9;
-            color: var(--text-color-dark);
+            font-size: 1.05em;
+            line-height: var(--line-height-base);
+            word-wrap: break-word; /* 防止长单词溢出 */
         }
-        .post-full-content h1, .post-full-content h2, .post-full-content h3, .post-full-content h4, .post-full-content h5, .post-full-content h6 {
-            font-family: var(--font-heading);
-            color: var(--text-color-dark);
-            margin-top: 2.5rem;
-            margin-bottom: 1.2rem;
-            line-height: 1.4;
-        }
-        .post-full-content p {
-            margin-bottom: 1.2em;
-        }
+        .post-full-content p { margin-bottom: 1em; }
         .post-full-content img {
             max-width: 100%;
             height: auto;
-            border-radius: 8px;
-            margin: 2rem 0;
             display: block;
-            box-shadow: var(--shadow-light);
-        }
-        .post-full-content blockquote {
-            padding: 1.5em 2em;
-            margin: 2rem 0;
-            border-left: 5px solid var(--primary-color);
-            color: var(--text-color-light);
-            background-color: #f0f4f7;
+            margin: 20px auto;
             border-radius: 8px;
-            font-style: italic;
+            box-shadow: 0 4px 10px var(--shadow-light);
         }
         .post-full-content pre {
-            background-color: #272c34;
+            background-color: #2d2d2d;
             color: #f8f8f2;
-            padding: 1.5em;
-            border-radius: 8px;
+            padding: 1em;
+            border-radius: 5px;
             overflow-x: auto;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            line-height: 1.4;
             font-size: 0.95em;
-            line-height: 1.5;
-            margin: 2rem 0;
         }
         .post-full-content code {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: rgba(0,0,0,0.05);
-            padding: 2px 6px;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 2px 5px;
             border-radius: 4px;
-            color: var(--text-color-dark);
-            font-size: 0.95em;
+            font-size: 0.9em;
+            color: #c0392b; /* Code snippet color */
         }
         .post-full-content pre code {
             background-color: transparent;
             padding: 0;
             color: inherit;
         }
-        .post-full-content ul, .post-full-content ol {
-            margin-left: 1.5em;
-            margin-bottom: 1.2em;
-            line-height: inherit;
+        .post-full-content blockquote {
+            padding: 0.8em 1.5em;
+            margin: 1.5em 0;
+            border-left: 5px solid var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+            color: var(--text-color-dark);
+            border-radius: 5px;
+            font-style: italic;
         }
-        .post-full-content li {
-            margin-bottom: 0.5em;
+        .post-full-content ul, .post-full-content ol {
+            margin-left: 25px;
+            margin-bottom: 1em;
         }
 
         /* Pagination */
         .pagination {
             display: flex;
             justify-content: center;
-            margin-top: 50px;
+            margin-top: 40px;
+            flex-wrap: wrap;
             gap: 10px;
         }
         .pagination a {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 40px;
-            height: 40px;
             color: var(--primary-color);
+            padding: 10px 18px;
             border: 1px solid var(--border-color);
             border-radius: 5px;
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-            font-weight: 600;
+            font-weight: 500;
         }
         .pagination a:hover, .pagination a.active {
             background-color: var(--primary-color);
             color: #fff;
             border-color: var(--primary-color);
+            text-decoration: none;
         }
 
         /* Footer */
         #app-footer {
             text-align: center;
             padding: 40px 20px;
-            margin-top: 60px;
-            color: var(--text-color-light);
-            font-size: 0.85em;
+            margin-top: 50px;
+            color: var(--text-color-muted);
+            font-size: 0.9em;
             border-top: 1px solid var(--border-color);
-            background-color: var(--background-card);
-            box-shadow: var(--shadow-light);
+            background-color: var(--surface-color);
         }
         #app-footer a {
-            color: var(--primary-color);
-            font-weight: 600;
+            color: var(--text-color-dark);
+            font-weight: 500;
         }
 
         /* Gitalk container */
         #gitalk-container {
             margin-top: 40px;
+            background-color: var(--surface-color);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px var(--shadow-light);
         }
 
         /* Loading Spinner */
-        .loading-spinner {
+        #loader {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: calc(100vh - var(--header-height) - 100px); /* Adjust height */
+            height: calc(100vh - 120px);
             font-size: 2.5rem;
             color: var(--primary-color);
         }
         
         /* About Page specific styles */
         .about-content {
-            background-color: var(--background-card);
-            border-radius: 10px;
+            background-color: var(--surface-color);
+            border-radius: 8px;
             padding: 40px;
-            box-shadow: var(--shadow-medium);
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: var(--text-color-dark);
+            box-shadow: 0 4px 15px var(--shadow-light);
         }
         .about-content h1, .about-content h2, .about-content h3 {
-            font-family: var(--font-heading);
-            color: var(--text-color-dark);
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-        }
-        .about-content p {
-            margin-bottom: 1em;
+            text-align: center;
         }
 
         /* Helper class */
@@ -431,30 +395,20 @@
 
     <header id="app-header">
         <div class="header-content">
-            <div class="site-branding">
-                <span class="site-logo">📝</span>
-                <a href="#/" class="site-title">我的博客</a>
-            </div>
+            <a href="#/" class="site-title">我的博客</a>
             <nav class="main-nav">
-                <ul>
-                    <li><a href="#/" class="nav-home active">首页</a></li>
-                    <li><a href="#/about" class="nav-about">关于</a></li>
-                    <li><a href="admin.html" target="_blank">管理后台</a></li>
-                </ul>
+                <a href="#/" class="nav-home active">首页</a>
+                <a href="#/about" class="nav-about">关于</a>
+                <a href="admin.html" target="_blank" class="nav-admin">管理</a>
             </nav>
-            <i class="fas fa-bars mobile-menu-toggle"></i>
-        </div>
-        <div class="mobile-menu-panel">
-            <ul>
-                <li><a href="#/" class="nav-home">首页</a></li>
-                <li><a href="#/about" class="nav-about">关于</a></li>
-                <li><a href="admin.html" target="_blank">管理后台</a></li>
-            </ul>
+             <i class="fas fa-bars mobile-menu-icon" id="mobile-menu-toggle"></i>
         </div>
     </header>
 
     <main id="app-content" class="container">
         <!-- Views will be rendered here by JavaScript -->
+        
+        <!-- Home View: Post list and pagination -->
         <div id="home-view">
             <div id="post-list">
                 <!-- Post cards will be inserted here -->
@@ -464,29 +418,36 @@
             </div>
         </div>
 
+        <!-- Single Post View -->
         <div id="post-view" class="hidden">
            <article class="post-card">
-               <h1 id="post-title-full" class="post-title"></h1>
+               <h1 id="post-title-full" class="post-card-title"></h1>
                <div id="post-meta-full" class="post-meta"></div>
                <div id="post-content-full" class="post-full-content"></div>
            </article>
            <div id="gitalk-container"></div>
         </div>
 
+        <!-- About Page View -->
         <div id="about-view" class="hidden">
              <div id="about-content-full" class="about-content">
                 <!-- About content will be inserted here -->
              </div>
         </div>
         
-        <div id="loader" class="loading-spinner">
+        <div id="archive-view" class="hidden">
+            <!-- Future: For category/tag archive pages -->
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loader">
             <i class="fas fa-spinner fa-spin"></i>
         </div>
     </main>
 
     <footer id="app-footer">
         <div>
-            <span id="footer-text">© 2024 My Awesome Blog. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a>.</span>
+            <span id="footer-text"></span>
         </div>
     </footer>
 
@@ -496,15 +457,16 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <script>
-        // ===================================
-        // GITHUB API AND CONFIGURATION
-        // ===================================
+        // ====================================================================
+        //                          GitHub API 和全局配置
+        // ====================================================================
 
         let GITHUB_CONFIG = {
             owner: '',
             repo: '',
-            basePath: '',
-            posts_per_page: 5
+            basePath: '', // 存储 config.json 和 posts.json 的相对路径
+            posts_per_page: 5,
+            siteTitle: '我的博客' // 默认值，会被config.json覆盖
         };
 
         const API_BASE_URL = 'https://api.github.com';
@@ -518,18 +480,20 @@
         // Function to fetch a file from GitHub API
         async function getFileFromApi(filePath) {
             const { owner, repo } = GITHUB_CONFIG;
+            if (!owner || !repo) {
+                console.error("GitHub Owner or Repo not configured correctly.");
+                throw new Error("GitHub Owner 或 Repo 未设置。");
+            }
             const url = `${API_BASE_URL}/repos/${owner}/${repo}/contents/${filePath}`;
             try {
                 const response = await fetch(url, {
                     headers: { 'Accept': 'application/vnd.github.v3+json' }
                 });
-                if (!response.ok) {
-                    const error = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status} for ${filePath}` }));
-                    throw new Error(`Failed to fetch ${filePath}: ${error.message || response.statusText}`);
-                }
+                if (response.status === 404) return null; // 文件不存在是正常情况，返回null
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for ${filePath}`);
                 const data = await response.json();
-                if (!data || !data.content) { // Ensure content exists before decoding
-                    throw new Error(`${filePath} 文件内容为空或格式不正确。`);
+                if (!data || typeof data.content !== 'string' || b64_to_utf8(data.content).trim().length === 0) {
+                    return null; // 内容为空也视为不存在
                 }
                 return JSON.parse(b64_to_utf8(data.content));
             } catch (error) {
@@ -538,9 +502,9 @@
             }
         }
         
-        // ===================================
-        // STATE MANAGEMENT
-        // ===================================
+        // ====================================================================
+        //                          前端状态管理
+        // ====================================================================
 
         const state = {
             config: {},
@@ -549,26 +513,26 @@
             totalPages: 1
         };
 
-        // ===================================
-        // DOM ELEMENTS CACHE
-        // ===================================
+        // ====================================================================
+        //                          DOM 元素缓存
+        // ====================================================================
 
         const dom = {
-            siteTitle: document.querySelectorAll('.site-title'),
+            siteTitles: document.querySelectorAll('.site-title'), // 使用querySelectorAll以防将来有多个
             postList: document.getElementById('post-list'),
             pagination: document.getElementById('pagination'),
             loader: document.getElementById('loader'),
             footerText: document.getElementById('footer-text'),
             
             navLinks: document.querySelectorAll('.main-nav a'),
-            mobileMenuToggle: document.querySelector('.mobile-menu-toggle'),
-            mobileMenuPanel: document.querySelector('.mobile-menu-panel'),
-            mobileNavLinks: document.querySelectorAll('.mobile-menu-panel a'),
+            mobileMenuIcon: document.getElementById('mobile-menu-toggle'),
+            mainNav: document.querySelector('.main-nav'),
             
             views: {
                 home: document.getElementById('home-view'),
                 post: document.getElementById('post-view'),
                 about: document.getElementById('about-view'),
+                archive: document.getElementById('archive-view') // for future use
             },
             
             postView: {
@@ -582,25 +546,27 @@
             }
         };
 
-        // ===================================
-        // RENDERING FUNCTIONS
-        // ===================================
+        // ====================================================================
+        //                          渲染函数
+        // ====================================================================
 
         function applyConfig(config) {
             state.config = config;
+            GITHUB_CONFIG.siteTitle = config.site.title; //更新到全局配置
+            
             // Update site title
             document.title = config.site.title;
-            dom.siteTitle.forEach(el => el.textContent = config.site.title);
+            dom.siteTitles.forEach(el => el.textContent = config.site.title);
             
             // Update footer
             const currentYear = new Date().getFullYear();
-            dom.footerText.innerHTML = `© ${currentYear} ${config.site.title}. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a>.`;
+            dom.footerText.innerHTML = `© ${currentYear} ${config.site.title}. Powered by <a href="https://github.com/rjdsq/rjdsq.github.io" target="_blank">期望ai</a>.`;
             
             // Apply styling
-            document.documentElement.style.setProperty('--background-body', config.styling.backgroundColor);
-            document.documentElement.style.setProperty('--text-color-dark', config.styling.textColor);
-            document.documentElement.style.setProperty('--text-color-light', config.styling.textColor);
-            document.documentElement.style.setProperty('--primary-color', config.styling.accentColor);
+            document.documentElement.style.setProperty('--background-color', config.styling.backgroundColor || '#f8f9fa');
+            document.documentElement.style.setProperty('--text-color-light', config.styling.textColor || '#34495e');
+            document.documentElement.style.setProperty('--text-color-dark', config.styling.textColor || '#2c3e50'); // Keep dark for contrast
+            document.documentElement.style.setProperty('--primary-color', config.styling.accentColor || '#3498db');
             
             if (config.styling.backgroundImageUrl) {
                 document.body.style.backgroundImage = `url('${config.styling.backgroundImageUrl}')`;
@@ -618,7 +584,7 @@
             const postsToRender = state.posts.slice(start, end);
 
             if (postsToRender.length === 0) {
-                dom.postList.innerHTML = '<p style="text-align: center; font-size: 1.2rem; padding: 40px; background-color: var(--background-card); border-radius: 10px; box-shadow: var(--shadow-light);">暂无文章。</p>';
+                dom.postList.innerHTML = '<div class="post-card" style="text-align: center;"><p>暂无文章。</p></div>';
                 return;
             }
 
@@ -629,14 +595,14 @@
                 const excerpt = post.content.split('<!--more-->')[0];
 
                 postCard.innerHTML = `
-                    <h2 class="post-title"><a href="#/post/${post.id}">${post.title}</a></h2>
+                    <h2 class="post-card-title"><a href="#/post/${post.id}">${post.title}</a></h2>
                     <div class="post-meta">
-                        <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
+                        <span><i class="fas fa-calendar-alt"></i> ${formatDateTime(post.createdAt)}</span>
                         ${post.category ? `<span><i class="fas fa-folder"></i> <a href="#/category/${post.category}">${post.category}</a></span>` : ''}
                         ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.map(tag => `<a href="#/tag/${tag}">${tag}</a>`).join(', ')}</span>` : ''}
                     </div>
                     <div class="post-excerpt">${marked.parse(excerpt)}</div>
-                    <a href="#/post/${post.id}" class="read-more-btn">阅读全文 <i class="fas fa-arrow-right"></i></a>
+                    <a href="#/post/${post.id}" class="read-more">阅读全文 <i class="fas fa-arrow-right"></i></a>
                 `;
                 dom.postList.appendChild(postCard);
             });
@@ -662,8 +628,8 @@
         function renderSinglePost(post) {
             dom.postView.title.textContent = post.title;
             dom.postView.meta.innerHTML = `
-                <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
-                <span><i class="fas fa-sync-alt"></i> ${new Date(post.updatedAt).toLocaleDateString()}</span>
+                <span><i class="fas fa-calendar-alt"></i> ${formatDateTime(post.createdAt)}</span>
+                <span><i class="fas fa-sync-alt"></i> ${formatDateTime(post.updatedAt)}</span>
                 ${post.category ? `<span><i class="fas fa-folder"></i> <a href="#/category/${post.category}">${post.category}</a></span>` : ''}
                 ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.map(tag => `<a href="#/tag/${tag}">${tag}</a>`).join(', ')}</span>` : ''}
             `;
@@ -679,7 +645,7 @@
                     repo: state.config.gitalk.repo,
                     owner: state.config.gitalk.owner,
                     admin: state.config.gitalk.admin,
-                    id: post.id, // Using post ID for issue ID
+                    id: post.id, // Using post ID for issue ID max 50 chars
                     distractionFreeMode: false
                 });
                 gitalk.render('gitalk-container');
@@ -691,6 +657,20 @@
             dom.aboutView.content.innerHTML = marked.parse(aboutContent);
         }
 
+        // Helper to format date and time
+        function formatDateTime(isoString) {
+            if (!isoString) return '未知日期';
+            const date = new Date(isoString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false // 24小时制
+            });
+        }
+
         // ===================================
         // ROUTING AND VIEW MANAGEMENT
         // ===================================
@@ -700,36 +680,23 @@
             if (dom.views[viewName]) {
                 dom.views[viewName].classList.remove('hidden');
             }
-            window.scrollTo(0, 0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function handleRoute() {
             const hash = window.location.hash || '#/';
             dom.loader.style.display = 'flex'; // Show loader on route change
 
-            // Update active nav link (Desktop)
+            // Update active nav link
             dom.navLinks.forEach(link => {
                 link.classList.remove('active');
-                if (link.dataset.view && hash.startsWith(`#/${link.dataset.view}`)) {
+                if (link.hash === hash.split('/')[0] + (hash.includes('/about') ? '' : '/') || (hash === '#/' && link.classList.contains('nav-home'))) { // More robust active state logic
                     link.classList.add('active');
-                } else if (hash === '#/' && link.getAttribute('href') === '#/') {
-                     link.classList.add('active');
                 }
             });
-
-            // Update active nav link (Mobile)
-            dom.mobileNavLinks.forEach(link => {
-                link.classList.remove('active');
-                 if (link.dataset.view && hash.startsWith(`#/${link.dataset.view}`)) {
-                    link.classList.add('active');
-                } else if (hash === '#/' && link.getAttribute('href') === '#/') {
-                     link.classList.add('active');
-                }
-            });
-
             // Close mobile menu on navigation
-            if (dom.mobileMenuPanel.classList.contains('active')) {
-                dom.mobileMenuPanel.classList.remove('active');
+            if(dom.mainNav.classList.contains('active')) {
+                dom.mainNav.classList.remove('active');
             }
 
             if (hash.startsWith('#/post/')) {
@@ -739,21 +706,19 @@
                     renderSinglePost(post);
                     switchView('post');
                 } else {
-                    window.location.hash = '#/'; // Not found, redirect to home
+                    // Post not found, redirect to home
+                    window.location.hash = '#/';
                 }
             } else if (hash.startsWith('#/page/')) {
                 const pageNum = parseInt(hash.split('/')[2], 10);
-                if (pageNum > 0 && pageNum <= state.totalPages) {
-                    renderPostList(pageNum);
-                    renderPagination();
-                    switchView('home');
-                } else {
-                    window.location.hash = '#/'; // Invalid page, redirect to home
-                }
+                renderPostList(pageNum);
+                renderPagination();
+                switchView('home');
             } else if (hash.startsWith('#/about')) {
                 renderAboutPage();
                 switchView('about');
             } else {
+                // Default to home view
                 renderPostList(1);
                 renderPagination();
                 switchView('home');
@@ -762,53 +727,55 @@
             dom.loader.style.display = 'none'; // Hide loader after content is ready
         }
         
-        // ===================================
-        // INITIALIZATION
-        // ===================================
+        // ====================================================================
+        //                          初始化函数
+        // ====================================================================
 
         async function initializeBlog() {
-            dom.loader.style.display = 'flex'; // Show loader
-
+            dom.loader.style.display = 'flex';
             try {
                 // **STEP 1: Dynamically determine owner, repo, and basePath**
-                const hostname = window.location.hostname;
-                let pathSegments = window.location.pathname.split('/').filter(p => p); // Remove empty strings
+                const hostname = window.location.hostname; // e.g., pkq66882.github.io, custom.domain.com
+                let pathSegments = window.location.pathname.split('/').filter(p => p); // e.g., ["ceishi", "index.html"] or ["index.html"]
 
                 let owner, repo, basePath;
 
                 if (hostname.endsWith('.github.io')) {
-                    owner = hostname.split('.')[0]; // e.g., 'pkq66882' from 'pkq66882.github.io'
-
-                    // Remove current HTML file from pathSegments if present
-                    if (pathSegments.length > 0 && (pathSegments[pathSegments.length-1].endsWith('.html') || pathSegments[pathSegments.length-1].endsWith('.htm'))){
-                         pathSegments.pop();
-                    }
+                    owner = hostname.split('.')[0]; // e.g., "pkq66882"
                     
+                    // Remove "index.html" if present
+                    if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase().endsWith('index.html')) {
+                        pathSegments.pop();
+                    }
+
                     if (pathSegments.length > 0) {
-                        // If pathSegments exist, the first segment is the repo name for project pages
+                        // This is likely a project page, where the repo name is the first path segment
+                        // e.g., https://pkq66882.github.io/ceishi/ -> owner='pkq66882', repo='ceishi', basePath=''
                         repo = pathSegments[0];
-                        basePath = pathSegments.slice(1).join('/'); // Remaining segments form basePath
+                        basePath = pathSegments.slice(1).join('/'); // If any subdirectories exist after repo name
                     } else {
-                        // User/Organization page at root
-                        repo = hostname; // e.g., 'pkq66882.github.io'
+                        // This is a user/organization page at the root
+                        // e.g., https://pkq66882.github.io/ -> owner='pkq66882', repo='pkq66882.github.io', basePath=''
+                        repo = hostname;
                         basePath = '';
                     }
                 } else {
-                    // Custom domain or local development (assumes a project structure like /repo_name/...)
-                    // This is a heuristic and might need manual config in complex scenarios.
-                    console.warn("Custom domain or non-GitHub Pages environment detected. Attempting to infer repository information. If issues persist, please verify your GitHub configuration.");
-                    
-                    if (pathSegments.length > 0 && (pathSegments[pathSegments.length-1].endsWith('.html') || pathSegments[pathSegments.length-1].endsWith('.htm'))){
-                         pathSegments.pop();
+                    // Custom domain or other complex cases
+                    // For custom domains, assume repo is the first path segment unless it's a domain-to-repo direct link
+                    // This is a simplified approach, a more robust solution might require explicit configuration
+                    if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase().endsWith('index.html')) {
+                        pathSegments.pop();
                     }
-
-                    if (pathSegments.length > 0) {
-                        repo = pathSegments[0]; // Assume first segment is repo
-                        basePath = pathSegments.slice(1).join('/'); // Rest is basePath
+                     if (pathSegments.length > 0) {
+                        repo = pathSegments[0];
+                        basePath = pathSegments.slice(1).join('/');
                     } else {
-                        // Fallback to a common default if no path segments, e.g., user.github.io repo
-                        repo = prompt("Could not automatically determine your GitHub repository name. Please enter it (e.g., 'my-blog-repo' or 'username.github.io'):") || `${owner}.github.io`;
-                        owner = prompt("Please confirm your GitHub username (owner):", owner) || owner; // Ensure owner is set
+                        // If no path segments, assume repo is on the hostname (e.g., custom.com points directly to pkq66882/ceishi)
+                        // This is hard to automatically determine. For simplicity, we'll try to guess repo from owner.
+                        // User might need to manually set `GITHUB_CONFIG.repo` if this guess is wrong.
+                        console.warn("Could not determine repository name from URL for custom domain. Assuming repo is the same as owner, or needs manual configuration.");
+                        owner = prompt("无法从自定义域名中自动识别 GitHub 用户名/组织名。请输入：", "YOUR_GITHUB_USERNAME");
+                        repo = prompt("无法从自定义域名中自动识别仓库名。请输入您的仓库名 (例如: 'my-blog-repo' 或 'username.github.io'):", `${owner}.github.io`);
                         basePath = '';
                     }
                 }
@@ -820,19 +787,24 @@
                 
                 console.log(`Frontend Initialized with: Owner=${owner}, Repo=${repo}, Base Path="${basePath}"`);
 
-                const configPath = GITHUB_CONFIG.basePath ? `${GITHUB_CONFIG.basePath}/config.json` : 'config.json';
-                const postsPath = GITHUB_CONFIG.basePath ? `${GITHUB_CONFIG.basePath}/posts.json` : 'posts.json';
+                const configPath = basePath ? `${basePath}/config.json` : 'config.json';
+                const postsPath = basePath ? `${basePath}/posts.json` : 'posts.json';
 
                 // **STEP 2: Fetch data**
                 const config = await getFileFromApi(configPath);
-                if (!config) throw new Error("config.json 文件未找到或为空。");
+                if (!config) {
+                    throw new Error(`config.json 文件未找到或为空。请确保后台已初始化并配置。`);
+                }
 
                 const posts = await getFileFromApi(postsPath);
-                if (!posts) throw new Error("posts.json 文件未找到或为空。");
+                // Even if posts.json is empty or not found, we can still proceed with an empty blog list
+                if (!posts || posts.length === 0) {
+                     console.warn(`posts.json 文件未找到或为空。博客列表将为空。`);
+                }
 
                 // **STEP 3: Process and store data**
                 applyConfig(config);
-                state.posts = posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                state.posts = (posts || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 
                 // **STEP 4: Initial Render**
                 handleRoute();
@@ -840,15 +812,16 @@
             } catch (error) {
                 console.error("博客初始化失败:", error);
                 document.getElementById('app-content').innerHTML = `
-                    <div style="text-align: center; padding: 40px; background: var(--background-card); border-radius: 10px; box-shadow: var(--shadow-medium);">
-                        <h2><i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i> 博客加载失败</h2>
+                    <div class="post-card" style="text-align: center; padding: 40px;">
+                        <h2><i class="fas fa-exclamation-triangle"></i> 博客加载失败</h2>
                         <p>无法加载必要的配置文件。请检查浏览器的开发者控制台获取更多信息。</p>
-                        <p style="color: #e74c3c;"><strong>错误信息:</strong> ${error.message}</p>
+                        <p><strong>错误信息:</strong> ${error.message}</p>
                         <p>可能的原因：</p>
-                        <ul style="text-align: left; display: inline-block; list-style-type: disc; padding-left: 20px;">
-                            <li>GitHub仓库路径配置错误或GitHub Pages未正确开启。</li>
-                            <li><code>config.json</code> 或 <code>posts.json</code> 文件不存在于仓库的 <code>${GITHUB_CONFIG.basePath ? GITHUB_CONFIG.basePath + '/' : ''}</code> 路径下。</li>
+                        <ul style="text-align: left; display: inline-block;">
+                            <li>GitHub仓库路径配置错误。</li>
+                            <li><code>config.json</code> 或 <code>posts.json</code> 文件不存在于仓库中。</li>
                             <li>GitHub API访问频率限制。</li>
+                            <li>请确保 <a href="admin.html" target="_blank">后台管理系统</a> 已正确初始化。</li>
                         </ul>
                     </div>
                 `;
@@ -857,23 +830,16 @@
             }
         }
 
-        // ===================================
-        // EVENT LISTENERS
-        // ===================================
+        // ====================================================================
+        //                          事件监听器
+        // ====================================================================
 
         window.addEventListener('hashchange', handleRoute);
         document.addEventListener('DOMContentLoaded', () => {
              // Mobile menu toggle
-            dom.mobileMenuToggle.addEventListener('click', () => {
-                dom.mobileMenuPanel.classList.toggle('active');
+            dom.mobileMenuIcon.addEventListener('click', () => {
+                dom.mainNav.classList.toggle('active');
             });
-            // Attach event listeners to mobile nav links to close the menu
-            dom.mobileNavLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    dom.mobileMenuPanel.classList.remove('active');
-                });
-            });
-
             initializeBlog();
         });
     </script>
