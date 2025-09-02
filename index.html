@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
 
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QjAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
         /* CSS Variables for theming */
@@ -392,20 +392,34 @@
         // Function to fetch a file from GitHub API
         async function getFileFromApi(filePath) {
             const { owner, repo } = GITHUB_CONFIG;
+            if (!owner || !repo) {
+                console.error("GitHub owner or repo is not set. Cannot fetch file.");
+                throw new Error("GitHub owner or repo is not correctly configured.");
+            }
             const url = `${API_BASE_URL}/repos/${owner}/${repo}/contents/${filePath}`;
             try {
                 const response = await fetch(url, {
-                    headers: { 'Accept': 'application/vnd.github.v3+json' }
+                    headers: { 'Accept': 'application/vnd.github.v3+json' },
+                    cache: 'no-cache' // Important for fresh content
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for ${filePath}`);
+                if (!response.ok) {
+                     const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.statusText}`, url: response.url }));
+                     console.error(`Failed to fetch ${filePath}:`, errorData);
+                     throw new Error(`File not found or API error: ${filePath}, Status: ${response.status}`);
+                }
                 const data = await response.json();
+                if (!data || !data.content) {
+                    throw new Error(`Fetched ${filePath} but content is empty.`);
+                }
                 return JSON.parse(b64_to_utf8(data.content));
             } catch (error) {
-                console.error(`Failed to fetch ${filePath}:`, error);
+                console.error(`Error in getFileFromApi for ${filePath}:`, error);
                 throw error;
             }
         }
         
+        const getPath = (fileName) => GITHUB_CONFIG.basePath ? `${GITHUB_CONFIG.basePath}/${fileName}` : fileName;
+
         // ===================================
         // STATE MANAGEMENT
         // ===================================
@@ -458,6 +472,14 @@
             // Update site title
             document.title = config.site.title;
             dom.siteTitle.forEach(el => el.textContent = config.site.title);
+            
+            // Update meta description
+            document.querySelector('meta[name="description"]').setAttribute('content', config.site.description);
+            document.querySelector('meta[property="og:title"]').setAttribute('content', config.site.title);
+            document.querySelector('meta[property="og:description"]').setAttribute('content', config.site.description);
+            // Optionally set og:image if you have a default image in config
+            // const ogImage = config.site.ogImage || '';
+            // document.querySelector('meta[property="og:image"]').setAttribute('content', ogImage);
             
             // Update footer
             const currentYear = new Date().getFullYear();
@@ -518,7 +540,7 @@
                 pageLink.href = `#/page/${i}`;
                 pageLink.textContent = i;
                 if (i === state.currentPage) {
-                    pageLink.className = 'active';
+                    pageLink.classList.add('active');
                 }
                 dom.pagination.appendChild(pageLink);
             }
@@ -544,7 +566,7 @@
                     repo: state.config.gitalk.repo,
                     owner: state.config.gitalk.owner,
                     admin: state.config.gitalk.admin,
-                    id: post.id, // Using post ID for issue ID
+                    id: post.id.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 50), // Ensure id is URL-friendly and within length limit
                     distractionFreeMode: false
                 });
                 gitalk.render('gitalk-container');
@@ -565,7 +587,11 @@
             if (dom.views[viewName]) {
                 dom.views[viewName].classList.remove('hidden');
             }
-            window.scrollTo(0, 0);
+            // Close mobile menu on navigation
+            if(dom.mainNav.classList.contains('active')) {
+                dom.mainNav.classList.remove('active');
+            }
+            window.scrollTo(0, 0); // Scroll to top on view change
         }
 
         async function handleRoute() {
@@ -575,16 +601,12 @@
             // Update active nav link
             dom.navLinks.forEach(link => {
                 link.classList.remove('active');
-                if (link.getAttribute('href') === hash.split('/')[0] + (hash.split('/')[1] ? `/${hash.split('/')[1]}` : '')) {
+                const linkHref = link.getAttribute('href');
+                if ((hash === '#/' && linkHref === '#/') || (linkHref.startsWith('#/') && hash.startsWith(linkHref) && linkHref !== '#/')) {
                     link.classList.add('active');
-                } else if (hash === '#/' && link.classList.contains('nav-home')) {
-                     link.classList.add('active');
                 }
             });
-            // Close mobile menu on navigation
-            if(dom.mainNav.classList.contains('active')) {
-                dom.mainNav.classList.remove('active');
-            }
+            
 
             if (hash.startsWith('#/post/')) {
                 const postId = hash.split('/')[2];
@@ -619,45 +641,60 @@
         // ===================================
 
         async function initializeBlog() {
+            dom.loader.style.display = 'flex'; // Ensure loader is visible from start
             try {
                 // **STEP 1: Dynamically determine owner, repo, and basePath**
-                // This logic is copied from the fixed admin.html to ensure consistency
-                const userLogin = window.location.hostname.split('.')[0]; // Heuristic, might need improvement for custom domains.
                 const hostname = window.location.hostname;
                 let pathSegments = window.location.pathname.split('/').filter(p => p);
                 
-                let owner, repo, basePath;
+                let ownerName, repoName, basePathValue; // Use different variable names to avoid shadowing GITHUB_CONFIG
 
                 if (hostname.endsWith('.github.io')) {
-                    owner = hostname.split('.')[0];
+                    ownerName = hostname.split('.')[0];
+                    if (pathSegments.length > 0 && (pathSegments[pathSegments.length-1].endsWith('.html') || pathSegments[pathSegments.length-1].endsWith('.htm'))){
+                         pathSegments.pop(); // Remove "index.html" or "admin.html"
+                    }
+                    if (pathSegments.length > 0) {
+                        repoName = pathSegments[0]; // e.g., "ceishi" for pkq66882.github.io/ceishi
+                        basePathValue = pathSegments.slice(1).join('/'); // e.g., "" if repo is root, or "sub/dir"
+                    } else {
+                        repoName = hostname; // e.g., "pkq66882.github.io" if root
+                        basePathValue = '';
+                    }
+                } else {
+                    // Fallback for custom domains assumes path like /owner/repo/sub-path
+                    // This is inherently less reliable Without a known pattern.
+                    // For a custom domain like 'blog.com' pointing to 'pkq66882/ceishi'
+                    // window.location.pathname might be '/' or '/some-sub-path'
+                    // In such cases, the `repo` and `owner` would ideally be hardcoded or passed.
+                    // For now, prompt the user for minimal setup or try to infer from common format /user/repo
                     if (pathSegments.length > 0 && (pathSegments[pathSegments.length-1].endsWith('.html') || pathSegments[pathSegments.length-1].endsWith('.htm'))){
                          pathSegments.pop();
                     }
-                    if (pathSegments.length > 0) {
-                        repo = pathSegments[0];
-                        basePath = pathSegments.slice(1).join('/');
-                    } else {
-                        repo = hostname;
-                        basePath = '';
+                    if (pathSegments.length >= 2) { // Assuming /owner/repo structure
+                        ownerName = pathSegments[0];
+                        repoName = pathSegments[1];
+                        basePathValue = pathSegments.slice(2).join('/');
+                    } else if (pathSegments.length === 1) { // Assuming /repo only, owner implicit from Gitalk config later
+                         ownerName = prompt("Could not automatically determine your GitHub username (owner) for this custom domain. Please enter it:", "your-username");
+                         repoName = pathSegments[0];
+                         basePathValue = '';
+                    } else { // Root custom domain with no path info, very ambigious
+                         ownerName = prompt("Could not automatically determine your GitHub username (owner) for this custom domain. Please enter it:", "your-username");
+                         repoName = prompt("Could not automatically determine your GitHub repository name. Please enter it:", "your-repo-name");
+                         basePathValue = '';
                     }
-                } else {
-                    // Fallback for custom domains (assumes owner/repo structure in path)
-                    // This will need manual config if the path structure is different.
-                    alert("Custom domain detected. The system will try to infer repository info, but it might fail. Please ensure your GITHUB_CONFIG is correct if you encounter issues.");
-                    owner = prompt("Please confirm your GitHub username (owner):", userLogin);
-                    repo = prompt("Please confirm your repository name:", pathSegments.length > 0 ? pathSegments[0] : "");
-                    basePath = pathSegments.slice(1).join('/');
                 }
                 
                 // Set the global config
-                GITHUB_CONFIG.owner = owner;
-                GITHUB_CONFIG.repo = repo;
-                GITHUB_CONFIG.basePath = basePath;
+                GITHUB_CONFIG.owner = ownerName;
+                GITHUB_CONFIG.repo = repoName;
+                GITHUB_CONFIG.basePath = basePathValue;
                 
-                console.log(`Frontend Initialized with: Owner=${owner}, Repo=${repo}, Base Path="${basePath}"`);
+                console.log(`Frontend Initialized with: Owner=${GITHUB_CONFIG.owner}, Repo=${GITHUB_CONFIG.repo}, Base Path="${GITHUB_CONFIG.basePath}"`);
 
-                const configPath = basePath ? `${basePath}/config.json` : 'config.json';
-                const postsPath = basePath ? `${basePath}/posts.json` : 'posts.json';
+                const configPath = getPath('config.json');
+                const postsPath = getPath('posts.json');
 
                 // **STEP 2: Fetch data**
                 const config = await getFileFromApi(configPath);
@@ -682,10 +719,11 @@
                         <p><strong>错误信息:</strong> ${error.message}</p>
                         <p>可能的原因：</p>
                         <ul style="text-align: left; display: inline-block;">
-                            <li>GitHub仓库路径配置错误。</li>
+                            <li>GitHub仓库路径配置错误(Owner或Repo不正确?)。</li>
                             <li><code>config.json</code> 或 <code>posts.json</code> 文件不存在于仓库中。</li>
                             <li>GitHub API访问频率限制。</li>
                         </ul>
+                        <p>请确保 <a href="admin.html" target="_blank">管理后台</a> 已正确初始化。</p>
                     </div>
                 `;
             } finally {
