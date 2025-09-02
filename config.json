@@ -19,6 +19,7 @@
     "admin": [
       "pkq66882"
     ],
+    "language": "zh-CN",
     "distractionFreeMode": false,
     "labels": [
       "Gitalk",
