@@ -179,10 +179,13 @@
         }
         #admin-sidebar .nav a:hover { background: var(--sidebar-hover-bg); }
         #admin-sidebar .nav a.active {
-            background: var(--sidebar-active-bg);
+            background: linear-gradient(90deg, var(--sidebar-active-bg) 0%, rgba(26,188,156,0.8) 100%);
             color: white;
             border-left-color: #fff;
             font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transform: translateX(5px);
+            border-radius: 0 5px 5px 0;
         }
         #admin-sidebar footer {
              padding: 20px;
@@ -318,12 +321,12 @@
             border-radius: 5px;
             font-size: 1rem;
             cursor: pointer;
-            transition: background .2s ease, box-shadow .2s ease;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
             font-weight: 600;
         }
         button i, .btn i { margin-right: 8px; }
-        button:hover:not(:disabled), .btn:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        button:disabled, .btn:disabled { background: #cccccc !important; cursor: not-allowed; opacity: 0.7; }
+        button:hover:not(:disabled), .btn:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        button:disabled, .btn:disabled { background: #cccccc !important; cursor: not-allowed; opacity: 0.7; box-shadow: none; transform: none;}
 
         .btn-primary { background: var(--accent-color); color: #fff; }
         .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
@@ -481,12 +484,21 @@
             box-shadow: var(--shadow);
             overflow: hidden;
             position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .media-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
         .media-card .image-container {
             width: 100%;
             padding-top: 100%; /* 1:1 Aspect Ratio */
             position: relative;
             background-color: #f0f0f0;
+            display: flex; /* For centering loading spinner */
+            align-items: center;
+            justify-content: center;
         }
         .media-card img {
             position: absolute;
@@ -495,11 +507,19 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .media-card:hover img {
+             transform: scale(1.05); /* Slight zoom on hover */
         }
         .media-card .info {
             padding: 10px;
-            font-size: 0.8rem;
+            font-size: 0.8em;
             word-break: break-all;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .media-card .actions {
             display: flex;
@@ -511,7 +531,94 @@
             padding: 5px;
             font-size: 0.8rem;
         }
-        
+        .media-card .actions .btn i {
+            margin-right: 0; /* Remove margin for smaller buttons */
+        }
+
+        /* Markdown Preview in Settings */
+        .markdown-preview {
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            background-color: var(--content-bg);
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        /* Modal for Media Library in Editor */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 2000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--content-bg);
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: var(--shadow);
+            position: relative;
+            animation: fadeIn 0.3s;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: var(--heading-color);
+        }
+        .close-button {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: var(--danger-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            flex-grow: 1;
+            overflow-y: auto;
+            /* Use media-library-grid for styling */
+        }
+        .modal .media-card {
+            cursor: pointer; /* Highlight that these are clickable */
+        }
+        .modal .media-card:hover {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body>
@@ -540,7 +647,7 @@
                 <li><a href="#" id="nav-posts" data-view="posts"><i class="fas fa-newspaper"></i> 文章管理</a></li>
                 <li><a href="#" id="nav-media" data-view="media"><i class="fas fa-images"></i> 媒体库</a></li>
                 <li><a href="#" id="nav-settings" data-view="settings"><i class="fas fa-cog"></i> 网站设置</a></li>
-                <li><a href="#" id="nav-gitalk-settings" data-view="gitalk-settings"><i class="fas fa-comments"></i> 评论设置</a></li>
+                <li><a href="#" id="nav-gitalk-settings" data-view="gitalkSettings"><i class="fas fa-comments"></i> 评论设置</a></li>
                 <li><a href="index.html" target="_blank"><i class="fas fa-desktop"></i> 查看站点</a></li>
                 <li><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> 安全退出</a></li>
             </ul>
@@ -661,7 +768,7 @@
                 </div>
                 <div id="media-library-grid" class="media-library-grid">
                     <!-- Media cards will be populated here -->
-                    <p>正在加载媒体文件...</p>
+                    <p style="text-align: center; color: var(--meta-color);">正在加载媒体文件...</p>
                 </div>
             </div>
 
@@ -684,6 +791,7 @@
                     <label for="setting-about-content">“关于我”页面内容 (支持 Markdown)</label>
                     <textarea id="setting-about-content" rows="10" placeholder="请在这里填写关于你的介绍，支持 Markdown 格式。"></textarea>
                      <p class="description">此内容将显示在网站的“关于我”页面。</p>
+                     <div class="markdown-preview" id="about-content-preview"></div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -698,12 +806,13 @@
                 </div>
                 <div class="form-group">
                     <label for="setting-bg-image">网站背景图</label>
-                    <input type="file" id="setting-bg-image" accept="image/*">
-                    <input type="text" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" readonly style="margin-top: 10px;">
-                    <div class="button-group" style="margin-top: 10px; justify-content: flex-start;">
-                        <button id="upload-bg-image-btn" class="btn-primary" style="display:none;"><i class="fas fa-upload"></i> 上传并设置</button>
-                        <button id="clear-bg-image-btn" class="btn-danger"><i class="fas fa-trash-alt"></i> 清除背景图</button>
+                    <input type="file" id="setting-bg-image" accept="image/*" style="margin-bottom: 5px;">
+                    <div id="setting-bg-image-preview" style="width: 200px; height: 120px; border: 1px dashed var(--border-color); margin-top: 10px; display: flex; justify-content: center; align-items: center; overflow: hidden; background-color: #f9f9f9; border-radius: 5px;">
+                        <span class="placeholder">无背景图</span>
                     </div>
+                    <input type="text" id="setting-bg-image-url" placeholder="背景图URL将显示在这里" style="margin-top: 10px;">
+                    <button id="upload-bg-image-btn" class="btn-primary" style="display:none; margin-top: 10px;"><i class="fas fa-upload"></i> 上传并设置</button>
+                    <button id="clear-bg-image-btn" class="btn-danger" style="margin-top: 10px;"><i class="fas fa-trash-alt"></i> 清除背景图</button>
                 </div>
             </div>
 
@@ -742,8 +851,27 @@
         </main>
     </div>
 
+    <!-- Media Library Modal -->
+    <div id="media-library-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>从媒体库选择图片</h3>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modal-media-library-grid" class="media-library-grid">
+                    <p style="text-align: center; color: var(--meta-color);">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- EasyMDE Markdown 编辑器 JS -->
     <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+    <!-- Marked.js for rendering markdown, for the settings preview -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 
     <script>
         // ==================== 全局变量和工具函数 ====================
@@ -766,6 +894,7 @@
                         ? '你的 GitHub Token 可能无效或权限不足。请检查：[Token生成页面](https://github.com/settings/tokens)'
                         : '';
                     if (response.status === 404 && (options.method === 'PUT' || options.method === 'DELETE')) {
+                        // This 404 is often caused by the parent directory not existing for PUT, or file not found for DELETE
                         throw new Error(`${errorMessage} (路径：${endpoint})。可能是由于父目录或文件不存在。`);
                     }
                     throw new Error(`${errorMessage} ${specificError}`);
@@ -828,7 +957,7 @@
             posts: document.getElementById('nav-posts'),
             media: document.getElementById('nav-media'),
             settings: document.getElementById('nav-settings'),
-            gitalkSettings: document.getElementById('nav-gitalk-settings'), //
+            gitalkSettings: document.getElementById('nav-gitalk-settings'),
             logout: document.getElementById('nav-logout'),
         };
         const postListBody = document.getElementById('post-list');
@@ -836,53 +965,71 @@
         let token = null, owner = '', repo = '', basePath = '';
         let posts = [], postsSha = '';
         let config = {}, configSha = '';
-        let easyMDE;
+        let easyMDE; // EasyMDE 实例
 
+        // 统一获取文件路径，处理basePath为空或不为空的情况
         const getPath = (fileName) => basePath ? `${basePath}/${fileName}` : fileName;
 
+        // 新函数：尝试创建目录及其.gitkeep文件
         async function createGitHubDirectory(apiToken, apiOwner, apiRepo, directoryPath) {
-            if (!directoryPath) return true; // Don't create empty base path
+            if (!directoryPath) return true; // Don't try to create an empty path
             const gitkeepPath = `${directoryPath}/.gitkeep`;
             try {
                 const fileData = await GitHubAPI.getFile(apiToken, apiOwner, apiRepo, gitkeepPath);
-                if (!fileData) {
+                if (!fileData) { // 文件不存在，尝试创建
                     await GitHubAPI.createFile(apiToken, apiOwner, apiRepo, gitkeepPath, '', `feat: create directory ${directoryPath}`);
+                    return true;
+                } else {
+                    return true;
                 }
-                return true;
             } catch (error) {
                 console.error(`Failed to create directory ${directoryPath}:`, error);
-                throw error;
+                throw error; // 重新抛出错误，阻止后续操作
             }
         }
         
         // ==================== UI 辅助函数 ====================
-        const showAdminView = (viewName) => {
-            Object.values(adminViews).forEach(v => v.style.display = 'none');
+        const switchView = (viewName) => { // Renamed from showAdminView to avoid confusion with internal state
+            Object.values(adminViews).forEach(v => {
+                if(v) v.style.display = 'none'; // Check if element exists before accessing style
+            });
             
+            // EasyMDE cleanup/init logic
             if (easyMDE && viewName !== 'editor') {
                 easyMDE.toTextArea();
                 document.getElementById('post-content').style.display = '';
                 easyMDE = null;
+            } else if (viewName === 'editor' && !easyMDE) {
+                initializeEasyMDE();
             }
-            
-            Object.values(navButtons).forEach(b => b.classList.remove('active'));
+
+            Object.values(navButtons).forEach(b => {
+                if(b) b.classList.remove('active'); // Check if element exists
+            });
             const currentNavLink = document.querySelector(`[data-view="${viewName}"]`);
             if (currentNavLink) {
                  currentNavLink.classList.add('active');
-            } else if (viewName === 'editor') {
+            } else if (viewName === 'editor') { // editor view is special, highlights posts
                 navButtons.posts.classList.add('active');
             }
             
-            adminViews[viewName].style.display = 'block';
-            
-            if (viewName === 'editor' && !easyMDE) {
-                initializeEasyMDE();
+            if (adminViews[viewName]) { // Check if the target view element exists
+                adminViews[viewName].style.display = 'block';
+            } else {
+                console.error(`Attempted to show unknown view: ${viewName}`);
+                showAlert(`未能显示视图: ${viewName}。页面可能不存在或ID配置错误。`, 'danger');
             }
+            
             // Trigger specific actions when a view is shown
             if (viewName === 'dashboard') renderDashboard();
             if (viewName === 'media') loadMediaLibrary();
-            
-            document.querySelector('.admin-wrapper').classList.remove('sidebar-visible');
+            if (viewName === 'settings') {
+                populateSettings();
+                document.getElementById('setting-about-content').dispatchEvent(new Event('input')); // Trigger update for markdown preview
+            }
+            if (viewName === 'gitalkSettings') populateGitalkSettings();
+
+            document.querySelector('.admin-wrapper').classList.remove('sidebar-visible'); // Hide mobile sidebar
         };
 
         const setButtonsDisabled = (disabled) => document.querySelectorAll('button').forEach(b => b.disabled = disabled);
@@ -898,6 +1045,8 @@
             const icon = {'info': 'fas fa-info-circle', 'success': 'fas fa-check-circle', 'danger': 'fas fa-exclamation-circle', 'warning': 'fas fa-exclamation-triangle'}[type];
             existingAlert.innerHTML = `<i class="${icon}"></i> ${message}`;
             existingAlert.style.display = 'flex';
+            existingAlert.style.marginTop = '0'; // Ensure at the top
+            // Auto-hide alert after some time
             setTimeout(() => { if(existingAlert) existingAlert.style.display = 'none'; }, 5000);
         };
 
@@ -905,6 +1054,7 @@
             navigator.clipboard.writeText(text).then(() => {
                 showAlert('URL已复制到剪贴板！', 'success');
             }).catch(err => {
+                console.error('Failed to copy:', err);
                 showAlert('复制失败: ' + err, 'danger');
             });
         };
@@ -932,36 +1082,52 @@
                 owner = user.login;
                 
                 const hostname = window.location.hostname;
-                let pathSegments = window.location.pathname.split('/').filter(p => p);
+                let pathSegments = window.location.pathname.split('/').filter(p => p); // e.g., ["ceishi", "admin.html"] or ["admin.html"]
 
                 if (hostname.endsWith('.github.io')) {
                     if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase().endsWith('admin.html')) {
-                        pathSegments.pop();
+                        pathSegments.pop(); // Remove "admin.html"
                     }
                     if (pathSegments.length > 0) {
-                        repo = pathSegments[0];
-                        basePath = pathSegments.slice(1).join('/');
+                        repo = pathSegments[0]; // e.g., "ceishi" for pkq66882.github.io/ceishi
+                        basePath = pathSegments.slice(1).join('/'); // e.g., "" if repo is root, or "sub/dir"
                     } else {
-                        repo = hostname;
-                        basePath = '';
+                        repo = hostname; // e.g., "pkq66882.github.io" if root
+                         basePath = '';
                     }
                 } else {
-                    // Fallback logic for custom domains
+                    // Fallback for custom domains: Try to infer, but might need manual input from user
+                    // For a custom domain like 'blog.com' pointing to 'pkq66882/ceishi'
+                    // window.location.pathname might be '/' or '/admin.html' or '/some-sub-path/admin.html'
+                    // In such cases, the `repo` and `owner` would ideally be hardcoded or passed.
                     if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase().endsWith('admin.html')) {
-                        pathSegments.pop();
+                        pathSegments.pop(); // Remove "admin.html"
                     }
-                    if (pathSegments.length > 0) {
+                    // Try to infer from path, e.g., /pkq66882/ceishi/admin.html -> owner=pkq66882, repo=ceishi
+                    if (pathSegments.length >= 2) {
+                        owner = pathSegments[0];
+                        repo = pathSegments[1];
+                        basePath = pathSegments.slice(2).join('/');
+                    } else if (pathSegments.length === 1) { // e.g., /mY-REPO/admin.html
+                        // If only one segment, assume it's the repo, and owner is the logged-in user
                         repo = pathSegments[0];
-                        basePath = pathSegments.slice(1).join('/');
-                    } else {
-                        throw new Error("无法从URL中确定仓库名称，请在标准GitHub Pages环境中使用。");
+                        basePath = '';
+                        console.warn("Custom domain detected with ambiguous path. Assuming owner is the authenticated user and first path segment is repository. Please verify Gitalk settings.");
+                    } else { // e.g., /admin.html or just /
+                        // User is likely on root of custom domain, repo name cannot be inferred.
+                         throw new Error(`无法从URL中确定仓库名称。请确保您的GitHub Pages仓库类型正确配置为“项目网站”或“用户/组织网站”，并检查URL路径。`);
                     }
                 }
                 
+                console.log(`Admin Initialized with: Owner=${owner}, Repo=${repo}, Base Path="${basePath}"`);
+                showAlert(`检测到仓库信息：Owner: ${owner}, Repo: ${repo}, Base Path: "${basePath}"`, 'info', 'path-detection-alert');
+
+
                 //
-                // Step 1: Create directories
+                // Step 1: Create directories for config/posts/images
                 //
-                const baseDirParts = basePath.split('/').filter(Boolean);
+                initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在检查并创建所需文件目录...`;
+                const baseDirParts = basePath.split('/').filter(Boolean); // Filter out empty strings
                 let currentPathAccumulated = '';
                 for (const part of baseDirParts) {
                     currentPathAccumulated = currentPathAccumulated ? `${currentPathAccumulated}/${part}` : part;
@@ -972,75 +1138,142 @@
                 //
                 // Step 2: Fetch and initialize config.json and posts.json
                 //
+                initialMessageEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在获取核心配置文件...`;
                 const configPath = getPath('config.json');
                 const postsPath = getPath('posts.json');
-                let [configData, postsData] = await Promise.all([
-                    GitHubAPI.getFile(token, owner, repo, configPath),
-                    GitHubAPI.getFile(token, owner, repo, postsPath)
-                ]);
+                let configData = await GitHubAPI.getFile(token, owner, repo, configPath);
+                let postsData = await GitHubAPI.getFile(token, owner, repo, postsPath);
 
-                // Initialize config.json if not present
+                // Default configurations
+                const initialConfig = {
+                    site: {
+                        title: `${user.login}的博客`,
+                        description: "由GitHub驱动的现代化半静态博客",
+                        aboutContent: `# 关于我\n\n你好！我是 ${user.login}，一个热爱技术和分享的开发者。欢迎来到我的博客！\n\n在这里，我将分享我的技术心得、学习笔记以及一些生活感悟。希望我的内容能对你有所启发或帮助。\n\n**联系我:**\n\n*   GitHub: [${user.login}](https://github.com/${user.login})\n*   Email: your_email@example.com\n\n---`,
+                    },
+                    styling: {
+                        backgroundColor: "#f8f9fa",
+                        textColor: "#212529",
+                        accentColor: "#0d6efd",
+                        backgroundImageUrl: ""
+                    },
+                    gitalk: {
+                        enabled: false,
+                        clientID: '',
+                        clientSecret: '',
+                        repo: repo, // Use dynamically resolved repo
+                        owner: owner,
+                        admin: [owner],
+                    }
+                };
+                const initialWelcomePost = {
+                    id: `hello_world_${Date.now()}`,
+                    title: "欢迎来到我的博客！",
+                    content: "# 欢迎！\n\n这是您的第一篇文章，由期望ai自动生成。\n\n使用后台管理系统，您可以轻松发布、编辑和删除文章。文章支持 **Markdown** 格式。\n\n在 [博客管理后台](admin.html) 中，您可以：\n\n*   撰写新的文章\n*   管理网站配置 (标题、描述、颜色、背景图)\n*   配置 Gitalk 评论系统\n\n快去发布你的第一篇文章吧！\n\n<!--more-->\n\n### Markdown 示例\n\n```javascript\nconsole.log('Hello, world!');\n```\n\n> 引用块。\n\n*   列表项1\n*   列表项2\n\n--- \n\n<p style=\"text-align: center;\">祝你创作愉快！</p>",
+                    category: "公告",
+                    tags: ["欢迎", "教程"],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+
+                // Handle config.json
                 if (configData) {
-                    config = JSON.parse(configData.content);
-                    configSha = configData.sha;
-                    // Ensure gitalk repo is up to date
-                    if (!config.gitalk || config.gitalk.repo !== repo) {
-                        if(!config.gitalk) config.gitalk = {};
-                        config.gitalk.repo = repo;
-                        config.gitalk.owner = owner;
-                        config.gitalk.admin = [owner];
-                        const res = await GitHubAPI.updateFile(token, owner, repo, configPath, JSON.stringify(config, null, 2), configSha, 'conf: auto-update repo info');
+                    try {
+                        let parsedConfig = JSON.parse(configData.content);
+                        // Deep merge with default config to ensure all new properties exist
+                        config = Object.assign({}, initialConfig, {
+                            site: Object.assign({}, initialConfig.site, parsedConfig.site),
+                            styling: Object.assign({}, initialConfig.styling, parsedConfig.styling),
+                            gitalk: Object.assign({}, initialConfig.gitalk, parsedConfig.gitalk)
+                        });
+                        configSha = configData.sha;
+                        // Ensure gitalk.repo and owner are updated in case user moved repo or setup changed
+                        if (config.gitalk.repo !== repo || config.gitalk.owner !== owner) {
+                            config.gitalk.repo = repo;
+                            config.gitalk.owner = owner;
+                            // Also ensure admin array exists and contains current owner if not already there
+                            if (!config.gitalk.admin || config.gitalk.admin.length === 0) {
+                                config.gitalk.admin = [owner];
+                            } else if (!config.gitalk.admin.includes(owner)) {
+                                config.gitalk.admin.push(owner);
+                            }
+                            const res = await GitHubAPI.updateFile(token, owner, repo, configPath, JSON.stringify(config, null, 2), configSha, 'conf: auto-update repo/owner/admin info');
+                            configSha = res.content.sha;
+                            showAlert('config.json 已自动更新评论设置中的仓库信息。', 'info');
+                        }
+                    } catch (e) {
+                        console.warn("Invalid config.json content, using default config.", e);
+                        showAlert('config.json 内容无效，已使用默认配置覆盖。', 'warning');
+                        config = initialConfig;
+                        const res = await GitHubAPI.createFile(token, owner, repo, configPath, JSON.stringify(config, null, 2), 'feat: re-initialize config (invalid content)');
                         configSha = res.content.sha;
                     }
                 } else {
-                    config = {
-                        site: { title: `${user.login}的博客`, description: "A simple blog", aboutContent: "# About Me\n\nThis is a page about me." },
-                        styling: { backgroundColor: "#f8f9fa", textColor: "#212529", accentColor: "#0d6efd", backgroundImageUrl: "" },
-                        gitalk: { enabled: false, clientID: '', clientSecret: '', repo, owner, admin: [owner] }
-                    };
+                    config = initialConfig;
                     const res = await GitHubAPI.createFile(token, owner, repo, configPath, JSON.stringify(config, null, 2), 'feat: initialize config');
                     configSha = res.content.sha;
+                    showAlert('config.json 文件不存在，已创建默认配置。', 'info');
                 }
 
-                // Initialize posts.json if not present
+                // Handle posts.json
                 if (postsData) {
-                    posts = JSON.parse(postsData.content);
-                    postsSha = postsData.sha;
-                } else {
-                    posts = [{ id: `hello_world_${Date.now()}`, title: "Welcome!", content: "This is your first post.", category: "General", tags: ["welcome"], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
-                    const res = await GitHubAPI.createFile(token, owner, repo, postsPath, JSON.stringify(posts, null, 2), 'feat: initialize first post');
+                    try {
+                        posts = JSON.parse(postsData.content);
+                        if (!Array.isArray(posts)) throw new Error("Posts data is not an array.");
+                        // Add welcome post if it doesn't exist
+                        if (!posts.some(p => p.id === initialWelcomePost.id || p.title === initialWelcomePost.title)) {
+                             posts.unshift(initialWelcomePost); // Add to the beginning
+                             showAlert('posts.json 文件缺少欢迎文章，已补充。', 'info');
+                        }
+                    } catch (e) {
+                        console.warn("Invalid posts.json content, overwriting with default post.", e);
+                        showAlert('posts.json 内容无效，已添加默认文章。', 'warning');
+                        posts = [initialWelcomePost];
+                    }
+                    posts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)); // Ensure sorted
+                    const res = await GitHubAPI.updateFile(token, owner, repo, postsPath, JSON.stringify(posts, null, 2), postsData.sha, 'docs: update posts (initial/existing)');
                     postsSha = res.content.sha;
+                } else {
+                    posts = [initialWelcomePost];
+                    const res = await GitHubAPI.createFile(token, owner, repo, postsPath, JSON.stringify(posts, null, 2), 'feat: add first welcome post');
+                    postsSha = res.content.sha;
+                    showAlert('posts.json 文件不存在，已创建默认文章。', 'info');
                 }
-
+                
                 //
                 // Step 3: All good, render UI
                 //
                 loginWrapper.style.display = 'none';
                 adminWrapper.style.display = 'flex';
-                showAdminView('dashboard');
-                populateSettings();
-                populateGitalkSettings();
-                updateUniqueTags();
+                switchView('dashboard'); // Go to dashboard first
+                updateUniqueTags(); // Update tags for suggestions
 
+                // Save token preference
                 if (rememberTokenCheckbox.checked) {
                     localStorage.setItem('github_token', token);
                 } else {
                     localStorage.removeItem('github_token');
                 }
+
+                initialMessageEl.innerHTML = ``; // Clear login messages
                 showAlert('登录成功！', 'success');
 
             } catch (error) {
-                initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 初始化失败: ${error.message}`;
+                console.error("Critical initialization failure:", error);
+                // Try to be specific about the failure
+                if (!initialMessageEl.innerHTML.includes('无法创建目录') && !initialMessageEl.innerHTML.includes('Token') && !initialMessageEl.innerHTML.includes('获取') && !initialMessageEl.innerHTML.includes('创建')) {
+                    initialMessageEl.innerHTML = `<i class="fas fa-times-circle"></i> 登录失败或系统初始化失败: ${error.message}<br>通用建议：请仔细检查您的Token权限、GitHub Pages配置和网络连接。`;
+                }
                 initialMessageEl.style.color = 'var(--danger-color)';
+                token = null;
                 localStorage.removeItem('github_token');
             } finally {
                 setButtonsDisabled(false);
             }
         };
 
-        // ==================== Dashboard, Post, Media, Settings Logic here... (Full functions not collapsed) ====================
-        
-        // RENDER DASHBOARD
+        // ==================== Dashboard Logic ====================
         function renderDashboard() {
             const uniqueCategories = new Set(posts.map(p => p.category).filter(Boolean));
             const allTags = posts.flatMap(p => p.tags || []);
@@ -1064,108 +1297,164 @@
             }
         }
 
-        // POST MANAGEMENT
+        // ==================== 文章管理功能 ====================
         const renderPostList = () => {
-             postListBody.innerHTML = '';
-             if (posts.length === 0) {
-                 postListBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">暂无文章。</td></tr>`;
-                 return;
-             }
-             [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(post => {
-                 const tr = document.createElement('tr');
-                 tr.innerHTML = `<td>${post.title}</td><td>${post.category || 'N/A'}</td><td>${(post.tags||[]).join(', ')}</td><td>${new Date(post.createdAt).toLocaleDateString()}</td><td>${new Date(post.updatedAt).toLocaleDateString()}</td><td class="actions"><a href="#" class="edit" data-id="${post.id}"><i class="fas fa-edit"></i></a><a href="#" class="delete" data-id="${post.id}"><i class="fas fa-trash-alt"></i></a><a href="index.html#/post/${post.id}" target="_blank" class="link"><i class="fas fa-external-link-alt"></i></a></td>`;
-                 postListBody.appendChild(tr);
-             });
-        };
-        const openEditor = (postId = null) => {
-             showAdminView('editor');
-             const post = posts.find(p => p.id === postId);
-             document.getElementById('editor-title').innerHTML = `<i class="fas fa-edit"></i> ${post ? '编辑文章' : '撰写新文章'}`;
-             document.getElementById('save-post-btn').innerHTML = `<i class="fas fa-upload"></i> ${post ? '更新文章' : '发布文章'}`;
-             document.getElementById('post-id').value = post?.id || '';
-             document.getElementById('post-title').value = post?.title || '';
-             document.getElementById('post-category').value = post?.category || '';
-             const tagTokenContainer = document.getElementById('tag-token-container');
-             tagTokenContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
-             const tagsInput = document.getElementById('post-tags-input');
-             if (post && post.tags && Array.isArray(post.tags)) { post.tags.forEach(tag => addTagToInput(tag, tagsInput)); }
-             tagsInput.value = '';
-             document.getElementById('post-tags').value = JSON.stringify(post?.tags || []);
-             if (easyMDE) { easyMDE.value(post?.content || ''); } else { document.getElementById('post-content').value = post?.content || ''; initializeEasyMDE(); }
-             document.getElementById('delete-post-btn').style.display = post ? 'inline-flex' : 'none';
-        };
-        const savePost = async () => {
-             const id = document.getElementById('post-id').value;
-             const title = document.getElementById('post-title').value.trim();
-             if (!title || !easyMDE.value().trim()) { showAlert('标题和内容不能为空！', 'danger'); return; }
-             setButtonsDisabled(true);
-             const postData = {
-                 title,
-                 category: document.getElementById('post-category').value.trim() || '未分类',
-                 content: easyMDE.value(),
-                 tags: JSON.parse(document.getElementById('post-tags').value || '[]'),
-                 updatedAt: new Date().toISOString()
-             };
-             const postIndex = posts.findIndex(p => p.id === id);
-             if (postIndex > -1) {
-                 posts[postIndex] = { ...posts[postIndex], ...postData };
-             } else {
-                 posts.unshift({ ...postData, id: `post_${Date.now()}`, createdAt: new Date().toISOString() });
-             }
-             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: ${id ? 'update' : 'create'} post "${title}"`);
-                 postsSha = res.content.sha;
-                 showAlert('文章保存成功！', 'success');
-                 updateUniqueTags();
-                 renderPostList();
-                 showAdminView('posts');
-             } catch (error) { showAlert(`文章保存失败: ${error.message}`, 'danger'); } finally { setButtonsDisabled(false); }
-        };
-        const deletePost = async (postId) => {
-             if (!postId || !confirm('确定要删除这篇文章吗？')) return;
-             setButtonsDisabled(true);
-             const postToDelete = posts.find(p => p.id === postId);
-             posts = posts.filter(p => p.id !== postId);
-             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: delete post "${postToDelete.title}"`);
-                 postsSha = res.content.sha;
-                 showAlert('文章删除成功！', 'success');
-                 updateUniqueTags();
-                 renderPostList();
-                 showAdminView('posts');
-             } catch (error) { showAlert(`文章删除失败: ${error.message}`, 'danger'); posts.push(postToDelete); /* Rollback */ } finally { setButtonsDisabled(false); }
+            postListBody.innerHTML = '';
+            if (posts.length === 0) {
+                postListBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">暂无文章。点击“撰写新文章”开始创作吧！</td></tr>`;
+                return;
+            }
+
+            [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(post => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${post.title}</td>
+                    <td>${post.category || '未分类'}</td>
+                    <td>${post.tags && post.tags.length > 0 ? post.tags.slice(0, 3).join(', ') + (post.tags.length > 3 ? '...' : '') : '无标签'}</td>
+                    <td>${new Date(post.createdAt).toLocaleDateString()}</td>
+                    <td>${new Date(post.updatedAt).toLocaleDateString()}</td>
+                    <td class="actions">
+                        <a href="#" class="edit" data-id="${post.id}" title="编辑"><i class="fas fa-edit"></i></a>
+                        <a href="#" class="delete" data-id="${post.id}" title="删除"><i class="fas fa-trash-alt"></i></a>
+                        <a href="index.html#/post/${post.id}" target="_blank" class="link" title="预览"><i class="fas fa-external-link-alt"></i></a>
+                    </td>
+                `;
+                postListBody.appendChild(tr);
+            });
         };
 
-        // MEDIA LIBRARY
-        async function loadMediaLibrary() {
-            const grid = document.getElementById('media-library-grid');
-            grid.innerHTML = '<p>正在加载媒体文件...</p>';
+        const openEditor = (postId = null) => {
+            switchView('editor');
+            const post = posts.find(p => p.id === postId);
+            document.getElementById('editor-title').innerHTML = `<i class="fas fa-edit"></i> ${post ? '编辑文章' : '撰写新文章'}`;
+            document.getElementById('save-post-btn').innerHTML = `<i class="fas fa-upload"></i> ${post ? '更新文章' : '发布文章'}`;
+            document.getElementById('post-id').value = post?.id || '';
+            document.getElementById('post-title').value = post?.title || '';
+            document.getElementById('post-category').value = post?.category || '';
+            // 清空并重新生成标签输入
+            const tagTokenContainer = document.getElementById('tag-token-container');
+            tagTokenContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
+            const tagsInput = document.getElementById('post-tags-input');
+            if (post && post.tags && Array.isArray(post.tags)) {
+                post.tags.forEach(tag => addTagToInput(tag, tagsInput));
+            }
+            tagsInput.value = ''; // 确保输入框清空
+            document.getElementById('post-tags').value = JSON.stringify(post?.tags || []);
+
+
+            // EasyMDE 赋值
+            if (easyMDE) {
+                easyMDE.value(post?.content || '');
+            } else {
+                document.getElementById('post-content').value = post?.content || '';
+                initializeEasyMDE(); // 确保EasyMDE被初始化 (this will be handled by switchView)
+            }
+            
+            document.getElementById('delete-post-btn').style.display = post ? 'inline-flex' : 'none';
+        };
+
+        const savePost = async () => {
+            const id = document.getElementById('post-id').value;
+            const title = document.getElementById('post-title').value.trim();
+            const category = document.getElementById('post-category').value.trim() || '未分类';
+            const content = easyMDE.value().trim(); // 从 EasyMDE 获取内容
+            if (!title || !content) { showAlert('标题和内容不能为空！', 'danger'); return; }
+            
+            setButtonsDisabled(true);
+            const tags = JSON.parse(document.getElementById('post-tags').value || '[]');
+
+            const postIndex = posts.findIndex(p => p.id === id);
+            const now = new Date().toISOString();
+
+            if (postIndex > -1) {
+                // 更新现有文章
+                Object.assign(posts[postIndex], { title, category, content, tags, updatedAt: now });
+            } else {
+                // 创建新文章
+                posts.unshift({ id: `post_${Date.now()}`, title, category, content, tags, createdAt: now, updatedAt: now });
+            }
+            // 重新排序文章，确保最新文章在前面
+            posts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
             try {
+                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: ${id ? 'update' : 'create'} post "${title}"`);
+                postsSha = res.content.sha;
+                showAlert('文章保存成功！', 'success');
+                // 更新标签建议列表
+                updateUniqueTags();
+                renderPostList();
+                switchView('posts');
+            } catch (error) {
+                showAlert(`文章保存失败: ${error.message}`, 'danger');
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        const deletePost = async (postId) => {
+            if (!postId || !confirm('确定要删除这篇文章吗？操作不可逆！')) return;
+            setButtonsDisabled(true);
+            const postToDelete = posts.find(p => p.id === postId);
+            if (!postToDelete) {
+                showAlert('文章未找到！', 'danger');
+                setButtonsDisabled(false);
+                return;
+            }
+            posts = posts.filter(p => p.id !== postId);
+            try {
+                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('posts.json'), JSON.stringify(posts, null, 2), postsSha, `docs: delete post "${postToDelete.title}"`);
+                postsSha = res.content.sha;
+                showAlert('文章删除成功！', 'success');
+                // 更新标签建议列表
+                updateUniqueTags();
+                renderPostList();
+                switchView('posts');
+            } catch (error) {
+                showAlert(`文章删除失败: ${error.message}`, 'danger');
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+        // ==================== 媒体库功能 ====================
+        async function loadMediaLibrary(targetGridId = 'media-library-grid') {
+            const grid = document.getElementById(targetGridId);
+            if (!grid) {
+                console.error(`Media library grid element with ID ${targetGridId} not found.`);
+                return;
+            }
+            grid.innerHTML = '<p style="text-align: center; color: var(--meta-color);">正在加载媒体文件...</p>';
+            try {
+                // Get contents of the 'images' directory
                 const files = await GitHubAPI.getDirectoryContents(token, owner, repo, getPath('images'));
-                grid.innerHTML = '';
+                grid.innerHTML = ''; // Clear loading message
                 if (files && files.length > 0) {
-                    files.filter(file => file.type === 'file' && (file.name.endsWith('.gitkeep') === false)).forEach(file => {
+                    files.filter(file => file.type === 'file' && !file.name.endsWith('.gitkeep')).forEach(file => {
                         const card = document.createElement('div');
                         card.className = 'media-card';
+                        card.setAttribute('data-url', file.download_url); // Store URL for easy access
+                        card.setAttribute('data-path', file.path);
+                        card.setAttribute('data-sha', file.sha);
                         card.innerHTML = `
                             <div class="image-container">
                                 <img src="${file.download_url}" alt="${file.name}" loading="lazy">
                             </div>
-                            <div class="info">${file.name}</div>
+                            <div class="info" title="${file.name}">${file.name}</div>
                             <div class="actions">
-                                <button class="btn btn-secondary copy-url-btn" data-url="${file.download_url}"><i class="fas fa-copy"></i></button>
-                                <button class="btn btn-danger delete-media-btn" data-path="${file.path}" data-sha="${file.sha}"><i class="fas fa-trash"></i></button>
+                                <button class="btn btn-secondary copy-url-btn" data-url="${file.download_url}" title="复制URL"><i class="fas fa-copy"></i></button>
+                                <button class="btn btn-danger delete-media-btn" data-path="${file.path}" data-sha="${file.sha}" title="删除"><i class="fas fa-trash"></i></button>
                             </div>
                         `;
                         grid.appendChild(card);
                     });
                 } else {
-                     grid.innerHTML = '<p>媒体库为空。请上传一些图片。</p>';
+                     grid.innerHTML = '<p style="text-align: center; color: var(--meta-color);">媒体库为空。请上传一些图片。</p>';
                 }
             } catch (error) {
-                grid.innerHTML = `<p class="alert alert-danger">加载媒体库失败: ${error.message}</p>`;
+                grid.innerHTML = `<p class="alert alert-danger" style="margin-top: 20px;">加载媒体库失败: ${error.message}</p>`;
             }
         }
+
         async function deleteMediaFile(path, sha) {
             if (!confirm(`确定要删除图片 ${path.split('/').pop()} 吗？此操作不可逆，且可能导致文章中的图片失效。`)) return;
             setButtonsDisabled(true);
@@ -1173,6 +1462,9 @@
                 await GitHubAPI.deleteFile(token, owner, repo, path, sha, `feat: delete image ${path}`);
                 showAlert('图片删除成功！', 'success');
                 loadMediaLibrary(); // Refresh view
+                if (document.getElementById('media-library-modal').style.display === 'flex') {
+                    loadMediaLibrary('modal-media-library-grid'); // Also refresh modal
+                }
             } catch (error) {
                 showAlert(`删除失败: ${error.message}`, 'danger');
             } finally {
@@ -1180,171 +1472,486 @@
             }
         }
 
-        // SETTINGS
+        // ==================== 网站设置功能 ====================
         const populateSettings = () => {
-             document.getElementById('setting-title').value = config.site.title;
-             document.getElementById('setting-description').value = config.site.description;
-             document.getElementById('setting-about-content').value = config.site.aboutContent;
-             document.getElementById('setting-bg-color').value = config.styling.backgroundColor;
-             document.getElementById('setting-text-color').value = config.styling.textColor;
-             document.getElementById('setting-accent-color').value = config.styling.accentColor;
-             document.getElementById('setting-bg-image-url').value = config.styling.backgroundImageUrl;
-        };
-        const saveSettings = async () => {
-             setButtonsDisabled(true);
-             config.site = { title: document.getElementById('setting-title').value.trim(), description: document.getElementById('setting-description').value.trim(), aboutContent: document.getElementById('setting-about-content').value.trim() };
-             config.styling = { backgroundColor: document.getElementById('setting-bg-color').value, textColor: document.getElementById('setting-text-color').value, accentColor: document.getElementById('setting-accent-color').value, backgroundImageUrl: document.getElementById('setting-bg-image-url').value.trim() };
-             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(config, null, 2), configSha, 'conf: update website settings');
-                 configSha = res.content.sha;
-                 showAlert('网站设置已保存！', 'success');
-             } catch (error) { showAlert(`设置保存失败: ${error.message}`, 'danger'); } finally { setButtonsDisabled(false); }
-        };
-        const populateGitalkSettings = () => {
-             const g = config.gitalk || {};
-             document.getElementById('gitalk-enabled').checked = g.enabled;
-             document.getElementById('gitalk-clientID').value = g.clientID || '';
-             document.getElementById('gitalk-clientSecret').value = g.clientSecret || '';
-             document.getElementById('gitalk-repo').value = g.repo || repo;
-             document.getElementById('gitalk-owner').value = g.owner || owner;
-             document.getElementById('gitalk-admin').value = (g.admin || []).join(', ');
-        };
-        const saveGitalkSettings = async () => {
-             setButtonsDisabled(true);
-             const adminArray = document.getElementById('gitalk-admin').value.split(',').map(name => name.trim()).filter(Boolean);
-             config.gitalk = {
-                 enabled: document.getElementById('gitalk-enabled').checked,
-                 clientID: document.getElementById('gitalk-clientID').value.trim(),
-                 clientSecret: document.getElementById('gitalk-clientSecret').value.trim(),
-                 repo: document.getElementById('gitalk-repo').value.trim(),
-                 owner: document.getElementById('gitalk-owner').value.trim(),
-                 admin: adminArray
-             };
-             if (config.gitalk.enabled && (!config.gitalk.clientID || !config.gitalk.clientSecret)) { showAlert('启用评论时，Client ID和Secret为必填项！', 'danger'); setButtonsDisabled(false); return; }
-             try {
-                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(config, null, 2), configSha, 'conf: update Gitalk settings');
-                 configSha = res.content.sha;
-                 showAlert('评论设置已保存！', 'success');
-             } catch (error) { showAlert(`评论设置保存失败: ${error.message}`, 'danger'); } finally { setButtonsDisabled(false); }
-        };
-
-        // FILE UPLOADS
-        const uploadFile = async (file, uploadPath, message) => {
-             return new Promise((resolve, reject) => {
-                 const reader = new FileReader();
-                 reader.onload = async (e) => {
-                     const content = e.target.result.split(',')[1];
-                     const blobPath = getPath(`${uploadPath}/${new Date().toISOString().replace(/[-:.]/g, '')}_${file.name}`);
-                     try {
-                         const result = await GitHubAPI.createFile(token, owner, repo, blobPath, content, message, true);
-                         resolve(result.content.download_url);
-                     } catch (error) { reject(error); }
-                 };
-                 reader.onerror = (error) => reject(error);
-                 reader.readAsDataURL(file);
-             });
+            document.getElementById('setting-title').value = config.site.title || '';
+            document.getElementById('setting-description').value = config.site.description || '';
+            document.getElementById('setting-about-content').value = config.site.aboutContent || '';
+            document.getElementById('setting-bg-color').value = config.styling.backgroundColor || '#f8f9fa';
+            document.getElementById('setting-text-color').value = config.styling.textColor || '#212529';
+            document.getElementById('setting-accent-color').value = config.styling.accentColor || '#0d6efd';
+            
+            const bgImageUrl = config.styling.backgroundImageUrl;
+            document.getElementById('setting-bg-image-url').value = bgImageUrl || '';
+            const bgImagePreview = document.getElementById('setting-bg-image-preview');
+            if (bgImageUrl) {
+                bgImagePreview.innerHTML = `<img src="${bgImageUrl}" alt="背景图预览">`;
+                document.getElementById('upload-bg-image-btn').style.display = 'none'; // 已经有图就隐藏上传按钮
+            } else {
+                bgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                // Only show upload button if no URL is set AND a file is selected (or default state)
+                document.getElementById('upload-bg-image-btn').style.display = document.getElementById('setting-bg-image').files.length > 0 ? 'inline-flex' : 'none';
+            }
         };
         
-        // EDITOR and TAGS
-        const initializeEasyMDE = () => {
-             if (easyMDE) return;
-             easyMDE = new EasyMDE({ element: document.getElementById('post-content'), spellChecker: false, forceSync: true,
-                 toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "upload-image", "|", "table", "horizontal-rule", "|", "preview", "side-by-side", "fullscreen", "|", "guide" ],
-                 customIcons: { "upload-image": "<i class='fas fa-image fa-fw'></i>" }
-             });
-             easyMDE.toolbar.find(item => item.name === 'upload-image').action = () => {
-                 const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
-                 input.onchange = async e => {
-                     const file = e.target.files[0]; if (!file) return;
-                     setButtonsDisabled(true); showAlert(`正在上传图片...`, 'info', 'img-upload');
-                     try {
-                         const imageUrl = await uploadFile(file, 'images', `feat: upload image "${file.name}"`);
-                         const markdownImage = `![${file.name}](${imageUrl})`;
-                         easyMDE.codemirror.replaceSelection(markdownImage);
-                         showAlert(`图片上传成功！`, 'success', 'img-upload');
-                     } catch (error) { showAlert(`上传失败: ${error.message}`, 'danger', 'img-upload'); } finally { setButtonsDisabled(false); }
-                 };
-                 input.click();
-             };
+        const saveSettings = async () => {
+            setButtonsDisabled(true);
+            const newConfig = JSON.parse(JSON.stringify(config)); // 深拷贝
+            newConfig.site = {
+                title: document.getElementById('setting-title').value.trim(),
+                description: document.getElementById('setting-description').value.trim(),
+                aboutContent: document.getElementById('setting-about-content').value.trim(),
+            };
+            newConfig.styling = {
+                backgroundColor: document.getElementById('setting-bg-color').value,
+                textColor: document.getElementById('setting-text-color').value,
+                accentColor: document.getElementById('setting-accent-color').value,
+                backgroundImageUrl: document.getElementById('setting-bg-image-url').value.trim(),
+            };
+
+            try {
+                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(newConfig, null, 2), configSha, 'conf: update website settings');
+                configSha = res.content.sha;
+                config = newConfig; // 更新本地配置
+                showAlert('网站设置已保存！', 'success');
+            } catch (error) {
+                showAlert(`网站设置保存失败: ${error.message}`, 'danger');
+            } finally {
+                setButtonsDisabled(false);
+            }
         };
-        const allUniqueTags = new Set();
-        const updateUniqueTags = () => { allUniqueTags.clear(); posts.forEach(post => { (post.tags || []).forEach(tag => allUniqueTags.add(tag)); }); };
+        
+        // ==================== Gitalk 评论设置功能 ====================
+        const populateGitalkSettings = () => {
+            const gitalkConfig = config.gitalk || {};
+            document.getElementById('gitalk-enabled').checked = !!gitalkConfig.enabled;
+            document.getElementById('gitalk-clientID').value = gitalkConfig.clientID || '';
+            document.getElementById('gitalk-clientSecret').value = gitalkConfig.clientSecret || '';
+            document.getElementById('gitalk-repo').value = gitalkConfig.repo || repo; // Default to current blog repo
+            document.getElementById('gitalk-owner').value = gitalkConfig.owner || owner; // Default to current owner
+            document.getElementById('gitalk-admin').value = (gitalkConfig.admin && Array.isArray(gitalkConfig.admin) ? gitalkConfig.admin.join(', ') : gitalkConfig.admin || '');
+        };
+
+        const saveGitalkSettings = async () => {
+            setButtonsDisabled(true);
+            const newConfig = JSON.parse(JSON.stringify(config)); // 深拷贝
+            const gitalkAdminRaw = document.getElementById('gitalk-admin').value.trim();
+            const gitalkAdminArray = gitalkAdminRaw.split(',').map(name => name.trim()).filter(Boolean);
+
+            newConfig.gitalk = {
+                enabled: document.getElementById('gitalk-enabled').checked,
+                clientID: document.getElementById('gitalk-clientID').value.trim(),
+                clientSecret: document.getElementById('gitalk-clientSecret').value.trim(),
+                repo: document.getElementById('gitalk-repo').value.trim(),
+                owner: document.getElementById('gitalk-owner').value.trim(),
+                admin: gitalkAdminArray,
+            };
+
+            // 验证必填字段
+            if (newConfig.gitalk.enabled && (!newConfig.gitalk.clientID || !newConfig.gitalk.clientSecret || !newConfig.gitalk.repo || !newConfig.gitalk.owner)) {
+                showAlert('启用 Gitalk 评论时，Client ID, Client Secret, Repo, Owner 都是必填项！', 'danger');
+                setButtonsDisabled(false);
+                return;
+            }
+
+            try {
+                const res = await GitHubAPI.updateFile(token, owner, repo, getPath('config.json'), JSON.stringify(newConfig, null, 2), configSha, 'conf: update Gitalk settings');
+                configSha = res.content.sha;
+                config = newConfig; // 更新本地配置
+                showAlert('Gitalk 评论设置已保存！', 'success');
+            } catch (error) {
+                showAlert(`Gitalk 评论设置保存失败: ${error.message}`, 'danger');
+            } finally {
+                setButtonsDisabled(false);
+            }
+        };
+
+
+        // ==================== 文件上传功能 (通用，用于图片) ====================
+        const uploadFile = async (file, uploadPath, message) => {
+            if (!file) return;
+            // setButtonsDisabled(true); // Disable outside, as this is often called in a loop for multiple files
+            const reader = new FileReader();
+            return new Promise((resolve, reject) => {
+                reader.onload = async (e) => {
+                    // content 是 base64 编码的二进制数据
+                    const content = e.target.result.split(',')[1];
+                    const safeFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_'); // Sanitize filename
+                    // 构建 GitHub 内部路径
+                    const blobPath = getPath(`${uploadPath}/${new Date().toISOString().replace(/[-:.]/g, '')}_${safeFileName}`);
+                    try {
+                        const result = await GitHubAPI.createFile(token, owner, repo, blobPath, content, message, true);
+                        resolve(result.content.download_url); // 返回可访问的 raw.githubusercontent.com URL
+                    } catch (error) {
+                        reject(error);
+                    } /* finally { setButtonsDisabled(false); } */
+                };
+                reader.onerror = (error) => {
+                    reject(error);
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+
+        // ==================== EasyMDE 初始化及图片上传集成 ====================
+        const initializeEasyMDE = () => {
+            if (easyMDE) return; // 避免重复初始化
+
+            easyMDE = new EasyMDE({
+                element: document.getElementById('post-content'),
+                spellChecker: false,
+                forceSync: true, // 确保 textarea 的值始终与编辑器同步
+                toolbar: [
+                    "bold", "italic", "heading", "|",
+                    "quote", "unordered-list", "ordered-list", "|",
+                    "link", "image", "|",
+                    {
+                        name: "upload-image-to-git", // Old icon
+                        action: EasyMDE.toggleImage,
+                        className: "fa fa-picture-o",
+                        title: "Insert Image (URL)",
+                    },
+                    {
+                        name: "upload-media-library", // New custom button
+                        action: showMediaLibraryModal,
+                        className: "fa fa-folder-open",
+                        title: "从媒体库插入图片",
+                    },
+                    "table", "horizontal-rule", "|",
+                    "preview", "side-by-side", "fullscreen", "|",
+                    "guide"
+                ],
+            });
+
+            // Re-map EasyMDE's default image button to our GitHub upload
+            easyMDE.toolbar.find(item => item.name === 'upload-image-to-git').action = () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        setButtonsDisabled(true); // 禁用按钮防止重复操作
+                        showAlert(`正在上传图片 ${file.name}...`, 'info', 'image-upload-alert');
+
+                        try {
+                            const imageUrl = await uploadFile(file, 'images', `feat: upload image "${file.name}" for post`);
+                            // const ghProxyUrl = `https://gh-proxy.com/${imageUrl}`; // Use proxy if needed
+                            const markdownImage = `![${file.name.split('.')[0]}](${imageUrl})`; // Use direct URL
+                            
+                            // Insert into editor at cursor position
+                            const cm = easyMDE.codemirror;
+                            const pos = cm.getCursor();
+                            cm.replaceRange(markdownImage, pos);
+                            showAlert(`图片 ${file.name} 上传成功并已插入！`, 'success', 'image-upload-alert');
+                        } catch (error) {
+                            // Error already handled by uploadFile
+                        } finally {
+                            setButtonsDisabled(false);
+                            // Clear file input to allow re-upload of same file
+                            e.target.value = '';
+                        }
+                    }
+                };
+                input.click();
+            };
+        };
+
+        // Media Library Modal functionality
+        const mediaLibraryModal = document.getElementById('media-library-modal');
+        const modalCloseButton = mediaLibraryModal.querySelector('.close-button');
+        const modalMediaLibraryGrid = document.getElementById('modal-media-library-grid');
+
+        function showMediaLibraryModal() {
+            mediaLibraryModal.style.display = 'flex'; // Show modal
+            loadMediaLibrary('modal-media-library-grid'); // Load media into modal grid
+        }
+
+        modalCloseButton.onclick = () => {
+            mediaLibraryModal.style.display = 'none'; // Hide modal
+        };
+
+        window.onclick = (event) => {
+            if (event.target == mediaLibraryModal) {
+                mediaLibraryModal.style.display = 'none'; // Click outside closes modal
+            }
+        };
+
+        modalMediaLibraryGrid.addEventListener('click', (e) => {
+            const mediaCard = e.target.closest('.media-card');
+            if (mediaCard) {
+                const imageUrl = mediaCard.dataset.url;
+                if (imageUrl && easyMDE) { // Ensure EasyMDE is initialized
+                    const fileName = decodeURIComponent(imageUrl.split('/').pop().split('_').slice(1).join('_')); // Extract readable filename
+                    const markdownImage = `![${fileName}](${imageUrl})`;
+                    easyMDE.codemirror.replaceSelection(markdownImage); // Insert into editor
+                    showAlert(`图片 ${fileName} 已插入文章！`, 'success');
+                    mediaLibraryModal.style.display = 'none'; // Close modal
+                }
+            }
+        });
+
+
+        // ==================== 标签输入管理 ====================
+        const allUniqueTags = new Set(); // 存储所有文章中出现的唯一标签
+        const updateUniqueTags = () => {
+            allUniqueTags.clear();
+            posts.forEach(post => {
+                if (post.tags && Array.isArray(post.tags)) {
+                    post.tags.forEach(tag => allUniqueTags.add(tag));
+                }
+            });
+        };
+
         const addTagToInput = (tagText, inputElement) => {
-            tagText = tagText.trim(); if (!tagText) return;
+            tagText = tagText.trim();
+            if (!tagText) return;
+
             const tagsContainer = document.getElementById('tag-token-container');
             let currentTags = JSON.parse(document.getElementById('post-tags').value || '[]');
+
             if (!currentTags.includes(tagText)) {
                 currentTags.push(tagText);
                 document.getElementById('post-tags').value = JSON.stringify(currentTags);
+
                 const tagToken = document.createElement('span');
                 tagToken.className = 'tag-token';
                 tagToken.innerHTML = `${tagText} <i class="fas fa-times remove-tag"></i>`;
-                tagToken.querySelector('.remove-tag').addEventListener('click', () => removeTagFromInput(tagText, inputElement));
+                tagToken.querySelector('.remove-tag').addEventListener('click', () => {
+                    removeTagFromInput(tagText, inputElement);
+                });
                 tagsContainer.insertBefore(tagToken, inputElement);
             }
         };
+
         const removeTagFromInput = (tagText, inputElement) => {
             let currentTags = JSON.parse(document.getElementById('post-tags').value || '[]');
             currentTags = currentTags.filter(tag => tag !== tagText);
             document.getElementById('post-tags').value = JSON.stringify(currentTags);
+            // 重新渲染标签 tokens
             const tagsContainer = document.getElementById('tag-token-container');
             tagsContainer.querySelectorAll('.tag-token').forEach(tagEl => tagEl.remove());
-            currentTags.forEach(tag => addTagToInput(tag, inputElement));
+            currentTags.forEach(tag => addTagToInput(tag, inputElement)); // Re-add existing tags
         };
 
-        // EVENT BINDING
+        // Tag suggestions
         document.addEventListener('DOMContentLoaded', () => {
-            startBtn.onclick = startAdmin; tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAdmin(); });
-            
-            navButtons.dashboard.onclick = () => showAdminView('dashboard');
-            navButtons.posts.onclick = () => { showAdminView('posts'); renderPostList(); };
-            navButtons.media.onclick = () => showAdminView('media');
-            navButtons.settings.onclick = () => { showAdminView('settings'); populateSettings(); };
-            navButtons.gitalkSettings.onclick = () => { showAdminView('gitalk-settings'); populateGitalkSettings(); };
-            navButtons.logout.onclick = () => { if (confirm('确定要退出吗？')) { localStorage.removeItem('github_token'); location.reload(); } };
+            const tagsInput = document.getElementById('post-tags-input');
+            const tagSuggestionsBox = document.getElementById('tag-suggestions');
+            const tagTokenContainer = document.getElementById('tag-token-container');
 
-            document.getElementById('dashboard-new-post-btn').onclick = () => openEditor();
-            document.getElementById('dashboard-settings-btn').onclick = () => showAdminView('settings');
-            document.getElementById('dashboard-recent-posts').addEventListener('click', e => { if(e.target.matches('.edit-link')) { e.preventDefault(); openEditor(e.target.dataset.id); }});
-            
-            document.getElementById('new-post-btn').onclick = () => openEditor();
-            document.getElementById('save-post-btn').onclick = savePost;
-            document.getElementById('cancel-edit-btn').onclick = () => showAdminView('posts');
-            document.getElementById('delete-post-btn').onclick = () => deletePost(document.getElementById('post-id').value);
-            postListBody.addEventListener('click', e => {
-                 if (e.target.closest('.edit')) { e.preventDefault(); openEditor(e.target.closest('a').dataset.id); }
-                 if (e.target.closest('.delete')) { e.preventDefault(); deletePost(e.target.closest('a').dataset.id); }
+            tagsInput.addEventListener('focus', () => {
+                if (posts.length > 0) { showTagSuggestions(tagsInput.value.trim().toLowerCase()); }
+            });
+            tagsInput.addEventListener('blur', (e) => {
+                setTimeout(() => { if (!tagSuggestionsBox.contains(document.activeElement)) { tagSuggestionsBox.style.display = 'none'; }}, 100);
+            });
+            tagsInput.addEventListener('input', () => {
+                const inputValue = tagsInput.value.toLowerCase().trim();
+                showTagSuggestions(inputValue);
             });
 
+            tagsInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const inputValue = tagsInput.value.trim();
+                    if (inputValue) {
+                        addTagToInput(inputValue, tagsInput);
+                        tagsInput.value = '';
+                        tagSuggestionsBox.style.display = 'none';
+                    }
+                } else if (e.key === 'Backspace' && tagsInput.value === '') {
+                    const lastTagToken = tagTokenContainer.querySelector('.tag-token:last-of-type');
+                    if (lastTagToken) {
+                        const tagText = lastTagToken.textContent.split(' ')[0].trim();
+                        removeTagFromInput(tagText, tagsInput);
+                    }
+                }
+            });
+            tagTokenContainer.addEventListener('click', (e) => {
+                if (e.target === tagTokenContainer || e.target.classList.contains('tag-token')) {
+                    tagsInput.focus();
+                }
+            });
+
+            const showTagSuggestions = (query) => {
+                tagSuggestionsBox.innerHTML = '';
+                const filteredSuggestions = Array.from(allUniqueTags).filter(tag => tag.toLowerCase().includes(query)).sort();
+
+                if (filteredSuggestions.length > 0) {
+                    filteredSuggestions.forEach(tag => {
+                        const div = document.createElement('div');
+                        div.textContent = tag;
+                        div.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            addTagToInput(tag, tagsInput);
+                            tagsInput.value = '';
+                            tagSuggestionsBox.style.display = 'none';
+                        });
+                        tagSuggestionsBox.appendChild(div);
+                    });
+                     // Position suggestions box correctly
+                    const inputRect = tagsInput.getBoundingClientRect();
+                    const containerRect = tagTokenContainer.getBoundingClientRect();
+                    tagSuggestionsBox.style.top = `${containerRect.height + 5}px`; 
+                    tagSuggestionsBox.style.left = `0`;
+                    tagSuggestionsBox.style.width = `${tagTokenContainer.offsetWidth}px`;
+
+                    tagSuggestionsBox.style.display = 'block';
+                } else {
+                    tagSuggestionsBox.style.display = 'none';
+                }
+            };
+        });
+
+
+        // ==================== 事件绑定 ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 登录
+            startBtn.onclick = startAdmin;
+            tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAdmin(); });
+            
+            // 导航
+            navButtons.dashboard.onclick = () => switchView('dashboard');
+            navButtons.posts.onclick = () => { switchView('posts'); renderPostList(); }; // Re-render post list
+            navButtons.media.onclick = () => switchView('media');
+            navButtons.settings.onclick = () => { switchView('settings'); populateSettings(); };
+            navButtons.gitalkSettings.onclick = () => { switchView('gitalkSettings'); populateGitalkSettings(); };
+            navButtons.logout.onclick = () => {
+                if (confirm('确定要安全退出吗？')) {
+                    localStorage.removeItem('github_token');
+                    location.reload(); // 重新加载页面，回到登录界面
+                }
+            };
+
+            // Dashboard Quick Actions
+            document.getElementById('dashboard-new-post-btn').onclick = () => openEditor();
+            document.getElementById('dashboard-settings-btn').onclick = () => switchView('settings');
+            document.getElementById('dashboard-recent-posts').addEventListener('click', e => {
+                if(e.target.matches('.edit-link')) { e.preventDefault(); openEditor(e.target.dataset.id); }
+            });
+
+            // 文章管理
+            document.getElementById('new-post-btn').onclick = () => openEditor();
+            document.getElementById('cancel-edit-btn').onclick = () => {
+                 switchView('posts');
+                 showAlert('已取消文章编辑。', 'info');
+            };
+            document.getElementById('save-post-btn').onclick = savePost;
+            document.getElementById('delete-post-btn').onclick = () => deletePost(document.getElementById('post-id').value);
+            postListBody.addEventListener('click', (e) => {
+                if (e.target.closest('.edit')) { e.preventDefault(); openEditor(e.target.closest('a').dataset.id); }
+                if (e.target.closest('.delete')) { e.preventDefault(); deletePost(e.target.closest('a').dataset.id); }
+            });
+
+            // 媒体库
             document.getElementById('media-upload-btn').onclick = () => document.getElementById('media-upload-input').click();
             document.getElementById('media-upload-input').onchange = async (e) => {
-                const files = e.target.files; if (!files.length) return; setButtonsDisabled(true);
-                showAlert(`正在上传 ${files.length} 个图片...`, 'info', 'media-upload');
+                const files = e.target.files;
+                if (!files.length) return;
+                setButtonsDisabled(true); // Disable all buttons while uploading
+                showAlert(`正在上传 ${files.length} 个图片...`, 'info', 'media-upload-alert');
                 try {
-                    await Promise.all([...files].map(file => uploadFile(file, 'images', `feat: upload image from media library "${file.name}"`)));
-                    showAlert(`图片上传完成！`, 'success', 'media-upload');
-                    loadMediaLibrary();
-                } catch(error) { showAlert(`上传失败: ${error.message}`, 'danger', 'media-upload'); } finally { setButtonsDisabled(false); }
-                e.target.value = ''; // Reset input
+                    const uploadPromises = Array.from(files).map(file => 
+                        uploadFile(file, 'images', `feat: upload image from media library "${file.name}"`)
+                    );
+                    await Promise.all(uploadPromises);
+                    showAlert(`所有图片上传完成！`, 'success', 'media-upload-alert');
+                    loadMediaLibrary(); // Refresh media library
+                } catch (error) {
+                    showAlert(`图片上传失败: ${error.message}`, 'danger', 'media-upload-alert');
+                } finally {
+                    setButtonsDisabled(false);
+                    e.target.value = ''; // Clear file input
+                }
             };
             document.getElementById('media-library-grid').addEventListener('click', e => {
                  if(e.target.closest('.copy-url-btn')) copyToClipboard(e.target.closest('.copy-url-btn').dataset.url);
                  if(e.target.closest('.delete-media-btn')) { const btn = e.target.closest('.delete-media-btn'); deleteMediaFile(btn.dataset.path, btn.dataset.sha); }
             });
             
+            // 网站设置
             document.getElementById('save-settings-btn').onclick = saveSettings;
-            document.getElementById('upload-bg-image-btn').onclick = async () => { /* ... */ };
-            document.getElementById('clear-bg-image-btn').onclick = () => { /* ... */ };
+            
+            // 背景图上传处理
+            const settingBgImageInput = document.getElementById('setting-bg-image');
+            const settingBgImageUrlInput = document.getElementById('setting-bg-image-url');
+            const uploadBgImageBtn = document.getElementById('upload-bg-image-btn');
+            const clearBgImageBtn = document.getElementById('clear-bg-image-btn');
+            const settingBgImagePreview = document.getElementById('setting-bg-image-preview');
+
+            settingBgImageInput.onchange = (e) => {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        settingBgImagePreview.innerHTML = `<img src="${e.target.result}" alt="背景图预览">`;
+                        uploadBgImageBtn.style.display = 'inline-flex';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                    uploadBgImageBtn.style.display = 'none';
+                }
+            };
+            settingBgImageUrlInput.addEventListener('input', () => {
+                const url = settingBgImageUrlInput.value.trim();
+                if (url) {
+                    settingBgImagePreview.innerHTML = `<img src="${url}" alt="背景图预览">`;
+                    uploadBgImageBtn.style.display = 'none'; // URL 已有值，不再需要上传按钮
+                } else {
+                    // If URL is cleared, and no file selected, hide upload button
+                    if (settingBgImageInput.files.length === 0) {
+                        settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                        uploadBgImageBtn.style.display = 'none';
+                    } else { // if file is selected, show upload button
+                        uploadBgImageBtn.style.display = 'inline-flex';
+                    }
+                }
+            });
+
+
+            uploadBgImageBtn.onclick = async () => {
+                const file = settingBgImageInput.files[0];
+                if (file) {
+                    try {
+                        showAlert(`正在上传背景图片 ${file.name}...`, 'info');
+                        const url = await uploadFile(file, 'images', `feat: upload background image "${file.name}"`);
+                        document.getElementById('setting-bg-image-url').value = url;
+                        // Upload successful, hide upload button
+                        uploadBgImageBtn.style.display = 'none';
+                        showAlert('背景图片上传并设置成功！请点击保存设置！', 'success');
+                    } catch (error) {
+                        // Error already handled in uploadFile
+                    }
+                } else {
+                    showAlert('请先选择一个图片文件！', 'warning');
+                }
+            };
+            clearBgImageBtn.onclick = () => {
+                document.getElementById('setting-bg-image-url').value = '';
+                settingBgImageInput.value = ''; // Clear file selector
+                settingBgImagePreview.innerHTML = `<span class="placeholder">无背景图</span>`;
+                uploadBgImageBtn.style.display = 'none'; // Clear both url and file, so no upload button
+                showAlert('背景图已清除！请点击保存设置！', 'info');
+            };
+
+            // Markdown preview for About Me in Settings
+            const aboutContentTextarea = document.getElementById('setting-about-content');
+            const aboutContentPreview = document.getElementById('about-content-preview');
+            aboutContentTextarea.addEventListener('input', () => {
+                aboutContentPreview.innerHTML = marked.parse(aboutContentTextarea.value);
+            });
+
+
+            // Gitalk 配置保存
             document.getElementById('save-gitalk-settings-btn').onclick = saveGitalkSettings;
 
-            // Tag input logic
-            const tagsInput = document.getElementById('post-tags-input');
-            const suggestionsBox = document.getElementById('tag-suggestions');
-            tagsInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTagToInput(e.target.value, e.target); e.target.value = ''; }});
-
+            // 移动端侧边栏切换
             document.getElementById('mobile-menu-btn').onclick = () => document.getElementById('admin-wrapper').classList.toggle('sidebar-visible');
             document.getElementById('mobile-overlay').onclick = () => document.getElementById('admin-wrapper').classList.remove('sidebar-visible');
-            
+
+            // 初始化时检查Token
             checkTokenAndStart();
         });
     </script>
