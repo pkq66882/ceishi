@@ -5,25 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>加载中...</title>
     
-    <!-- Meta tags for SEO and social sharing -->
     <meta name="description" content="一个由GitHub驱动的现代化半静态博客">
     <meta property="og:title" content="博客">
     <meta property="og:description" content="一个由GitHub驱动的现代化半静态博客">
     <meta property="og:type" content="website">
-    <meta property="og:image" content=""> <!-- Will be dynamically set -->
+    <meta property="og:image" content="">
     <meta name="twitter:card" content="summary_large_image">
 
-    <!-- Favicon (placeholder, can be customized) -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
 
-    <!-- Gitalk CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
-
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <style>
-        /* CSS Variables for theming */
+    <style id="theme-styles">
+        /* CSS Variables for theming, will be updated dynamically or by JS */
         :root {
             --bg-color: #f8f9fa;
             --text-color: #212529;
@@ -38,7 +33,6 @@
             --container-width: 960px;
         }
 
-        /* Base styles */
         body {
             margin: 0;
             font-family: var(--font-sans);
@@ -52,7 +46,6 @@
             background-position: center center;
         }
 
-        /* Structure and Layout */
         .container {
             max-width: var(--container-width);
             margin: 0 auto;
@@ -114,7 +107,6 @@
             width: 100%;
         }
 
-        /* Mobile Menu */
         .mobile-menu-icon {
             display: none;
             font-size: 1.5rem;
@@ -148,7 +140,6 @@
             margin-top: 30px;
         }
         
-        /* Card styles for posts */
         .post-card {
             background-color: var(--card-bg);
             border-radius: 8px;
@@ -181,11 +172,7 @@
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-        }
-        .post-meta span {
-            margin-right: 15px;
-            display: flex;
-            align-items: center;
+            gap: 10px;
         }
         .post-meta i {
             margin-right: 5px;
@@ -198,18 +185,14 @@
         .post-meta a:hover {
             color: var(--accent-color);
         }
-
-        .post-excerpt {
-            margin-top: 20px;
-        }
         
-        /* Single post view */
-        .post-full-content {
-            font-size: 1.1em;
+        .post-excerpt, .post-full-content { /* General content styling */
+            word-wrap: break-word;
         }
-        .post-full-content h1, .post-full-content h2, .post-full-content h3, .post-full-content h4 {
+        .post-full-content h1, .post-full-content h2, .post-full-content h3 {
             font-family: var(--font-serif);
             margin-top: 2em;
+            margin-bottom: 1em;
         }
         .post-full-content img {
             max-width: 100%;
@@ -245,18 +228,17 @@
             padding: 0;
         }
 
-        /* Pagination */
         .pagination {
             display: flex;
             justify-content: center;
             margin-top: 40px;
+            gap: 5px;
         }
         .pagination a {
             color: var(--accent-color);
-            padding: 8px 16px;
+            padding: 8px 12px;
             text-decoration: none;
             border: 1px solid var(--border-color);
-            margin: 0 5px;
             border-radius: 5px;
             transition: background-color 0.2s, color 0.2s;
         }
@@ -266,7 +248,6 @@
             border-color: var(--accent-color);
         }
 
-        /* Footer */
         #app-footer {
             text-align: center;
             padding: 40px 20px;
@@ -280,22 +261,25 @@
             font-weight: 500;
         }
 
-        /* Gitalk container */
         #gitalk-container {
             margin-top: 40px;
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
         }
 
-        /* Loading Spinner */
         .loading-spinner {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: calc(100vh - 120px);
             font-size: 2rem;
             color: var(--accent-color);
         }
+        .loading-spinner i { animation: spin 2s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* About Page specific styles */
         .about-content {
             background-color: var(--card-bg);
             border-radius: 8px;
@@ -303,10 +287,21 @@
             box-shadow: var(--shadow);
         }
 
-        /* Helper class */
         .hidden {
             display: none !important;
         }
+        
+        /* Theme Toggle Button */
+        #theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: color 0.2s;
+        }
+        #theme-toggle:hover { color: var(--accent-color); }
+
     </style>
 </head>
 <body>
@@ -317,21 +312,22 @@
             <nav class="main-nav">
                 <a href="#/" class="nav-home active">首页</a>
                 <a href="#/about" class="nav-about">关于</a>
-                <a href="admin.html" target="_blank">管理</a>
+                <a href="admin.html" target="_blank" style="display: none;">管理</a>
+                <button id="theme-toggle"><i class="fas fa-moon"></i></button>
             </nav>
              <i class="fas fa-bars mobile-menu-icon"></i>
         </div>
     </header>
 
     <main id="app-content" class="container">
-        <!-- Views will be rendered here by JavaScript -->
         <div id="home-view">
             <div id="post-list">
-                <!-- Post cards will be inserted here -->
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>正在加载文章...</p>
+                </div>
             </div>
-            <div id="pagination" class="pagination">
-                <!-- Pagination links will be inserted here -->
-            </div>
+            <div id="pagination" class="pagination"></div>
         </div>
 
         <div id="post-view" class="hidden">
@@ -344,23 +340,20 @@
         </div>
 
         <div id="about-view" class="hidden">
-             <div id="about-content-full" class="about-content">
-                <!-- About content will be inserted here -->
-             </div>
+             <div id="about-content-full" class="about-content"></div>
         </div>
         
-        <div id="archive-view" class="hidden">
-            <!-- For category/tag views, can be implemented later -->
-        </div>
-
-        <div id="loader" class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
+        <div id="not-found-view" class="hidden">
+            <div class="post-card" style="text-align: center;">
+                <h1>404 - 页面未找到</h1>
+                <p>抱歉，您访问的页面不存在。请检查链接或返回首页。</p>
+            </div>
         </div>
     </main>
 
     <footer id="app-footer">
         <div>
-            <span id="footer-text">© 2024 My Awesome Blog. Powered by <a href="https://github.com/rjdsq/rjdsq.github.io" target="_blank">期望ai</a>.</span>
+            <span id="footer-text">© 2024 My Awesome Blog. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a>.</span>
         </div>
     </footer>
 
@@ -383,19 +376,21 @@
 
         const API_BASE_URL = 'https://api.github.com';
 
-        // Base64 to UTF-8 decoding helper
         const b64_to_utf8 = (str) => {
             try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); }
             catch (e) { return atob(str); }
         };
 
-        // Function to fetch a file from GitHub API
+        // **FIXED**: Correctly pass owner and repo from GITHUB_CONFIG**
         async function getFileFromApi(filePath) {
-            const { owner, repo } = GITHUB_CONFIG;
-            const url = `${API_BASE_URL}/repos/${owner}/${repo}/contents/${filePath}`;
+            const url = `${API_BASE_URL}/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${filePath}`;
             try {
                 const response = await fetch(url, {
-                    headers: { 'Accept': 'application/vnd.github.v3+json' }
+                    headers: { 
+                        'Accept': 'application/vnd.github.v3+json',
+                        // If you ever decide to add a token for private repos, uncomment and add:
+                        // 'Authorization': `token ${your_personal_access_token}` 
+                    }
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for ${filePath}`);
                 const data = await response.json();
@@ -425,10 +420,10 @@
             siteTitle: document.querySelectorAll('.site-title'),
             postList: document.getElementById('post-list'),
             pagination: document.getElementById('pagination'),
-            loader: document.getElementById('loader'),
+            loader: document.querySelector('.loading-spinner'), // More specific selector
             footerText: document.getElementById('footer-text'),
             
-            navLinks: document.querySelectorAll('.main-nav a'),
+            navLinks: document.querySelectorAll('.main-nav a.nav-home, .main-nav a.nav-about'),
             mobileMenuIcon: document.querySelector('.mobile-menu-icon'),
             mainNav: document.querySelector('.main-nav'),
             
@@ -436,6 +431,7 @@
                 home: document.getElementById('home-view'),
                 post: document.getElementById('post-view'),
                 about: document.getElementById('about-view'),
+                notFound: document.getElementById('not-found-view')
             },
             
             postView: {
@@ -446,24 +442,50 @@
 
             aboutView: {
                 content: document.getElementById('about-content-full')
-            }
+            },
+            themeToggleBtn: document.getElementById('theme-toggle')
         };
 
         // ===================================
         // RENDERING FUNCTIONS
         // ===================================
 
+        function getCurrentTheme() {
+            return localStorage.getItem('theme') || 'light';
+        }
+
+        function setTheme(theme) {
+            const isDark = theme === 'dark';
+            if (isDark) {
+                document.documentElement.style.setProperty('--bg-color', '#17181b');
+                document.documentElement.style.setProperty('--text-color', '#e6edf3');
+                document.documentElement.style.setProperty('--accent-color', '#1f6feb');
+                document.documentElement.style.setProperty('--header-bg', 'rgba(22, 27, 34, 0.85)');
+                document.documentElement.style.setProperty('--card-bg', '#0d1117');
+                document.documentElement.style.setProperty('--meta-color', '#8b949e');
+                document.documentElement.style.setProperty('--border-color', '#30363d');
+                dom.themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+                document.documentElement.style.setProperty('--bg-color', '#f8f9fa');
+                document.documentElement.style.setProperty('--text-color', '#212529');
+                document.documentElement.style.setProperty('--accent-color', '#0d6efd');
+                document.documentElement.style.setProperty('--header-bg', 'rgba(255, 255, 255, 0.85)');
+                document.documentElement.style.setProperty('--card-bg', '#ffffff');
+                document.documentElement.style.setProperty('--meta-color', '#6c757d');
+                document.documentElement.style.setProperty('--border-color', '#dee2e6');
+                dom.themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+            }
+            localStorage.setItem('theme', theme);
+        }
+
         function applyConfig(config) {
             state.config = config;
-            // Update site title
             document.title = config.site.title;
             dom.siteTitle.forEach(el => el.textContent = config.site.title);
             
-            // Update footer
             const currentYear = new Date().getFullYear();
-            dom.footerText.innerHTML = `© ${currentYear} ${config.site.title}. Powered by <a href="https://github.com/rjdsq/rjdsq.github.io" target="_blank">期望ai</a>.`;
+            dom.footerText.innerHTML = `© ${currentYear} ${config.site.title}. Powered by <a href="https://github.com/rjdsq" target="_blank">期望ai</a>.`;
             
-            // Apply styling
             document.documentElement.style.setProperty('--bg-color', config.styling.backgroundColor);
             document.documentElement.style.setProperty('--text-color', config.styling.textColor);
             document.documentElement.style.setProperty('--accent-color', config.styling.accentColor);
@@ -472,6 +494,15 @@
                 document.body.style.backgroundImage = `url('${config.styling.backgroundImageUrl}')`;
             } else {
                 document.body.style.backgroundImage = 'none';
+            }
+            
+            // **NEW**: Apply non-image style overrides for theme
+            const current_theme = getCurrentTheme();
+            if(current_theme !== 'light') setTheme(current_theme);
+
+            // Show admin link if token exists (crude check for admin access)
+            if (localStorage.getItem('github_token')) {
+                document.querySelector('.main-nav a[href="admin.html"]').style.display = 'inline-block';
             }
         }
 
@@ -484,7 +515,7 @@
             const postsToRender = state.posts.slice(start, end);
 
             if (postsToRender.length === 0) {
-                dom.postList.innerHTML = '<p>暂无文章。</p>';
+                dom.postList.innerHTML = '<div class="post-card" style="text-align:center;">暂无文章。</div>';
                 return;
             }
 
@@ -525,7 +556,7 @@
         }
 
         function renderSinglePost(post) {
-            dom.postView.title.textContent = post.title;
+            dom.postView.title.innerHTML = `<a href="#/post/${post.id}">${post.title}</a>`;
             dom.postView.meta.innerHTML = `
                 <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
                 <span><i class="fas fa-sync-alt"></i> ${new Date(post.updatedAt).toLocaleDateString()}</span>
@@ -534,26 +565,32 @@
             `;
             dom.postView.content.innerHTML = marked.parse(post.content.replace('<!--more-->', ''));
             
-            // Initialize Gitalk
             const gitalkContainer = document.getElementById('gitalk-container');
-            gitalkContainer.innerHTML = ''; // Clear previous instance
-            if (state.config.gitalk && state.config.gitalk.enabled) {
+            gitalkContainer.innerHTML = ''; 
+            if (state.config.gitalk && state.config.gitalk.enabled && state.config.gitalk.clientID && state.config.gitalk.clientSecret) {
                 const gitalk = new Gitalk({
                     clientID: state.config.gitalk.clientID,
                     clientSecret: state.config.gitalk.clientSecret,
                     repo: state.config.gitalk.repo,
                     owner: state.config.gitalk.owner,
                     admin: state.config.gitalk.admin,
-                    id: post.id, // Using post ID for issue ID
-                    distractionFreeMode: false
+                    id: post.id,
+                    distractionFreeMode: false,
+                    proxy: 'https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token' // Public proxy for CORS
                 });
                 gitalk.render('gitalk-container');
+            } else {
+                gitalkContainer.style.display = 'none';
             }
         }
         
         function renderAboutPage() {
             const aboutContent = state.config.site.aboutContent || '<h3>关于我</h3><p>暂无内容。</p>';
             dom.aboutView.content.innerHTML = marked.parse(aboutContent);
+        }
+        
+        function renderNotFoundPage() {
+            showAdminView('notFound');
         }
 
         // ===================================
@@ -565,23 +602,23 @@
             if (dom.views[viewName]) {
                 dom.views[viewName].classList.remove('hidden');
             }
-            window.scrollTo(0, 0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function handleRoute() {
             const hash = window.location.hash || '#/';
-            dom.loader.style.display = 'flex'; // Show loader on route change
+            if (dom.loader) dom.loader.style.display = 'flex';
 
-            // Update active nav link
+            // Update active nav link for simple nav items
             dom.navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === hash.split('/')[0] + (hash.split('/')[1] ? `/${hash.split('/')[1]}` : '')) {
+                const linkHash = link.getAttribute('href').split('/')[1];
+                if (hash.startsWith(`#/${linkHash}`) || (hash === '#/' && link.classList.contains('nav-home'))) {
                     link.classList.add('active');
-                } else if (hash === '#/' && link.classList.contains('nav-home')) {
-                     link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
                 }
             });
-            // Close mobile menu on navigation
+
             if(dom.mainNav.classList.contains('active')) {
                 dom.mainNav.classList.remove('active');
             }
@@ -593,8 +630,7 @@
                     renderSinglePost(post);
                     switchView('post');
                 } else {
-                    // Post not found, redirect to home
-                    window.location.hash = '#/';
+                    renderNotFoundPage();
                 }
             } else if (hash.startsWith('#/page/')) {
                 const pageNum = parseInt(hash.split('/')[2], 10);
@@ -605,13 +641,12 @@
                 renderAboutPage();
                 switchView('about');
             } else {
-                // Default to home view
                 renderPostList(1);
                 renderPagination();
                 switchView('home');
             }
             
-            dom.loader.style.display = 'none'; // Hide loader after content is ready
+            if (dom.loader) dom.loader.style.display = 'none';
         }
         
         // ===================================
@@ -619,77 +654,70 @@
         // ===================================
 
         async function initializeBlog() {
+            if (dom.loader) dom.loader.innerHTML = '<i class="fas fa-spinner fa-spin"></i><p>正在加载博客配置...</p>';
             try {
-                // **STEP 1: Dynamically determine owner, repo, and basePath**
-                // This logic is copied from the fixed admin.html to ensure consistency
-                const userLogin = window.location.hostname.split('.')[0]; // Heuristic, might need improvement for custom domains.
                 const hostname = window.location.hostname;
-                let pathSegments = window.location.pathname.split('/').filter(p => p);
-                
-                let owner, repo, basePath;
+                const pathSegments = window.location.pathname.split('/').filter(p => p);
+                let owner, repo, basePath = '';
 
                 if (hostname.endsWith('.github.io')) {
                     owner = hostname.split('.')[0];
-                    if (pathSegments.length > 0 && (pathSegments[pathSegments.length-1].endsWith('.html') || pathSegments[pathSegments.length-1].endsWith('.htm'))){
-                         pathSegments.pop();
-                    }
-                    if (pathSegments.length > 0) {
+                    if (pathSegments.length === 0) {
+                        repo = owner + '.github.io';
+                    } else {
                         repo = pathSegments[0];
                         basePath = pathSegments.slice(1).join('/');
-                    } else {
-                        repo = hostname;
-                        basePath = '';
                     }
                 } else {
-                    // Fallback for custom domains (assumes owner/repo structure in path)
-                    // This will need manual config if the path structure is different.
-                    alert("Custom domain detected. The system will try to infer repository info, but it might fail. Please ensure your GITHUB_CONFIG is correct if you encounter issues.");
-                    owner = prompt("Please confirm your GitHub username (owner):", userLogin);
-                    repo = prompt("Please confirm your repository name:", pathSegments.length > 0 ? pathSegments[0] : "");
-                    basePath = pathSegments.slice(1).join('/');
+                    // Fallback for custom domains. This is a guess.
+                    alert("自定义域名警告：系统正在尝试自动检测您的GitHub仓库信息。如果后台加载失败，请手动配置GITHUB_CONFIG对象。");
+                    owner = prompt("请输入您的GitHub用户名 (Owner):", owner || 'your_username');
+                    repo = prompt("请输入您的仓库名 (Repo):", repo || 'your_repo_name');
+                    basePath = prompt("请输入您的博客文件所在的子目录路径 (Base Path，如果无则留空):", basePath || '');
+                    if (!owner || !repo) throw new Error("关键信息未提供，初始化中止。");
                 }
-                
-                // Set the global config
+
                 GITHUB_CONFIG.owner = owner;
                 GITHUB_CONFIG.repo = repo;
                 GITHUB_CONFIG.basePath = basePath;
                 
                 console.log(`Frontend Initialized with: Owner=${owner}, Repo=${repo}, Base Path="${basePath}"`);
 
-                const configPath = basePath ? `${basePath}/config.json` : 'config.json';
-                const postsPath = basePath ? `${basePath}/posts.json` : 'posts.json';
+                const configPath = GITHUB_CONFIG.basePath ? `${GITHUB_CONFIG.basePath}/config.json` : 'config.json';
+                const postsPath = GITHUB_CONFIG.basePath ? `${GITHUB_CONFIG.basePath}/posts.json` : 'posts.json';
 
-                // **STEP 2: Fetch data**
                 const config = await getFileFromApi(configPath);
                 if (!config) throw new Error("config.json 文件未找到或为空。");
 
                 const posts = await getFileFromApi(postsPath);
                 if (!posts) throw new Error("posts.json 文件未找到或为空。");
 
-                // **STEP 3: Process and store data**
                 applyConfig(config);
                 state.posts = posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 
-                // **STEP 4: Initial Render**
                 handleRoute();
 
             } catch (error) {
                 console.error("博客初始化失败:", error);
-                document.getElementById('app-content').innerHTML = `
-                    <div style="text-align: center; padding: 40px; background: #fff; border-radius: 8px; box-shadow: var(--shadow);">
-                        <h2><i class="fas fa-exclamation-triangle"></i> 博客加载失败</h2>
-                        <p>无法加载必要的配置文件。请检查浏览器的开发者控制台获取更多信息。</p>
-                        <p><strong>错误信息:</strong> ${error.message}</p>
-                        <p>可能的原因：</p>
-                        <ul style="text-align: left; display: inline-block;">
-                            <li>GitHub仓库路径配置错误。</li>
-                            <li><code>config.json</code> 或 <code>posts.json</code> 文件不存在于仓库中。</li>
-                            <li>GitHub API访问频率限制。</li>
-                        </ul>
-                    </div>
-                `;
+                if (dom.loader) {
+                    dom.loader.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <i class="fas fa-exclamation-triangle" style="color: #dc3545; font-size: 3rem;"></i>
+                            <h2>博客加载失败</h2>
+                            <p>无法加载必要的配置文件。请检查浏览器控制台获取更多信息。</p>
+                            <p><strong>错误信息:</strong> <code>${error.message}</code></p>
+                            <p>常见原因:</p>
+                            <ul style="text-align: left; display: inline-block;">
+                                <li>GitHub仓库路径错误或文件不存在。</li>
+                                <li><code>config.json</code> 或 <code>posts.json</code> 格式有误。</li>
+                                <li>私有仓库需要提供访问token。</li>
+                                <li>网络问题或GitHub API限流。</li>
+                            </ul>
+                        </div>
+                    `;
+                }
             } finally {
-                dom.loader.style.display = 'none';
+                if (dom.loader) dom.loader.style.display = 'none';
             }
         }
 
@@ -699,10 +727,16 @@
 
         window.addEventListener('hashchange', handleRoute);
         document.addEventListener('DOMContentLoaded', () => {
-             // Mobile menu toggle
             dom.mobileMenuIcon.addEventListener('click', () => {
                 dom.mainNav.classList.toggle('active');
             });
+            
+            // **NEW**: Theme toggle logic
+            dom.themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = getCurrentTheme();
+                setTheme(currentTheme === 'light' ? 'dark' : 'light');
+            });
+            
             initializeBlog();
         });
     </script>
