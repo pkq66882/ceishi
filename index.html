@@ -13,17 +13,19 @@
     <meta property="og:image" content=""> <!-- Will be dynamically set -->
     <meta name="twitter:card" content="summary_large_image">
 
-    <!-- Favicon (placeholder, can be customized) -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E" type="image/svg+xml">
 
     <!-- Gitalk CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
 
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Marked.js for rendering markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
-        /* CSS Variables for theming */
         :root {
             --bg-color: #f8f9fa;
             --text-color: #212529;
@@ -38,7 +40,6 @@
             --container-width: 960px;
         }
 
-        /* Base styles */
         body {
             margin: 0;
             font-family: var(--font-sans);
@@ -52,7 +53,17 @@
             background-position: center center;
         }
 
-        /* Structure and Layout */
+        /* Lazy loading for images */
+        img {
+            transition: opacity 0.2s;
+        }
+        img[loading="lazy"] {
+            opacity: 0;
+        }
+        img[loading="lazy"].loaded {
+            opacity: 1;
+        }
+
         .container {
             max-width: var(--container-width);
             margin: 0 auto;
@@ -114,7 +125,6 @@
             width: 100%;
         }
 
-        /* Mobile Menu */
         .mobile-menu-icon {
             display: none;
             font-size: 1.5rem;
@@ -148,7 +158,6 @@
             margin-top: 30px;
         }
         
-        /* Card styles for posts */
         .post-card {
             background-color: var(--card-bg);
             border-radius: 8px;
@@ -203,7 +212,6 @@
             margin-top: 20px;
         }
         
-        /* Single post view */
         .post-full-content {
             font-size: 1.1em;
         }
@@ -245,7 +253,6 @@
             padding: 0;
         }
 
-        /* Pagination */
         .pagination {
             display: flex;
             justify-content: center;
@@ -266,7 +273,6 @@
             border-color: var(--accent-color);
         }
 
-        /* Footer */
         #app-footer {
             text-align: center;
             padding: 40px 20px;
@@ -280,12 +286,10 @@
             font-weight: 500;
         }
 
-        /* Gitalk container */
         #gitalk-container {
             margin-top: 40px;
         }
 
-        /* Loading Spinner */
         .loading-spinner {
             display: flex;
             justify-content: center;
@@ -295,7 +299,6 @@
             color: var(--accent-color);
         }
         
-        /* About Page specific styles */
         .about-content {
             background-color: var(--card-bg);
             border-radius: 8px;
@@ -303,9 +306,23 @@
             box-shadow: var(--shadow);
         }
 
-        /* Helper class */
         .hidden {
             display: none !important;
+        }
+
+        /* Responsive table styles */
+        .post-full-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+        .post-full-content th, .post-full-content td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        .post-full-content th {
+            background-color: var(--bg-color);
         }
     </style>
 </head>
@@ -324,7 +341,6 @@
     </header>
 
     <main id="app-content" class="container">
-        <!-- Views will be rendered here by JavaScript -->
         <div id="home-view">
             <div id="post-list">
                 <!-- Post cards will be inserted here -->
@@ -344,15 +360,13 @@
         </div>
 
         <div id="about-view" class="hidden">
-             <div id="about-content-full" class="about-content">
-                <!-- About content will be inserted here -->
+             <div class="about-content">
+                <div id="about-content-full"></div>
              </div>
         </div>
         
         <div id="archive-view" class="hidden">
-           <div id="archive-content" class="post-list-by-category">
-               <!-- Archive content will be inserted here for categories/tags -->
-           </div>
+            <!-- For category/tag views -->
         </div>
 
         <div id="loader" class="loading-spinner">
@@ -362,20 +376,15 @@
 
     <footer id="app-footer">
         <div>
-            <span id="footer-text">© 2024 My Awesome Blog. Powered by <a href="https://github.com/rjdsq/rjdsq.github.io" target="_blank">期望ai</a>.</span>
+            <span id="footer-text">© 2024 My Awesome Blog. Powered by 期望ai.</span>
         </div>
     </footer>
 
     <!-- Gitalk JS -->
     <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
-    <!-- Marked.js for rendering markdown -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <script>
-        // ===================================
         // GITHUB API AND CONFIGURATION
-        // ===================================
-
         let GITHUB_CONFIG = {
             owner: '',
             repo: '',
@@ -387,11 +396,19 @@
 
         // Base64 to UTF-8 decoding helper
         const b64_to_utf8 = (str) => {
-            try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); }
-            catch (e) { return atob(str); }
+            try { 
+                return decodeURIComponent(
+                    atob(str)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                ); 
+            } catch (e) { 
+                return atob(str); 
+            }
         };
 
-        // Function to fetch a file from GitHub API
+        // Fetch a file from GitHub API
         async function getFileFromApi(filePath) {
             const { owner, repo } = GITHUB_CONFIG;
             const url = `${API_BASE_URL}/repos/${owner}/${repo}/contents/${filePath}`;
@@ -399,14 +416,8 @@
                 const response = await fetch(url, {
                     headers: { 'Accept': 'application/vnd.github.v3+json' }
                 });
-                if (!response.ok) {
-                    console.error(`HTTP error! status: ${response.status} for ${filePath}`);
-                    throw new Error(`Failed to fetch ${filePath}: HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for ${filePath}`);
                 const data = await response.json();
-                if (!data || typeof data.content !== 'string') {
-                    throw new Error(`${filePath} content is invalid or empty.`);
-                }
                 return JSON.parse(b64_to_utf8(data.content));
             } catch (error) {
                 console.error(`Failed to fetch ${filePath}:`, error);
@@ -414,10 +425,7 @@
             }
         }
         
-        // ===================================
         // STATE MANAGEMENT
-        // ===================================
-
         const state = {
             config: {},
             posts: [],
@@ -425,10 +433,7 @@
             totalPages: 1
         };
 
-        // ===================================
         // DOM ELEMENTS CACHE
-        // ===================================
-
         const dom = {
             siteTitle: document.querySelectorAll('.site-title'),
             postList: document.getElementById('post-list'),
@@ -444,7 +449,6 @@
                 home: document.getElementById('home-view'),
                 post: document.getElementById('post-view'),
                 about: document.getElementById('about-view'),
-                archive: document.getElementById('archive-view')
             },
             
             postView: {
@@ -455,57 +459,156 @@
 
             aboutView: {
                 content: document.getElementById('about-content-full')
-            },
-            archiveView: {
-                content: document.getElementById('archive-content')
             }
         };
 
-        // ===================================
-        // RENDERING FUNCTIONS
-        // ===================================
+        // Initialize blog with proper path detection
+        const initializeBlog = async () => {
+            try {
+                // Enhanced path detection for GitHub Pages
+                const hostname = window.location.hostname;
+                let pathSegments = window.location.pathname.split('/').filter(p => p);
+                let owner, repo, basePath;
 
-        function applyConfig(config) {
-            state.config = config;
-            // Update site title
-            document.title = config.site.title;
-            dom.siteTitle.forEach(el => el.textContent = config.site.title);
+                // Standard GitHub Pages (project sites)
+                if (hostname.endsWith('.github.io')) {
+                    owner = hostname.split('.')[0];
+                    
+                    // Remove the index.html if present
+                    if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase().endsWith('.html')) {
+                        pathSegments.pop();
+                    }
+                    
+                    // Check if it's a project site (e.g., user.github.io/repo-name)
+                    if (pathSegments.length > 0 && pathSegments[0] !== owner) {
+                        repo = pathSegments[0];
+                        basePath = pathSegments.slice(1).join('/');
+                    } else {
+                        // User/organization site - repo is the same as owner
+                        repo = owner + '.github.io';
+                        basePath = '';
+                    }
+                } 
+                // Custom domains or complex setups
+                else {
+                    // Fallback: use hostname as owner, and prompt for repo if needed
+                    owner = hostname.split('.')[0];
+                    repo = prompt("无法自动确定仓库名。如果这是项目页面，请输入仓库名:", owner + '.github.io') || owner + '.github.io';
+                    basePath = pathSegments.join('/').replace('index.html', '');
+                }
+
+                // Set the global config
+                GITHUB_CONFIG.owner = owner;
+                GITHUB_CONFIG.repo = repo;
+                GITHUB_CONFIG.basePath = basePath;
+
+                console.log(`Frontend Initialized:=${owner}=${repo}="${basePath}"`);
+
+                const configPath = basePath ? `${basePath}/config.json` : 'config.json';
+                const postsPath = basePath ? `${basePath}/posts.json` : 'posts.json';
+
+                const [config, posts] = await Promise.all([
+                    getFileFromApi(configPath),
+                    getFileFromApi(postsPath)
+                ]);
+
+                if (!config) throw new Error("config.json 文件未找到或为空。");
+                if (!posts) throw new Error("posts.json 文件未找到或为空。");
+
+                // Apply configuration
+                const currentYear = new Date().getFullYear();
+                dom.siteTitle.forEach(el => el.textContent = config.site.title);
+                dom.footerText.innerHTML = `© ${currentYear} ${config.site.title}. Powered by 期望ai.`;
+
+                // Apply styling
+                document.documentElement.style.setProperty('--bg-color', config.styling.backgroundColor);
+                document.documentElement.style.setProperty('--text-color', config.styling.textColor);
+                document.documentElement.style.setProperty('--accent-color', config.styling.accentColor);
+                
+                if (config.styling.backgroundImageUrl) {
+                    document.body.style.backgroundImage = `url('${config.styling.backgroundImageUrl}')`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundAttachment = 'fixed';
+                } else {
+                    document.body.style.backgroundImage = 'none';
+                }
+
+                state.posts = posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                // Initial render
+                showView('home');
+
+            } catch (error) {
+                console.error("博客初始化失败:", error);
+                dom.loader.style.display = 'none';
+                document.getElementById('app-content').innerHTML = `
+                    <div style="text-align: center; padding: 40px; background: #fff; border-radius: 8px; box-shadow: var(--shadow);">
+                        <h2><i class="fas fa-exclamation-triangle"></i> 博客加载失败</h2>
+                        <p>无法加载必要的配置文件。请检查浏览器的开发者控制台获取更多信息。</p>
+                        <p><strong>错误信息:</strong> ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                dom.loader.style.display = 'none';
+            }
+        };
+
+        // VIEW MANAGEMENT
+        function showView(viewName) {
+            Object.values(dom.views).forEach(view => view.classList.add('hidden'));
             
-            // Update footer
-            const currentYear = new Date().getFullYear();
-            dom.footerText.innerHTML = `© ${currentYear} ${config.site.title}. Powered by <a href="https://github.com/rjdsq/rjdsq.github.io" target="_blank">期望ai</a>.`;
-            
-            // Apply styling
-            document.documentElement.style.setProperty('--bg-color', config.styling.backgroundColor);
-            document.documentElement.style.setProperty('--text-color', config.styling.textColor);
-            document.documentElement.style.setProperty('--accent-color', config.styling.accentColor);
-            
-            if (config.styling.backgroundImageUrl) {
-                document.body.style.backgroundImage = `url('${config.styling.backgroundImageUrl}')`;
-            } else {
-                document.body.style.backgroundImage = 'none';
+            const mainView = dom.views[viewName + 'View'] || dom.views.home;
+            if (mainView) {
+                mainView.classList.remove('hidden');
+            }
+
+            // Update active nav link
+            dom.navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (viewName === 'home' && link.textContent.trim() === '首页') {
+                    link.classList.add('active');
+                } else if (viewName === 'about' && link.textContent.trim() === '关于') {
+                    link.classList.add('active');
+                }
+            });
+
+            // Close mobile menu
+            if(dom.mainNav.classList.contains('active')) {
+                dom.mainNav.classList.remove('active');
+            }
+
+            // Trigger specific actions
+            if (viewName === 'home') {
+                renderPostList(1);
+                renderPagination();
+            } else if (viewName === 'post') {
+                renderSinglePost(state.posts.find(p => p.id === window.location.hash.split('/')[2]));
+            } else if (viewName === 'about') {
+                renderAboutPage();
             }
         }
 
+        // RENDER FUNCTIONS
         function renderPostList(page = 1) {
             state.currentPage = page;
-            dom.postList.innerHTML = '';
-            
             const start = (page - 1) * GITHUB_CONFIG.posts_per_page;
             const end = start + GITHUB_CONFIG.posts_per_page;
             const postsToRender = state.posts.slice(start, end);
 
+            dom.postList.innerHTML = '';
             if (postsToRender.length === 0) {
                 dom.postList.innerHTML = '<p>暂无文章。</p>';
                 return;
             }
 
             postsToRender.forEach(post => {
+                let excerpt = post.content.split('<!--more-->')[0];
+                if (excerpt.length > 200) {
+                    excerpt = excerpt.substring(0, 200) + '...';
+                }
+
                 const postCard = document.createElement('article');
                 postCard.className = 'post-card';
-                
-                const excerpt = post.content.split('<!--more-->')[0];
-
                 postCard.innerHTML = `
                     <h2 class="post-title"><a href="#/post/${post.id}">${post.title}</a></h2>
                     <div class="post-meta">
@@ -533,10 +636,15 @@
                     pageLink.className = 'active';
                 }
                 dom.pagination.appendChild(pageLink);
-            }
+            });
         }
 
         function renderSinglePost(post) {
+            if (!post) {
+                showView('home');
+                return;
+            }
+
             dom.postView.title.textContent = post.title;
             dom.postView.meta.innerHTML = `
                 <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
@@ -546,235 +654,85 @@
             `;
             dom.postView.content.innerHTML = marked.parse(post.content.replace('<!--more-->', ''));
             
-            // Initialize Gitalk
+            // Initialize Gitalk with lazy loading
             const gitalkContainer = document.getElementById('gitalk-container');
-            gitalkContainer.innerHTML = ''; // Clear previous instance
+            gitalkContainer.innerHTML = '';
             if (state.config.gitalk && state.config.gitalk.enabled) {
-                const gitalk = new Gitalk({
-                    clientID: state.config.gitalk.clientID,
-                    clientSecret: state.config.gitalk.clientSecret,
-                    repo: state.config.gitalk.repo,
-                    owner: state.config.gitalk.owner,
-                    admin: state.config.gitalk.admin,
-                    id: post.id, // Using post ID for issue ID
-                    distractionFreeMode: false
-                });
-                gitalk.render('gitalk-container');
+                // Add a loading state for Gitalk
+                const loading = document.createElement('div');
+                loading.className = 'loading-spinner';
+                loading.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x"></i><p>加载评论组件...</p>';
+                gitalkContainer.appendChild(loading);
+                
+                // Initialize Gitalk when in view
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        loading.remove();
+                        initializeGitalk();
+                        observer.disconnect();
+                    }
+                }, { threshold: 0.1 });
+                observer.observe(gitalkContainer);
             }
+        }
+
+        function initializeGitalk() {
+            const gitalk = new Gitalk({
+                clientID: state.config.gitalk.clientID,
+                clientSecret: state.config.gitalk.clientSecret,
+                repo: state.config.gitalk.repo,
+                owner: state.config.gitalk.owner,
+                admin: state.config.gitalk.admin,
+                id: window.location.hash.split('/')[2],
+                distractionFreeMode: false,
+                language: 'zh-CN'
+            });
+            gitalk.render('gitalk-container');
         }
         
         function renderAboutPage() {
-            const aboutContent = state.config.site.aboutContent || '<h3>关于我</h3><p>暂无内容。</p>';
-            dom.aboutView.content.innerHTML = marked.parse(aboutContent);
-        }
-        
-        // This is a placeholder for potential archive by category/tag.
-        // For now, it will simply redirect to home.
-        function renderArchiveView(type, value) {
-            dom.archiveView.content.innerHTML = `<h2>${type === 'category' ? '分类' : '标签'}：${value}</h2>`;
-            const filteredPosts = state.posts.filter(post => {
-                 if (type === 'category') return post.category === value;
-                 if (type === 'tag') return post.tags && post.tags.includes(value);
-                 return false;
-            });
-
-            if (filteredPosts.length === 0) {
-                 dom.archiveView.content.innerHTML += '<p>此分类/标签下暂无文章。</p>';
-                 return;
+            let aboutContent = '<h3>关于我</h3>';
+            if (state.config.site.aboutContent) {
+                aboutContent = marked.parse(state.config.site.aboutContent);
             }
-
-            const currentPath = window.location.hash;
-            filteredPosts.forEach(post => {
-                const postCard = document.createElement('article');
-                postCard.className = 'post-card';
-                const excerpt = post.content.split('<!--more-->')[0];
-                postCard.innerHTML = `
-                    <h2 class="post-title"><a href="#/post/${post.id}">${post.title}</a></h2>
-                    <div class="post-meta">
-                        <span><i class="fas fa-calendar-alt"></i> ${new Date(post.createdAt).toLocaleDateString()}</span>
-                        ${post.category ? `<span><i class="fas fa-folder"></i> <a href="#/category/${post.category}">${post.category}</a></span>` : ''}
-                        ${post.tags && post.tags.length > 0 ? `<span><i class="fas fa-tags"></i> ${post.tags.map(tag => `<a href="#/tag/${tag}">${tag}</a>`).join(', ')}</span>` : ''}
-                    </div>
-                    <div class="post-excerpt">${marked.parse(excerpt)}</div>
-                `;
-                dom.archiveView.content.appendChild(postCard);
-            });
+            dom.aboutView.content.innerHTML = aboutContent;
         }
 
-
-        // ===================================
-        // ROUTING AND VIEW MANAGEMENT
-        // ===================================
-
-        function switchView(viewName) {
-            Object.values(dom.views).forEach(view => view.classList.add('hidden'));
-            if (dom.views[viewName]) {
-                dom.views[viewName].classList.remove('hidden');
-            }
-            window.scrollTo(0, 0);
-        }
-
-        async function handleRoute() {
+        // ROUTING
+        function handleRoute() {
             const hash = window.location.hash || '#/';
-            dom.loader.style.display = 'flex'; // Show loader on route change
-
-            // Update active nav link
-            dom.navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === hash.split('/')[0] + (hash.split('/')[1] ? `/${hash.split('/')[1]}` : '')) {
-                    link.classList.add('active');
-                } else if (hash === '#/' && link.classList.contains('nav-home')) {
-                     link.classList.add('active');
-                }
-            });
-            // Close mobile menu on navigation
-            if(dom.mainNav.classList.contains('active')) {
-                dom.mainNav.classList.remove('active');
-            }
-
-            if (hash.startsWith('#/post/')) {
-                const postId = hash.split('/')[2];
-                const post = state.posts.find(p => p.id === postId);
-                if (post) {
-                    renderSinglePost(post);
-                    switchView('post');
-                } else {
-                    window.location.hash = '#/'; // Fallback to home if not found
-                }
-            } else if (hash.startsWith('#/page/')) {
+            
+            if (hash.startsWith('#/page/')) {
                 const pageNum = parseInt(hash.split('/')[2], 10);
                 renderPostList(pageNum);
                 renderPagination();
-                switchView('home');
+            } else if (hash.startsWith('#/post/')) {
+                showView('post');
             } else if (hash.startsWith('#/about')) {
-                renderAboutPage();
-                switchView('about');
-            } else if (hash.startsWith('#/category/') || hash.startsWith('#/tag/')) {
-                 const parts = hash.split('/');
-                 const type = parts[1]; // 'category' or 'tag'
-                 const value = decodeURIComponent(parts[2]);
-                 renderArchiveView(type, value);
-                 switchView('archive');
+                showView('about');
+            } else {
+                showView('home');
             }
-            else {
-                renderPostList(1);
-                renderPagination();
-                switchView('home');
-            }
-            
-            dom.loader.style.display = 'none'; // Hide loader after content is ready
         }
         
-        // ===================================
-        // INITIALIZATION
-        // ===================================
-
-        async function initializeBlog() {
-            try {
-                // **STEP 1: Dynamically determine owner, repo, and basePath**
-                // This logic is copied from the fixed admin.html to ensure consistency
-                const hostname = window.location.hostname;
-                let pathName = window.location.pathname;
-                let pathSegments = pathName.split('/').filter(p => p);
-                
-                let owner, repo, basePath;
-
-                if (hostname.endsWith('.github.io')) {
-                    owner = hostname.split('.')[0];
-                    if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase().endsWith('index.html')) {
-                        pathSegments.pop(); // Remove "index.html"
-                    }
-                    if (pathSegments.length > 0) {
-                        repo = pathSegments[0]; // First segment is the repo name for project pages
-                        basePath = pathSegments.slice(1).join('/'); // Rest is basePath within the repo
-                    } else {
-                        repo = hostname; // User/Org page, repo name is the hostname
-                        basePath = '';
-                    }
-                } else {
-                    // Custom domain or local development (needs more robust handling but this is a reasonable heuristic)
-                    console.warn("Custom domain or local environment detected. Attempting to infer repository settings. Please verify configuration if issues arise.");
-                    if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].toLowerCase().endsWith('index.html')) {
-                        pathSegments.pop(); 
-                    }
-                    if (pathSegments.length > 0) {
-                        // Assume first segment is repo, rest is basePath
-                         repo = pathSegments[0];
-                         basePath = pathSegments.slice(1).join('/');
-                         // Best guess for owner is usually related to the domain or first segment if not a direct user.github.io
-                         owner = prompt("无法从URL中自动确定GitHub用户名(owner)。请输入:", "pkq66882");
-                    } else {
-                        // If root path on custom domain, prompt for everything
-                        owner = prompt("无法从URL中自动确定GitHub用户名(owner)。请输入:", "pkq66882");
-                        repo = prompt("无法从URL中自动确定GitHub仓库名称(repo)。请输入(例如:ceishi):", "ceishi");
-                        basePath = '';
-                    }
-                }
-
-                // If no owner was set yet, try to derive from repo if it's a *.github.io type
-                if (!owner && repo.endsWith('.github.io')) {
-                    owner = repo.split('.')[0];
-                }
-                if (!owner) { // Final fallback if still no owner
-                    owner = prompt("请再次输入你的GitHub用户名 (Owner):", "your-github-username");
-                }
-                
-                // Set the global config
-                GITHUB_CONFIG.owner = owner;
-                GITHUB_CONFIG.repo = repo;
-                GITHUB_CONFIG.basePath = basePath;
-                
-                console.log(`Frontend Initialized with: Owner=${owner}, Repo=${repo}, Base Path="${basePath}"`);
-
-                const configPath = basePath ? `${basePath}/config.json` : 'config.json';
-                const postsPath = basePath ? `${basePath}/posts.json` : 'posts.json';
-
-                // **STEP 2: Fetch data**
-                const config = await getFileFromApi(configPath);
-                // No need to check for config emptiness here, getFileFromApi throws if content is invalid/empty.
-                // It should get default values from admin.html now.
-
-                const posts = await getFileFromApi(postsPath);
-                // Same for posts
-                
-                // **STEP 3: Process and store data**
-                applyConfig(config);
-                state.posts = posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                
-                // **STEP 4: Initial Render**
-                handleRoute();
-
-            } catch (error) {
-                console.error("博客初始化失败:", error);
-                document.getElementById('app-content').innerHTML = `
-                    <div style="text-align: center; padding: 40px; background: #fff; border-radius: 8px; box-shadow: var(--shadow); margin-top: 50px;">
-                        <h2><i class="fas fa-exclamation-triangle"></i> 博客加载失败</h2>
-                        <p>无法加载必要的配置文件。请检查浏览器的开发者控制台获取更多信息。</p>
-                        <p><strong>错误信息:</strong> ${error.message}</p>
-                        <p>可能的原因：</p>
-                        <ul style="text-align: left; display: inline-block;">
-                            <li>GitHub仓库路径配置错误或仓库/文件不存在。</li>
-                            <li><code>config.json</code> 或 <code>posts.json</code> 文件在仓库中内容无效或格式错误。</li>
-                            <li>GitHub API访问频率限制。</li>
-                        </ul>
-                        <p>请确保您的GitHub Pages已正确配置，并且后台 <a href="admin.html" target="_blank">admin.html</a> 已成功完成初始化。</p>
-                    </div>
-                `;
-            } finally {
-                dom.loader.style.display = 'none';
-            }
-        }
-
-        // ===================================
         // EVENT LISTENERS
-        // ===================================
-
-        window.addEventListener('hashchange', handleRoute);
         document.addEventListener('DOMContentLoaded', () => {
-             // Mobile menu toggle
+            window.addEventListener('hashchange', handleRoute);
+            handleRoute();
+
+            // Mobile menu toggle
             dom.mobileMenuIcon.addEventListener('click', () => {
                 dom.mainNav.classList.toggle('active');
             });
+
+            // Lazy load images
+            if ('loading' in HTMLImageElement.prototype) {
+                document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+                    img.classList.add('loaded');
+                });
+            }
+
+            // Start initialization
             initializeBlog();
         });
     </script>
